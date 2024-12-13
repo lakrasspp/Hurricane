@@ -1924,7 +1924,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	}
 
 	private void setAuraCircleOverlay(boolean enabled, Color col) {
-		setAuraCircleOverlay(enabled, col, 10f);
+		setAuraCircleOverlay(enabled, col, 20f);
 	}
 
 	public void updateSpeedBuffAuras() {
