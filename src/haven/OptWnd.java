@@ -1288,6 +1288,7 @@ public class OptWnd extends Window {
 	public static ColorOptionWidget speedBuffAuraColorOptionWidget;
 	public static String[] speedBuffAuraColorSetting = Utils.getprefsa("speedBuffAura" + "_colorSetting", new String[]{"255", "255", "255", "140"});
 	public static CheckBox showMidgesCircleAurasCheckBox;
+	public static CheckBox showRowboatCircleAurasCheckBox;
 	public static CheckBox showBeastDangerRadiiCheckBox;
 	public static CheckBox showBeeSkepsRadiiCheckBox;
 	public static CheckBox showFoodTroughsRadiiCheckBox;
@@ -1805,6 +1806,16 @@ public class OptWnd extends Window {
 				}
 			}), speedBuffAuraColorOptionWidget.pos("ur").adds(10, 0));
 
+			middleColumn = add(showRowboatCircleAurasCheckBox = new CheckBox("Show Rowboat / Dugout Circle Auras"){
+				{a = (Utils.getprefb("showRowboatCircleAuras", true));}
+				public void changed(boolean val) {
+					Utils.setprefb("showRowboatCircleAuras", val);
+					if (ui != null && ui.gui != null) {
+						ui.sess.glob.oc.gobAction(Gob::updateRowboatAuras);
+					}
+				}
+			}, middleColumn.pos("bl").adds(0, 18).x(UI.scale(240)));
+
 			middleColumn = add(showMidgesCircleAurasCheckBox = new CheckBox("Show Midges Circle Auras"){
 				{a = (Utils.getprefb("showMidgesCircleAuras", true));}
 				public void changed(boolean val) {
@@ -1813,7 +1824,7 @@ public class OptWnd extends Window {
 						ui.sess.glob.oc.gobAction(Gob::updateMidgesAuras);
 					}
 				}
-			}, middleColumn.pos("bl").adds(0, 18).x(UI.scale(240)));
+			}, middleColumn.pos("bl").adds(0, 2));
 
 			middleColumn = add(showBeastDangerRadiiCheckBox = new CheckBox("Show Beast Danger Radii"){
 				{a = (Utils.getprefb("showBeastDangerRadii", true));}
