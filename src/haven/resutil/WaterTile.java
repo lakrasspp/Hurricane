@@ -571,8 +571,8 @@ public class WaterTile extends Tiler {
 	public ShaderMacro shader() {return(shader);}
     }
 	public static final BottomFog allwaterfog = new BottomFog(new Color(0, 16, 48));
-	public static final BottomFog waterfog = new BottomFog(new Color(70, 99, 181));
-	public static final BottomFog deepwaterfog = new BottomFog(new Color(0, 5, 60));
+	public static final BottomFog waterfog = new BottomFog(new Color(0, 50, 124));
+	public static final BottomFog deepwaterfog = new BottomFog(new Color(1, 16, 67));
 	public static final BottomFog owaterfog = new BottomFog(new Color(0, 56, 85));
 	public static final BottomFog odeepwaterfog = new BottomFog(new Color(0, 22, 37));
 	public static final BottomFog odeeperwaterfog = new BottomFog(new Color(0, 16, 32));
