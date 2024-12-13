@@ -571,11 +571,11 @@ public class WaterTile extends Tiler {
 	public ShaderMacro shader() {return(shader);}
     }
 	public static final BottomFog allwaterfog = new BottomFog(new Color(0, 16, 48));
-	public static final BottomFog waterfog = new BottomFog(new Color(0, 20, 60));
-	public static final BottomFog deepwaterfog = new BottomFog(new Color(0, 10, 50));
-	public static final BottomFog owaterfog = new BottomFog(new Color(0, 40, 60));
-	public static final BottomFog odeepwaterfog = new BottomFog(new Color(0, 30, 50));
-	public static final BottomFog odeeperwaterfog = new BottomFog(new Color(0, 20, 40));
+	public static final BottomFog waterfog = new BottomFog(new Color(70, 99, 181));
+	public static final BottomFog deepwaterfog = new BottomFog(new Color(0, 5, 60));
+	public static final BottomFog owaterfog = new BottomFog(new Color(0, 56, 85));
+	public static final BottomFog odeepwaterfog = new BottomFog(new Color(0, 22, 37));
+	public static final BottomFog odeeperwaterfog = new BottomFog(new Color(0, 16, 32));
     private Pipe.Op botmat;
 	private static final States.DepthBias boff = new States.DepthBias(4, 4);
 
