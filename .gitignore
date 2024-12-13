@@ -4,5 +4,6 @@
 /local-boot.properties
 /build.properties
 /.idea
+/AlarmSounds/settings
 *.db
 *~
