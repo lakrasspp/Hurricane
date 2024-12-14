@@ -421,6 +421,7 @@ public class OptWnd extends Window {
 
 	public static HSlider instrumentsSoundVolumeSlider;
 	public static HSlider clapSoundVolumeSlider;
+	public static HSlider bellSoundVolumeSlider;
 	public static HSlider quernSoundVolumeSlider;
 	public static HSlider cauldronSoundVolumeSlider;
 	public static HSlider squeakSoundVolumeSlider;
@@ -501,6 +502,16 @@ public class OptWnd extends Window {
 			}
 			public void changed() {
 				Utils.setprefi("clapSoundVolume", val);
+			}
+		}, prev.pos("bl").adds(0, 2));
+
+		prev = add(new Label("Bell Sound Effect Volume"), prev.pos("bl").adds(0, 5).x(0));
+		prev = add(bellSoundVolumeSlider = new HSlider(UI.scale(audioSliderWidth), 0, 100, Utils.getprefi("bellSoundVolume", 10)) {
+			protected void attach(UI ui) {
+				super.attach(ui);
+			}
+			public void changed() {
+				Utils.setprefi("bellSoundVolume", val);
 			}
 		}, prev.pos("bl").adds(0, 2));
 
