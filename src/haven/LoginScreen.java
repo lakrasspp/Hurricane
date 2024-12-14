@@ -491,12 +491,12 @@ public class LoginScreen extends Widget {
 		if (!firstTimeWindowCreated && Utils.getprefb("firstTimeOpeningClient", true)){
 			createFirstTimeUseWindow();
 		}
-		if (!githubVersionChecked && !Config.githubLatestVersion.equals("Loading...") && !Config.githubLatestVersion.equals("Failed")){
-			if (!Config.clientVersion.equals(Config.githubLatestVersion)) {
-				adda(updateWindow, 0.5, 0);
-			}
-			githubVersionChecked = true;
-		}
+//		if (!githubVersionChecked && !Config.githubLatestVersion.equals("Loading...") && !Config.githubLatestVersion.equals("Failed")){
+//			if (!Config.clientVersion.equals(Config.githubLatestVersion)) {
+//				adda(updateWindow, 0.5, 0);
+//			}
+//			githubVersionChecked = true;
+//		}
 		super.tick(dt);
 	}
 
