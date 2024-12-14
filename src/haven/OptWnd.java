@@ -422,6 +422,7 @@ public class OptWnd extends Window {
 	public static HSlider instrumentsSoundVolumeSlider;
 	public static HSlider clapSoundVolumeSlider;
 	public static HSlider bellSoundVolumeSlider;
+	public static HSlider armorSoundVolumeSlider;
 	public static HSlider quernSoundVolumeSlider;
 	public static HSlider cauldronSoundVolumeSlider;
 	public static HSlider squeakSoundVolumeSlider;
@@ -485,7 +486,7 @@ public class OptWnd extends Window {
 		prev.tooltip = audioLatencyTooltip;
 	    }
 
-		prev = add(new Label("Other Sound Settings"), prev.pos("bl").adds(52, 20));
+		prev = add(new Label("Other Sound Settings"), prev.pos("bl").adds(52, 10));
 		prev = add(new Label("Music Instruments Volume"), prev.pos("bl").adds(0, 5).x(0));
 		prev = add(instrumentsSoundVolumeSlider = new HSlider(UI.scale(audioSliderWidth), 0, 100, Utils.getprefi("instrumentsSoundVolume", 70)) {
 			protected void attach(UI ui) {
@@ -512,6 +513,16 @@ public class OptWnd extends Window {
 			}
 			public void changed() {
 				Utils.setprefi("bellSoundVolume", val);
+			}
+		}, prev.pos("bl").adds(0, 2));
+
+		prev = add(new Label("Armor Sound Effect Volume"), prev.pos("bl").adds(0, 5).x(0));
+		prev = add(armorSoundVolumeSlider = new HSlider(UI.scale(audioSliderWidth), 0, 100, Utils.getprefi("armorSoundVolume", 20)) {
+			protected void attach(UI ui) {
+				super.attach(ui);
+			}
+			public void changed() {
+				Utils.setprefi("armorSoundVolume", val);
 			}
 		}, prev.pos("bl").adds(0, 2));
 
