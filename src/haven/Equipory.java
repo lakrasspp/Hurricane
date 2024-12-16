@@ -26,6 +26,8 @@
 
 package haven;
 
+import haven.automated.DropItemsFromKnockedEnemy;
+import haven.automated.YoinkGoodStuffFromKnockedEnemy;
 import haven.res.ui.tt.wear.Wear;
 import haven.res.ui.tt.armor.Armor;
 
@@ -98,6 +100,7 @@ public class Equipory extends Widget implements DTarget {
 	public static CheckBox autoDropLeechesCheckBox;
 	public static CheckBox autoDropTicksCheckBox;
 	public static CheckBox autoEquipBunnySlippersPlateBootsCheckBox;
+	private static final int btnw = UI.scale(80);
 	boolean checkForLeeches = false;
 	boolean checkForTicks = false;
 
@@ -116,8 +119,32 @@ public class Equipory extends Widget implements DTarget {
     }
 
     protected void added() {
-	if(ava.avagob == -2)
-	    ava.avagob = getparent(GameUI.class).plid;
+	if(ava.avagob == -2) {
+		ava.avagob = getparent(GameUI.class).plid;
+	}
+	if(parent instanceof Window) {
+		boolean ignoredEquipory = "Mannequin".equals(((Window) parent).caption()) || "Wardrobe".equals(((Window) parent).caption()) || "Equipment".equals(((Window) parent).caption());
+		if(!ignoredEquipory) {
+			Equipory enemyEquipory = this;
+			Button button = new Button(btnw, "Yoink") {
+				@Override
+				public void click() {
+					new Thread(new YoinkGoodStuffFromKnockedEnemy(enemyEquipory, ui.gui), "DropItemsFromEnemy").start();
+					}
+				};
+			button.c = UI.scale(74, 0);
+			add(button);
+			Button button2 = new Button(btnw, "Drop") {
+				@Override
+				public void click() {
+					new Thread(new DropItemsFromKnockedEnemy(enemyEquipory, ui.gui), "DropItemsFromEnemy").start();
+					}
+				};
+
+			button2.c = UI.scale(170, 0);
+			add(button2);
+			}
+		}
 	super.added();
     }
 
