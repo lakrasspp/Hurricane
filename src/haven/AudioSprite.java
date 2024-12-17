@@ -71,7 +71,7 @@ public class AudioSprite {
 		haven.Audio.CS stream = clip.stream();
 		if (res.name.equals("sfx/borka/clap"))
 			stream = new Audio.VolAdjust(stream, OptWnd.clapSoundVolumeSlider.val/100d);
-		else if (res.name.equals("sfx/terobjs/quern"))
+		else if (res.name.equals("sfx/terobjs/quern") || res.name.equals("sfx/terobjs/hookah"))
 			stream = new Audio.VolAdjust(stream, OptWnd.quernSoundVolumeSlider.val/100d);
 		else if (res.name.equals("sfx/squeak"))
 			stream = new Audio.VolAdjust(stream, OptWnd.squeakSoundVolumeSlider.val/100d);
