@@ -426,7 +426,6 @@ public class OptWnd extends Window {
 	public static HSlider quernSoundVolumeSlider;
 	public static HSlider cauldronSoundVolumeSlider;
 	public static HSlider squeakSoundVolumeSlider;
-	public static HSlider butcherSoundVolumeSlider;
 	private final int audioSliderWidth = 220;
 
     public class AudioPanel extends Panel {
@@ -557,15 +556,6 @@ public class OptWnd extends Window {
 			}
 		}, prev.pos("bl").adds(0, 2));
 
-		prev = add(new Label("Butcher Sound Volume"), prev.pos("bl").adds(0, 5).x(0));
-		prev = add(butcherSoundVolumeSlider = new HSlider(UI.scale(audioSliderWidth), 0, 100, Utils.getprefi("butcherSoundVolume", 75)) {
-			protected void attach(UI ui) {
-				super.attach(ui);
-			}
-			public void changed() {
-				Utils.setprefi("butcherSoundVolume", val);
-			}
-		}, prev.pos("bl").adds(0, 2));
 
 	    add(new PButton(UI.scale(200), "Back", 27, back, "Options            "), prev.pos("bl").adds(0, 30));
 	    pack();
