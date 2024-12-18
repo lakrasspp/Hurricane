@@ -98,6 +98,10 @@ public class KeyMatch {
 	return(match(ev, 0));
     }
 
+    public boolean match(Widget.KbdEvent ev) {
+	return(match(ev.awt));
+    }
+
     public String name() {
 	StringBuilder buf = new StringBuilder();
 	if((modmatch & S) != 0)
@@ -133,7 +137,7 @@ public class KeyMatch {
     }
 
     public static KeyMatch forchar(char chr, int modmask, int modmatch) {
-	return(new KeyMatch(chr, false, VK_UNDEFINED, false, Character.toString(chr), modmask, modmatch));
+	return(new KeyMatch('\0', false, KeyEvent.getExtendedKeyCodeForChar(chr), false, Character.toString(chr), modmask, modmatch));
     }
     public static KeyMatch forchar(char chr, int mods) {
 	return(forchar(chr, S | C | M, mods));
@@ -149,21 +153,18 @@ public class KeyMatch {
     public static KeyMatch forevent(KeyEvent ev, int modmask) {
 	int mod = mods(ev) & modmask;
 	char key = Character.toUpperCase(ev.getKeyChar());
-	int code = ev.getExtendedKeyCode();
-	if(key == KeyEvent.CHAR_UNDEFINED)
-	    key = 0;
-	if(code != VK_UNDEFINED) {
-	    String nm;
-	    if(ev.getKeyCode() != VK_UNDEFINED)
-		nm = KeyEvent.getKeyText(ev.getKeyCode());
-	    else if(!Character.isISOControl(key))
+	int extended = ev.getExtendedKeyCode();
+	int code = ev.getKeyCode();
+	if(code != VK_UNDEFINED){
+		return(new KeyMatch('\0', false, code, false, KeyEvent.getKeyText(code), modmask, mod));
+	} else if(extended != VK_UNDEFINED){
+		String nm;
+		if(!Character.isISOControl(key))
 		nm = Character.toString(key);
 	    else
 		nm = String.format("%X", code);
-	    return(new KeyMatch('\0', false, code, true, nm, modmask, mod));
+	    return(new KeyMatch('\0', false, extended, true, nm, modmask, mod));
 	}
-	if(!Character.isISOControl(key))
-	    return(new KeyMatch(key, false, VK_UNDEFINED, false, Character.toString(key), modmask, mod));
 	return(null);
     }
 
@@ -283,10 +284,10 @@ public class KeyMatch {
 	    return(true);
 	}
 
-	public boolean keydown(KeyEvent ev) {
-	    if(grab == null)
+	public boolean keydown(KeyDownEvent ev) {
+	    if(!ev.grabbed)
 		return(super.keydown(ev));
-	    if(handle(ev)) {
+	    if(handle(ev.awt)) {
 		grab.remove();
 		grab = null;
 	    }
@@ -318,7 +319,7 @@ public class KeyMatch {
 	return(buf.toString());
     }
 
-    public static class ModCapture extends Button {
+    public static class ModCapture extends Button  {
 	public final int mask;
 	public int match, nmatch;
 	private UI.Grab grab = null;
@@ -362,10 +363,10 @@ public class KeyMatch {
 	    return(false);
 	}
 
-	public boolean keyup(KeyEvent ev) {
-	    if(grab == null)
+	public boolean keyup(KeyUpEvent ev) {
+	    if(!ev.grabbed)
 		return(super.keyup(ev));
-	    switch(ev.getKeyCode()) {
+	    switch(ev.code) {
 	    case KeyEvent.VK_SHIFT: case KeyEvent.VK_CONTROL: case KeyEvent.VK_ALT:
 	    case KeyEvent.VK_META: case KeyEvent.VK_WINDOWS:
 		grab.remove();
@@ -376,13 +377,13 @@ public class KeyMatch {
 	    return(true);
 	}
 
-	public boolean keydown(KeyEvent ev) {
-	    if(grab == null)
+	public boolean keydown(KeyDownEvent ev) {
+	    if(!ev.grabbed)
 		return(super.keydown(ev));
-	    switch(ev.getKeyCode()) {
+	    switch(ev.code) {
 	    case KeyEvent.VK_SHIFT: case KeyEvent.VK_CONTROL: case KeyEvent.VK_ALT:
 	    case KeyEvent.VK_META: case KeyEvent.VK_WINDOWS:
-		nmatch |= (mods(ev) & mask);
+		nmatch |= (mods(ev.awt) & mask);
 		return(true);
 	    }
 	    if(handle(ev)) {

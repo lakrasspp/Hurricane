@@ -41,7 +41,7 @@ public class Config {
     public static final String confid = "Hurricane";
     public static final Variable<Boolean> par = Variable.def(() -> true);
     public final Properties localprops = getlocalprops();
-	public static final String clientVersion = "v1.0";
+	public static final String clientVersion = "v1.17";
 	public static String githubLatestVersion = "Loading...";
 
     private static Config global = null;
@@ -436,6 +436,7 @@ public class Config {
 			"gfx/kritter/squirrel/squirrel",
 			"gfx/kritter/stagbeetle/stagbeetle",
 			"gfx/kritter/stalagoomba/stalagoomba",
+			"gfx/kritter/tick/tick",
 			"gfx/kritter/toad/toad",
 			"gfx/kritter/waterstrider/waterstrider",
 			"gfx/kritter/woodgrouse/woodgrouse-f", // ND: Only female can be chased, males will fight you
@@ -502,6 +503,10 @@ public class Config {
 			"gfx/terobjs/leatherbasket",
 			"gfx/terobjs/woodbox",
 			"gfx/terobjs/linencrate",
+			"gfx/terobjs/map/stonekist",
+			"gfx/terobjs/map/jotunclam",
+			"gfx/terobjs/thatchbasket",
+			"gfx/terobjs/barrel",
 	};
 
 	public static final String[] workstationsResPaths = {
@@ -528,8 +533,6 @@ public class Config {
 			"quartz",
 			"sandstone",
 			"schist",
-			"blackcoal",
-			"coal",
 			"zincspar",
 			"apatite",
 			"sodalite",
@@ -556,7 +559,13 @@ public class Config {
 			"pumice",
 			"serpentine",
 			"chert",
-			"graywacke"
+			"graywacke",
+			"halite" // rock salt
+	));
+
+	public final static Set<String> coalItemBaseNames = new HashSet<String>(Arrays.asList(
+			"blackcoal",
+			"coal"
 	));
 
 	public final static Set<String> oreItemBaseNames = new HashSet<String>(Arrays.asList(
@@ -917,17 +926,20 @@ public class Config {
 				"gfx/invobjs/hartshornsalve",
 				"gfx/invobjs/leech",
 				"gfx/invobjs/opium",
-				"gfx/invobjs/toadbutter"
+				"gfx/invobjs/toadbutter",
+				"gfx/invobjs/jar-willowweep"
 		});
 		cures.put("paginae/wound/bruise", new String[]{
-				"gfx/invobjs/leech"
+				"gfx/invobjs/leech",
+				"gfx/invobjs/jar-willowweep"
 		});
 		cures.put("paginae/wound/coalcough", new String[]{
 				"gfx/invobjs/opium"
 		});
 		cures.put("paginae/wound/concussion", new String[]{
 				"gfx/invobjs/coldcompress",
-				"gfx/invobjs/opium"
+				"gfx/invobjs/opium",
+				"gfx/invobjs/jar-willowweep"
 		});
 		cures.put("paginae/wound/crabcaressed", new String[]{
 				"gfx/invobjs/antpaste"
@@ -971,9 +983,10 @@ public class Config {
 				"gfx/invobjs/herbs/yarrow",
 				"gfx/invobjs/honeybroadaid"
 		});
-		cures.put("paginae/wound/paginae/wound/punchsore", new String[]{
+		cures.put("paginae/wound/punchsore", new String[]{
 				"gfx/invobjs/mudointment",
-				"gfx/invobjs/opium"
+				"gfx/invobjs/opium",
+				"gfx/invobjs/jar-willowweep"
 		});
 		cures.put("paginae/wound/sandfleabites", new String[]{
 				"gfx/invobjs/graygrease",

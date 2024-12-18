@@ -54,7 +54,7 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
     private boolean recons = true, showkeys = false;
     private double fstart;
 	public static ArrayList<String> customButtonPaths = new ArrayList<String>();
-	
+
     @RName("scm")
     public static class $_ implements Factory {
 	public Widget create(UI ui, Object[] args) {
@@ -419,6 +419,10 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 	return(ret);
     }
 
+    private void announce(Pagina pag) {
+	ui.loader.defer(() -> ui.msg("New discovery: " + pag.button().name(), Color.WHITE, null), null);
+    }
+
     public MenuGrid() {
 	super(bgsz.mul(gsz).add(1, 1));
 	loadCustomActionButtons();
@@ -509,14 +513,10 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 	if(pag != null) {
 	    if(prev != this)
 		hoverstart = now;
-	    boolean ttl = (now - hoverstart) > 0.5;
+	    boolean ttl = (now - hoverstart) > 0.0;
 	    if((pag != curttp) || (ttl != curttl)) {
-		try {
-		    BufferedImage ti = pag.rendertt(ttl);
-		    curtt = (ti == null) ? null : new TexI(ti);
-		} catch(Loading l) {
-		    return("...");
-		}
+		BufferedImage ti = pag.rendertt(ttl);
+		curtt = (ti == null) ? null : new TexI(ti);
 		curttp = pag;
 		curttl = ttl;
 	    }
@@ -535,18 +535,18 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 	    return(null);
     }
 
-    public boolean mousedown(Coord c, int button) {
-	PagButton h = bhit(c);
-	if((button == 1) && (h != null)) {
+    public boolean mousedown(MouseDownEvent ev) {
+	PagButton h = bhit(ev.c);
+	if((ev.b == 1) && (h != null)) {
 	    pressed = h;
 	    grab = ui.grabmouse(this);
 	}
 	return(true);
     }
 
-    public void mousemove(Coord c) {
+    public void mousemove(MouseMoveEvent ev) {
 	if((dragging == null) && (pressed != null)) {
-	    PagButton h = bhit(c);
+	    PagButton h = bhit(ev.c);
 	    if(h != pressed)
 		dragging = pressed.pag;
 	}
@@ -620,11 +620,11 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 	}
     }
 
-    public boolean mouseup(Coord c, int button) {
-	PagButton h = bhit(c);
-	if((button == 1) && (grab != null)) {
+    public boolean mouseup(MouseUpEvent ev) {
+	PagButton h = bhit(ev.c);
+	if((ev.b == 1) && (grab != null)) {
 	    if(dragging != null) {
-		ui.dropthing(ui.root, ui.mc, dragging);
+		DropTarget.dropthing(ui.root, ui.mc, dragging);
 		pressed = null;
 		dragging = null;
 	    } else if(pressed != null) {
@@ -670,8 +670,10 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 			    pag.sdt = data;
 			    pag.invalidate();
 			}
-			if((fl & 8) != 0)
+			if((fl & 8) != 0) {
 			    pag.anew = 2;
+			    announce(pag);
+			}
 			Object[] rawinfo = ((fl & 16) != 0) ? (Object[])args[a++] : new Object[0];
 			if(!Arrays.deepEquals(pag.rawinfo, rawinfo)) {
 			    pag.rawinfo = rawinfo;
@@ -692,8 +694,8 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
     public static final KeyBinding kb_root = KeyBinding.get("scm-root", KeyMatch.forcode(KeyEvent.VK_ESCAPE, 0));
     public static final KeyBinding kb_back = KeyBinding.get("scm-back", KeyMatch.forcode(KeyEvent.VK_BACK_SPACE, 0));
     public static final KeyBinding kb_next = KeyBinding.get("scm-next", KeyMatch.forchar('N', KeyMatch.S | KeyMatch.C | KeyMatch.M, KeyMatch.S));
-    public boolean globtype(char k, KeyEvent ev) {
-	if (OptWnd.disableMenuGridHotkeysCheckBox.a)
+    public boolean globtype(GlobKeyEvent ev) {
+	if (OptWnd.disableMenuGridHotkeysCheckBox.a || !GameUI.showUI)
 		return (false);
 	if(kb_root.key().match(ev) && (this.cur != null)) {
 	    change(null);
@@ -717,12 +719,12 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 	    }
 	}
 	if(pag != null) {
-	    use(pag, new Interaction(), (KeyMatch.mods(ev) & KeyMatch.S) == 0);
+	    use(pag, new Interaction(), (ev.mods & KeyMatch.S) == 0);
 	    if(this.cur != null)
 		showkeys = true;
 	    return(true);
 	}
-	return(false);
+	return(super.globtype(ev));
     }
 
     public KeyBinding getbinding(Coord cc) {
@@ -756,6 +758,10 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 		makeLocal("customclient/menugrid/Toggles/AnimalAutoPeace");
 		makeLocal("customclient/menugrid/Toggles/AutoDrinking");
 		makeLocal("customclient/menugrid/Toggles/TileCentering");
+		makeLocal("customclient/menugrid/Toggles/QueuedMovementWindow");
+		makeLocal("customclient/menugrid/Toggles/AutoDrop");
+		makeLocal("customclient/menugrid/Toggles/BarrelContentsText");
+		makeLocal("customclient/menugrid/Toggles/FlowerMenuAutoSelect");
 
 		// Category: Bots
 		makeLocal("customclient/menugrid/Bots/OceanScoutBot");
@@ -778,6 +784,10 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 		makeLocal("customclient/menugrid/OtherScriptsAndTools/QuestgiverTriangulation");
 		makeLocal("customclient/menugrid/OtherScriptsAndTools/OreAndStoneCounter");
 		makeLocal("customclient/menugrid/OtherScriptsAndTools/GridHeightCalculator");
+		makeLocal("customclient/menugrid/OtherScriptsAndTools/CustomAlarmManager");
+		makeLocal("customclient/menugrid/OtherScriptsAndTools/AutoDropManager");
+		makeLocal("customclient/menugrid/OtherScriptsAndTools/FlowerMenuAutoSelectManager");
+		makeLocal("customclient/menugrid/OtherScriptsAndTools/QuestHelper");
 
 		// Category: Quick Switch From Belt
 		makeLocal("customclient/menugrid/QuickSwitchFromBelt/Equip_B12");
@@ -794,6 +804,15 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 		makeLocal("customclient/menugrid/QuickSwitchFromBelt/Equip_TravelersSacks");
 		makeLocal("customclient/menugrid/QuickSwitchFromBelt/Equip_WanderersBindles");
 		makeLocal("customclient/menugrid/QuickSwitchFromBelt/Equip_WoodenShovel");
+		makeLocal("customclient/menugrid/QuickSwitchFromBelt/Equip_HuntersBow");
+		makeLocal("customclient/menugrid/QuickSwitchFromBelt/Equip_RangersBow");
+
+		// Category: Combat Decks
+		makeLocal("customclient/menugrid/CombatDecks/CombatDeck1");
+		makeLocal("customclient/menugrid/CombatDecks/CombatDeck2");
+		makeLocal("customclient/menugrid/CombatDecks/CombatDeck3");
+		makeLocal("customclient/menugrid/CombatDecks/CombatDeck4");
+		makeLocal("customclient/menugrid/CombatDecks/CombatDeck5");
 
 	}
 
@@ -834,12 +853,20 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 				OptWnd.autoDrinkingCheckBox.set(!OptWnd.autoDrinkingCheckBox.a);
 			} else if (ad[2].equals("TileCentering")) {
 				OptWnd.tileCenteringCheckBox.set(!OptWnd.tileCenteringCheckBox.a);
+			} else if (ad[2].equals("QueuedMovementWindow")) {
+				OptWnd.enableQueuedMovementCheckBox.set(!OptWnd.enableQueuedMovementCheckBox.a);
+			} else if (ad[2].equals("AutoDrop")) {
+				AutoDropManagerWindow.autoDropItemsCheckBox.set(!AutoDropManagerWindow.autoDropItemsCheckBox.a);
+			} else if (ad[2].equals("BarrelContentsText")) {
+				OptWnd.showBarrelContentsTextCheckBox.set(!OptWnd.showBarrelContentsTextCheckBox.a);
+			} else if (ad[2].equals("FlowerMenuAutoSelect")) {
+				FlowerMenuAutoSelectManagerWindow.flowerMenuAutoSelectCheckBox.set(!FlowerMenuAutoSelectManagerWindow.flowerMenuAutoSelectCheckBox.a);
 			}
 		} else if (ad[1].equals("Bots")) { // Category: Toggles
 			if (ad[2].equals("OceanScoutBot")) {
 				if (gui.OceanScoutBot == null && gui.oceanScoutBotThread == null) {
 					gui.OceanScoutBot = new OceanScoutBot(gui);
-					gui.add(gui.OceanScoutBot, new Coord(gui.sz.x / 2 - gui.OceanScoutBot.sz.x / 2, gui.sz.y / 2 - gui.OceanScoutBot.sz.y / 2 - 200));
+					gui.add(gui.OceanScoutBot, Utils.getprefc("wndc-oceanScoutBotWindow", new Coord(gui.sz.x / 2 - gui.OceanScoutBot.sz.x / 2, gui.sz.y / 2 - gui.OceanScoutBot.sz.y / 2 - 200)));
 					gui.oceanScoutBotThread = new Thread(gui.OceanScoutBot, "OceanScoutBot");
 					gui.oceanScoutBotThread.start();
 				} else {
@@ -854,7 +881,7 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 			} else if (ad[2].equals("TarKilnEmptierBot")) {
 				if (gui.tarKilnCleanerBot == null && gui.tarKilnCleanerThread == null) {
 					gui.tarKilnCleanerBot = new TarKilnCleanerBot(gui);
-					gui.add(gui.tarKilnCleanerBot, new Coord(gui.sz.x/2 - gui.tarKilnCleanerBot.sz.x/2, gui.sz.y/2 - gui.tarKilnCleanerBot.sz.y/2 - 200));
+					gui.add(gui.tarKilnCleanerBot, Utils.getprefc("wndc-tarKilnCleanerBotWindow", new Coord(gui.sz.x/2 - gui.tarKilnCleanerBot.sz.x/2, gui.sz.y/2 - gui.tarKilnCleanerBot.sz.y/2 - 200)));
 					gui.tarKilnCleanerThread = new Thread(gui.tarKilnCleanerBot, "TarKilnEmptierBot");
 					gui.tarKilnCleanerThread.start();
 				} else {
@@ -868,7 +895,7 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 			} else if (ad[2].equals("TurnipBot")) {
 				if (gui.turnipBot == null && gui.turnipThread == null) {
 					gui.turnipBot = new TurnipBot(gui);
-					gui.add(gui.turnipBot, new Coord(gui.sz.x/2 - gui.turnipBot.sz.x/2, gui.sz.y/2 - gui.turnipBot.sz.y/2 - 200));
+					gui.add(gui.turnipBot, Utils.getprefc("wndc-turnipBotWindow", new Coord(gui.sz.x/2 - gui.turnipBot.sz.x/2, gui.sz.y/2 - gui.turnipBot.sz.y/2 - 200)));
 					gui.turnipThread = new Thread(gui.turnipBot, "TurnipBot");
 					gui.turnipThread.start();
 				} else {
@@ -882,7 +909,7 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 			} else if (ad[2].equals("CleanupBot")) {
 				if (gui.cleanupBot == null && gui.cleanupThread == null) {
 					gui.cleanupBot = new CleanupBot(gui);
-					gui.add(gui.cleanupBot, new Coord(gui.sz.x/2 - gui.cleanupBot.sz.x/2, gui.sz.y/2 - gui.cleanupBot.sz.y/2 - 200));
+					gui.add(gui.cleanupBot, Utils.getprefc("wndc-cleanupBotWindow", new Coord(gui.sz.x/2 - gui.cleanupBot.sz.x/2, gui.sz.y/2 - gui.cleanupBot.sz.y/2 - 200)));
 					gui.cleanupThread = new Thread(gui.cleanupBot, "CleanupBot");
 					gui.cleanupThread.start();
 				} else {
@@ -942,7 +969,7 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 			} else if (ad[2].equals("CombatDistanceTool")) {
 				if (gui.combatDistanceTool == null && gui.combatDistanceToolThread == null) {
 					gui.combatDistanceTool = new CombatDistanceTool(gui);
-					gui.add(gui.combatDistanceTool, new Coord(gui.sz.x/2 - gui.combatDistanceTool.sz.x/2, gui.sz.y/2 - gui.combatDistanceTool.sz.y/2 - 200));
+					gui.add(gui.combatDistanceTool, Utils.getprefc("wndc-combatDistanceToolWindow", new Coord(gui.sz.x/2 - gui.combatDistanceTool.sz.x/2, gui.sz.y/2 - gui.combatDistanceTool.sz.y/2 - 200)));
 					gui.combatDistanceToolThread = new Thread(gui.combatDistanceTool, "CombatDistanceTool");
 					gui.combatDistanceToolThread.start();
 				} else {
@@ -978,7 +1005,7 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 			} else if (ad[2].equals("MiningSafetyAssistant")) {
 				if (gui.miningSafetyAssistantWindow == null && gui.miningSafetyAssistantThread == null) {
 					gui.miningSafetyAssistantWindow = new MiningSafetyAssistant(gui);
-					gui.miningSafetyAssistantWindow = gui.add(gui.miningSafetyAssistantWindow, new Coord(gui.sz.x/2 - ui.gui.miningSafetyAssistantWindow.sz.x/2, gui.sz.y/2 - gui.miningSafetyAssistantWindow.sz.y/2 - 200));
+					gui.miningSafetyAssistantWindow = gui.add(gui.miningSafetyAssistantWindow, Utils.getprefc("wndc-miningSafetyAssistantWindow", new Coord(gui.sz.x/2 - ui.gui.miningSafetyAssistantWindow.sz.x/2, gui.sz.y/2 - gui.miningSafetyAssistantWindow.sz.y/2 - 200)));
 					gui.miningSafetyAssistantThread = new Thread(gui.miningSafetyAssistantWindow, "miningSafetyAssistantThread");
 					gui.miningSafetyAssistantThread.start();
 				} else if (gui.miningSafetyAssistantWindow != null) {
@@ -993,12 +1020,12 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 					gui.pointerTriangulation = null;
 				} else {
 					gui.pointerTriangulation = new PointerTriangulation(gui);
-					gui.add(gui.pointerTriangulation, new Coord(gui.sz.x/2 - gui.pointerTriangulation.sz.x/2, gui.sz.y/2 - gui.pointerTriangulation.sz.y/2 - 300));
+					gui.add(gui.pointerTriangulation, Utils.getprefc("wndc-pointerTriangulationWindow", new Coord(gui.sz.x/2 - gui.pointerTriangulation.sz.x/2, gui.sz.y/2 - gui.pointerTriangulation.sz.y/2 - 300)));
 				}
 			} else if (ad[2].equals("OreAndStoneCounter")) {
 				if (gui.oreAndStoneCounter == null && gui.oreAndStoneCounterThread == null) {
 					gui.oreAndStoneCounter = new OreAndStoneCounter(gui);
-					gui.add(gui.oreAndStoneCounter, new Coord(gui.sz.x/2 - gui.oreAndStoneCounter.sz.x/2, gui.sz.y/2 - gui.oreAndStoneCounter.sz.y/2 - 200));
+					gui.add(gui.oreAndStoneCounter, Utils.getprefc("wndc-oreAndStoneCounterWindow", new Coord(gui.sz.x/2 - gui.oreAndStoneCounter.sz.x/2, gui.sz.y/2 - gui.oreAndStoneCounter.sz.y/2 - 200)));
 					gui.oreAndStoneCounterThread = new Thread(gui.oreAndStoneCounter, "OreAndStoneCounter");
 					gui.oreAndStoneCounterThread.start();
 				} else {
@@ -1011,9 +1038,46 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 				}
 			} else if (ad[2].equals("GridHeightCalculator")) {
 				AUtils.getGridHeightAvg(gui);
+			} else if (ad[2].equals("CustomAlarmManager")) {
+				if(gui.opts != null) {
+					if(gui.opts.alarmWindow == null) {
+						gui.opts.alarmWindow = gui.opts.parent.parent.add(new AlarmWindow());
+						gui.opts.alarmWindow.show();
+					} else {
+						gui.opts.alarmWindow.show(!gui.opts.alarmWindow.visible);
+						gui.opts.alarmWindow.bottomNote.settext("NOTE: You can add your own alarm sound files in the \"AlarmSounds\" folder. (The file extension must be .wav)");
+						gui.opts.alarmWindow.bottomNote.setcolor(Color.WHITE);
+						gui.opts.alarmWindow.bottomNote.c.x = UI.scale(140);
+					}
+				}
+			} else if (ad[2].equals("AutoDropManager")) {
+				if(!gui.opts.autoDropManagerWindow.attached) {
+					gui.opts.parent.parent.add(gui.opts.autoDropManagerWindow);
+					gui.opts.autoDropManagerWindow.show();
+				} else {
+					gui.opts.autoDropManagerWindow.show(!gui.opts.autoDropManagerWindow.visible);
+				}
+			} else if (ad[2].equals("FlowerMenuAutoSelectManager")) {
+				if(gui.opts.flowerMenuAutoSelectManagerWindow == null) {
+					gui.opts.flowerMenuAutoSelectManagerWindow = gui.opts.parent.parent.add(new FlowerMenuAutoSelectManagerWindow());
+					gui.opts.flowerMenuAutoSelectManagerWindow.show();
+				} else {
+					gui.opts.flowerMenuAutoSelectManagerWindow.show(!gui.opts.flowerMenuAutoSelectManagerWindow.visible);
+					gui.opts.flowerMenuAutoSelectManagerWindow.refresh();
+				}
+			} else if (ad[2].equals("QuestHelper")) {
+				if(gui.questhelper.visible){
+					gui.questhelper.hide();
+					gui.questhelper.active = false;
+				} else {
+					gui.questhelper.show();
+					gui.questhelper.active = true;
+				}
 			}
 		} else if (ad[1].equals("QuickSwitchFromBelt")) {
 			new Thread(new EquipFromBelt(gui, ad[2]), "EquipFromBelt").start();
+		} else if (ad[1].equals("CombatDecks")) {
+			gui.changeCombatDeck(Integer.parseInt(ad[2])-1);
 		}
 	}
 }

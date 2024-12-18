@@ -22,6 +22,8 @@ public class Info extends GAttrib implements RenderTree.Node, PView.Render2D {
     }
 
     public void draw(GOut g, Pipe state) {
+	if (!GameUI.showUI)
+		return;
 	Coord sc = Homo3D.obj2view(new Coord3f(0, 0, 15), state, Area.sized(g.sz())).round2();
 	if(dirty) {
 	    RenderContext ctx = state.get(RenderContext.slot);
@@ -61,6 +63,7 @@ public class Info extends GAttrib implements RenderTree.Node, PView.Render2D {
 				final double angle = gob.glob.sess.ui.gui.map.screenangle(gob.rc, true, 15);
 				if (Double.isNaN(angle)) {
 					g.chcolor(show);
+					if (rend != null) // ND: someone crashed to this once and idk why or how, probably need to synchronize rend? but why?
 					g.aimage(rend, sc, 0.5, 1.0);
 					g.chcolor();
 				}

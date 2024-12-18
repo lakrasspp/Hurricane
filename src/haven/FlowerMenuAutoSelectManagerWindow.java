@@ -1,16 +1,19 @@
 package haven;
 
+import haven.res.ui.pag.toggle.Toggle;
+
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.Objects;
 
 public class FlowerMenuAutoSelectManagerWindow extends Window {
     private PetalList petalList;
+    public static CheckBox flowerMenuAutoSelectCheckBox;
 
     public FlowerMenuAutoSelectManagerWindow() {
         super(UI.scale(300, 350), "Auto-Select Manager (Flower Menus)");
 
-        add(new CheckBox("Enable Flower-Menu Auto-Select") {
+        add(flowerMenuAutoSelectCheckBox = new CheckBox("Enable Flower-Menu Auto-Select") {
             {
                 a = Utils.getprefb("flowerMenuAutoSelect", false);
             }
@@ -18,6 +21,9 @@ public class FlowerMenuAutoSelectManagerWindow extends Window {
                 a = val;
                 GameUI.flowerMenuAutoSelect = val;
                 Utils.setprefb("flowerMenuAutoSelect", val);
+                if (ui != null && ui.gui != null) {
+                    ui.gui.optionInfoMsg("Flower-Menu Auto-Select is now " + (val ? "ENABLED" : "DISABLED") + "!", (val ? OptWnd.msgGreen : OptWnd.msgRed), Audio.resclip(val ? Toggle.sfxon : Toggle.sfxoff));
+                }
             }
         }, UI.scale(10, 10));
 
@@ -90,29 +96,29 @@ public class FlowerMenuAutoSelectManagerWindow extends Window {
         }
 
         @Override
-        public boolean mousewheel(Coord c, int amount) {
-            sb.ch(amount);
+        public boolean mousewheel(MouseWheelEvent ev) {
+            sb.ch(ev.a);
             return true;
         }
 
         @Override
-        public boolean mousedown(Coord c, int button) {
-            int row = c.y / rowHeight + sb.val;
+        public boolean mousedown(MouseDownEvent ev) {
+            int row = ev.c.y / rowHeight + sb.val;
             if(row >= items.size())
-                return super.mousedown(c, button);
-            if(items.get(row).mousedown(c.sub(UI.scale(15), c.y / rowHeight * rowHeight), button))
+                return super.mousedown(ev);
+            if(items.get(row).mousedown(new MouseDownEvent(ev.c.sub(UI.scale(15), ev.c.y / rowHeight * rowHeight), ev.b)))
                 return true;
-            return super.mousedown(c, button);
+            return super.mousedown(ev);
         }
 
         @Override
-        public boolean mouseup(Coord c, int button) {
-            int row = c.y / rowHeight + sb.val;
+        public boolean mouseup(MouseUpEvent ev) {
+            int row = ev.c.y / rowHeight + sb.val;
             if(row >= items.size())
-                return super.mouseup(c, button);
-            if(items.get(row).mouseup(c.sub(UI.scale(15), c.y / rowHeight * rowHeight), button))
+                return super.mouseup(ev);
+            if(items.get(row).mouseup(new MouseUpEvent(ev.c.sub(UI.scale(15), ev.c.y / rowHeight * rowHeight), ev.b)))
                 return true;
-            return super.mouseup(c, button);
+            return super.mouseup(ev);
         }
 
         @Override
@@ -152,18 +158,30 @@ public class FlowerMenuAutoSelectManagerWindow extends Window {
         }
 
         @Override
-        public void mousemove(Coord c) {
-            if(c.x > 470)
-                super.mousemove(c.sub(UI.scale(15), 0));
+        public void mousemove(MouseMoveEvent ev) {
+            if(ev.c.x > 470)
+                super.mousemove(new MouseMoveEvent(ev.c.sub(UI.scale(15), 0)));
             else
-                super.mousemove(c);
+                super.mousemove(ev);
         }
 
         @Override
-        public boolean mousedown(Coord c, int button) {
-            if(super.mousedown(c, button))
-                return true;
-            return false;
+        public boolean mousedown(MouseDownEvent ev) {
+            // ND: This is the old mousedown method basically.
+            // Child widgets of widgets can't be clicked anymore for some reason but idk how to fix it for now, so just use this old one.
+            Coord c = ev.c;
+            int button = ev.b;
+            for(Widget wdg = lchild; wdg != null; wdg = wdg.prev) {
+                if(!wdg.visible())
+                    continue;
+                Coord cc = xlate(wdg.c, true);
+                if(c.isect(cc, wdg.sz)) {
+                    if(wdg.mousedown(new MouseDownEvent(c.add(cc.inv()), button))) {
+                        return(true);
+                    }
+                }
+            }
+            return(false);
         }
     }
 }

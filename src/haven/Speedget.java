@@ -26,8 +26,6 @@
 
 package haven;
 
-import java.awt.event.KeyEvent;
-
 public class Speedget extends Widget {
     public static final Tex imgs[][];
     public static final String tips[];
@@ -92,11 +90,11 @@ public class Speedget extends Widget {
 	wdgmsg("set", s);
     }
 
-    public boolean mousedown(Coord c, int button) {
+    public boolean mousedown(MouseDownEvent ev) {
 	int x = 0;
 	for(int i = 0; i < 4; i++) {
 	    x += imgs[i][0].sz().x;
-	    if(c.x < x) {
+	    if(ev.c.x < x) {
 		set(i);
 		break;
 	    }
@@ -104,9 +102,9 @@ public class Speedget extends Widget {
 	return(true);
     }
 
-    public boolean mousewheel(Coord c, int amount) {
+    public boolean mousewheel(MouseWheelEvent ev) {
 	if(max >= 0)
-	    set(Utils.clip(cur + amount, 0, max));
+	    set(Utils.clip(cur + ev.a, 0, max));
 	return(true);
     }
 
@@ -117,14 +115,14 @@ public class Speedget extends Widget {
     }
 
     public static final KeyBinding kb_speedup = KeyBinding.get("speed-up", KeyMatch.nil);
-    public static final KeyBinding kb_speeddn = KeyBinding.get("speed-up", KeyMatch.nil);
+    public static final KeyBinding kb_speeddn = KeyBinding.get("speed-dn", KeyMatch.nil);
     public static final KeyBinding[] kb_speeds = {
 	KeyBinding.get("speed-set/0", KeyMatch.nil),
 	KeyBinding.get("speed-set/1", KeyMatch.forchar('W', KeyMatch.S)),
 	KeyBinding.get("speed-set/2", KeyMatch.forchar('E', KeyMatch.S)),
 	KeyBinding.get("speed-set/3", KeyMatch.forchar('R', KeyMatch.S)),
     };
-    public boolean globtype(char key, KeyEvent ev) {
+    public boolean globtype(GlobKeyEvent ev) {
 	int dir = 0;
 	if(kb_speedup.key().match(ev))
 	    dir = 1;
@@ -142,7 +140,7 @@ public class Speedget extends Widget {
 		return(true);
 	    }
 	}
-	return(super.globtype(key, ev));
+	return(super.globtype(ev));
     }
 
 	@Override

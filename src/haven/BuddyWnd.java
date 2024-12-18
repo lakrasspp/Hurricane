@@ -26,9 +26,13 @@
 
 package haven;
 
+import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.Color;
+import java.io.*;
 import java.util.*;
 import java.text.Collator;
+import java.util.stream.Collectors;
 
 public class BuddyWnd extends Widget implements Iterable<BuddyWnd.Buddy> {
     private List<Buddy> buddies = new ArrayList<Buddy>();
@@ -128,7 +132,10 @@ public class BuddyWnd extends Widget implements Iterable<BuddyWnd.Buddy> {
 	}
 
 	private void chstatus(int status) {
-	    online = status;
+		online = status;
+		if (!OptWnd.showKinStatusChangeMessages.a) {
+			return;
+		}
 	    GameUI gui = getparent(GameUI.class);
 	    if(gui != null) {
 		ui.gui.msg(name + (online > 0 ? " is now ONLINE" : " has gone Offline"), BuddyWnd.gc[group]);
@@ -194,9 +201,9 @@ public class BuddyWnd extends Widget implements Iterable<BuddyWnd.Buddy> {
 	    g.chcolor();
 	}
 
-	public boolean mousedown(Coord c, int button) {
+	public boolean mousedown(MouseDownEvent ev) {
 	    selector.select(group);
-	    return (true);
+	    return(true);
 	}
 
 	public void select() {
@@ -381,10 +388,10 @@ public class BuddyWnd extends Widget implements Iterable<BuddyWnd.Buddy> {
 			g.chcolor();
 		    }
 
-		    public boolean mousedown(Coord c, int button) {
-			if(button == 1)
+		    public boolean mousedown(MouseDownEvent ev) {
+			if(ev.b == 1)
 			    change(item);
-			else if(button == 3)
+			else if(ev.b == 3)
 			    opts(b, ui.mc);
 			return(true);
 		    }
@@ -493,7 +500,7 @@ public class BuddyWnd extends Widget implements Iterable<BuddyWnd.Buddy> {
 	             new Button(sbw, "Clear" ).action(() -> { setpwd(""); })
 	      );
 
-	prev = add(new Label("Add kin by Hearth Secret:"), prev.pos("bl").adds(0, 109));
+	prev = add(new Label("Add kin by Hearth Secret:"), prev.pos("bl").adds(0, 60));
 	opass = add(new TextEntry(UI.scale(140), "") {
 		public void activate(String text) {
 		    BuddyWnd.this.wdgmsg("bypwd", text);
@@ -504,6 +511,35 @@ public class BuddyWnd extends Widget implements Iterable<BuddyWnd.Buddy> {
 		    BuddyWnd.this.wdgmsg("bypwd", opass.text());
 		    opass.settext("");
 	}), opass.pos("bl").adds(0, 5));
+
+	prev = add(new Button(UI.scale(140), "Add kin from file").action(() -> {
+		java.awt.EventQueue.invokeLater(() -> {
+			try {
+				// Open a file chooser dialog for selecting a text file
+				JFileChooser fileChooser = new JFileChooser(System.getProperty("user.dir"));
+				fileChooser.setFileFilter(new FileNameExtensionFilter("Text files containing hearth secrets", "txt"));
+
+				// If no file is selected, exit the method
+				if (fileChooser.showOpenDialog(null) != JFileChooser.APPROVE_OPTION) {
+					return;
+				}
+
+				File file = fileChooser.getSelectedFile();
+
+				final List<String> lines;
+				try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+					lines = reader.lines().collect(Collectors.toList());
+				}
+
+				lines.forEach(line -> {
+					BuddyWnd.this.wdgmsg("bypwd", line);
+				});
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		});
+	}), prev.pos("bl").adds(0, 5));
+
 	pack();
     }
 

@@ -35,9 +35,11 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
 import java.util.*;
-import java.awt.event.KeyEvent;
 import java.util.List;
+import java.net.URI;
 
 public class LoginScreen extends Widget {
     public static final Config.Variable<String> authmech = Config.Variable.prop("haven.authmech", "native");
@@ -81,6 +83,8 @@ public class LoginScreen extends Widget {
 	add(new Img(bg), Coord.z);
 	optbtn = adda(new Button(UI.scale(100), "Options"), pos("cbl").add(10, -10), 0, 1);
 	optbtn.setgkey(GameUI.kb_opt);
+//	if(HttpStatus.mond.get() != null)
+//	    adda(new StatusLabel(HttpStatus.mond.get(), 1.0), sz.x - UI.scale(10), UI.scale(10), 1.0, 0.0);
 	switch(authmech.get()) {
 	case "native":
 	    login = new Credbox();
@@ -93,7 +97,11 @@ public class LoginScreen extends Widget {
 	}
 	adda(login, bgc.adds(0, 10), 0.5, 0.0).hide();
 	accounts = add(new AccountList(16));
-	adda(new StatusLabel(hostname, 0.5), bgc.x, bg.sz().y, 0.5, 1.4); // ND: This adds the server status and player count
+	try {
+		adda(new StatusLabel(new URI("http", hostname, "/mt/srv-mon", null), 0.5), bgc.x, bg.sz().y, 0.5, 1.4); // ND: This adds the server status and player count
+	} catch(URISyntaxException e) {
+		throw(new RuntimeException(e));
+	}
 	mainThemeStopped = false;
 	playMainTheme();
 	add(themeSongVolumeSlider = new HSlider(UI.scale(220), 0, 100, Utils.getprefi("themeSongVolume", 40)) {
@@ -149,6 +157,8 @@ public class LoginScreen extends Widget {
 			Config.githubLatestVersion = version; // Update immediately upon response
 		}
 	});
+	GameUI.verifiedAccount = false;
+	GameUI.subscribedAccount = false;
     }
 
 //    public static final KeyBinding kb_savtoken = KeyBinding.get("login/savtoken", KeyMatch.forchar('R', KeyMatch.M)); // ND: Why the fuck are there keybinds for these? Someone might press one of those by mistake
@@ -184,7 +194,7 @@ public class LoginScreen extends Widget {
 		changed();
 	    }
 
-	    public boolean keydown(KeyEvent ev) {
+	    public boolean keydown(KeyDownEvent ev) {
 		if(ConsoleHost.kb_histprev.key().match(ev)) {
 		    if(hpos < history.size() - 1) {
 			if(hpos < 0)
@@ -332,7 +342,7 @@ public class LoginScreen extends Widget {
 	    return(ret);
 	}
 
-	public boolean keydown(KeyEvent ev) {
+	public boolean keydown(KeyDownEvent ev) {
 	    if(key_act.match(ev)) {
 		enter();
 		return(true);
@@ -390,9 +400,9 @@ public class LoginScreen extends Widget {
 	public final HttpStatus stat;
 	public final double ax;
 
-	public StatusLabel(String host, double ax) {
+	public StatusLabel(URI svc, double ax) {
 	    super(new Coord(UI.scale(150), FastText.h * 2));
-	    this.stat = new HttpStatus(host);
+	    this.stat = new HttpStatus(svc);
 	    this.ax = ax;
 	}
 
@@ -410,8 +420,10 @@ public class LoginScreen extends Widget {
 			}
 		} else if(stat.status == "down") {
 		    FastText.aprintfstroked(g, new Coord(x, FastText.h * 0), ax, 0, "Server status: Offline");
-		} else if(stat.status == "shutdown") {
-		    FastText.aprintfstroked(g, new Coord(x, FastText.h * 0), ax, 0, "Server status: Shutting down");
+        } else if(stat.status == "terminating") {
+            FastText.aprintfstroked(g, new Coord(x, FastText.h * 0), ax, 0, "Server status: Shutting down");
+        } else if(stat.status == "shutdown") {
+		    FastText.aprintfstroked(g, new Coord(x, FastText.h * 0), ax, 0, "Server status: Down");
 		} else if(stat.status == "crashed") {
 		    FastText.aprintfstroked(g, new Coord(x, FastText.h * 0), ax, 0, "Server status: Crashed");
 		}

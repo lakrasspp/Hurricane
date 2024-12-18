@@ -2,8 +2,9 @@ package haven;
 
 import java.util.*;
 import java.awt.image.BufferedImage;
-import java.awt.event.KeyEvent;
 import haven.MenuGrid.Pagina;
+import haven.UI.Grab;
+import haven.MenuGrid.Interaction;
 import haven.MenuGrid.PagButton;
 
 public class MenuSearch extends Window {
@@ -14,6 +15,9 @@ public class MenuSearch extends Window {
     private List<Result> cur = Collections.emptyList();
     private List<Result> filtered = Collections.emptyList();
     private boolean recons = false;
+	private Coord drag_start = null;
+	private boolean drag_mode = false;
+	private Grab grab = null;
 
     public class Result {
 	public final PagButton btn;
@@ -43,21 +47,60 @@ public class MenuSearch extends Window {
 			    }, Coord.z);
 		    }
 
-//		    private double lastcl = 0;
-		    public boolean mousedown(Coord c, int button) {
-			boolean psel = sel == item;
-			super.mousedown(c, button);
-//			double now = Utils.rtime();
-//			if(psel) {
-//			    if(now - lastcl < 0.5)
-			menu.use(item.btn, new MenuGrid.Interaction(1, ui.modflags()), false);
-				setfocus(ui.gui.portrait); // ND: do this to defocus the search box after you select something. It's focusing on your portrait, which does nothing.
-//			}
-//			lastcl = now;
-			return(true);
+		    @Override public boolean mousedown(MouseDownEvent ev) {
+				super.mousedown(ev);
+				
+				if(ev.b == 1){
+					drag_start = ui.mc;
+					drag_mode = false;
+					grab = ui.grabmouse(this);
+				}
+
+				return(true);
 		    }
+
+			@Override public void mousemove(MouseMoveEvent ev) {
+				if(!drag_mode && drag_start != null && drag_start.dist(ui.mc) > 40) {
+					drag_mode = true;
+				}
+				super.mousemove(ev);
+			}
+	
+			@Override public boolean mouseup(MouseUpEvent ev) {
+				if((ev.b == 1) && (grab != null)) {
+					if(drag_mode) {
+						DropTarget.dropthing(ui.root, ui.mc, rls.sel.btn.pag);
+					} else {
+						menu.use(rls.sel.btn, new Interaction(), false);
+					}
+					
+					drag_start = null;
+					drag_mode = false;
+					
+					grab.remove();
+					grab = null;
+	
+					setfocus(ui.gui.portrait); // ND: do this to defocus the search box after you select something. It's focusing on your portrait, which does nothing.
+				}
+				return super.mouseup(ev);
+			}
+
 		});
 	}
+
+		@Override
+		public Object tooltip(Coord c, Widget prev) {
+		try {
+			int slot = slotat(c);
+			final Result item = items().get(slot);
+			if (item != null) {
+				return new TexI(item.btn.rendertt(true));
+			} else {
+				return super.tooltip(c, prev);
+			}
+		} catch (Exception ignored){}
+		return null;
+		}
     }
 
     public MenuSearch(MenuGrid menu) {
@@ -81,12 +124,7 @@ public class MenuSearch extends Window {
     }
 
     private void refilter() {
-	List<Result> found = new ArrayList<>();
-	String needle = sbox.text().toLowerCase();
-	for(Result res : this.cur) {
-	    if(res.btn.name().toLowerCase().indexOf(needle) >= 0)
-		found.add(res);
-	}
+	List<Result> found = Fuzzy.fuzzyFilterAndSort(sbox.text().toLowerCase(), this.cur);
 	this.filtered = found;
 	int idx = filtered.indexOf(rls.sel);
 	if(idx < 0) {
@@ -150,30 +188,43 @@ public class MenuSearch extends Window {
     public void tick(double dt) {
 //	if(menu.cur != root) // ND: commented these 2 lines so the search checks for EVERYTHING, not just the current sub-menu in the menu-grid
 //	    setroot(menu.cur);
-	if(recons)
-	    updlist();
-	super.tick(dt);
+		if(recons)
+			updlist();
+		super.tick(dt);
     }
 
-    public boolean keydown(KeyEvent ev) {
-	if(ev.getKeyCode() == KeyEvent.VK_DOWN) {
-	    int idx = filtered.indexOf(rls.sel);
-	    if((idx >= 0) && (idx < filtered.size() - 1)) {
-		idx++;
-		rls.change(filtered.get(idx));
-		rls.display(idx);
-	    }
-	    return(true);
-	} else if(ev.getKeyCode() == KeyEvent.VK_UP) {
-	    int idx = filtered.indexOf(rls.sel);
-	    if(idx > 0) {
-		idx--;
-		rls.change(filtered.get(idx));
-		rls.display(idx);
-	    }
-	    return(true);
-	} else {
-	    return(super.keydown(ev));
-	}
+    public boolean keydown(KeyDownEvent ev) {
+		if(ev.code == ev.awt.VK_DOWN) {
+			int idx = filtered.indexOf(rls.sel);
+			if((idx >= 0) && (idx < filtered.size() - 1)) {
+				idx++;
+				rls.change(filtered.get(idx));
+				rls.display(idx);
+			}
+			return(true);
+		} else if(ev.code == ev.awt.VK_UP) {
+			int idx = filtered.indexOf(rls.sel);
+			if(idx > 0) {
+				idx--;
+				rls.change(filtered.get(idx));
+				rls.display(idx);
+			}
+			return(true);
+		} else {
+			return(super.keydown(ev));
+		}
     }
+
+	public void draw(GOut g) {
+		super.draw(g);
+		// Drawing the drag icon
+		if(drag_mode && rls.sel != null) {
+			GSprite ds = rls.sel.btn.spr();
+			ui.drawafter(new UI.AfterDraw() {
+				public void draw(GOut g) {
+				ds.draw(g.reclip(ui.mc.sub(ds.sz().div(2)), ds.sz()));
+				}
+			});
+		}
+	}
 }

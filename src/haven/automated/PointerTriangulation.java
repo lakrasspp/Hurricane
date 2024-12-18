@@ -12,38 +12,35 @@ import static haven.MCache.cmaps;
 import static haven.MCache.tilesz;
 
 public class PointerTriangulation extends Window {
+    public static boolean pointerChecked = false;
     public static double pointerAngle = 0;
     private final GameUI gui;
     private List<LineData> lines;
 
     public PointerTriangulation(GameUI gui) {
-        super(UI.scale(100, 100), "Triangulate");
+        super(UI.scale(100, 100), "Pointer Triangulation");
         this.gui = gui;
         this.lines = new ArrayList<>();
 
-        Button getCheckpoint = new Button(UI.scale(50), "Get") {
+        Widget prev;
+        prev = add(new Label("Remember: To triangulate a different quest giver, just reopen this window to reset it."), 0, 0);
+        prev = add(new Button(UI.scale(160), "Get Pointer Location") {
             @Override
             public void click() {
                 saveCheckpoint();
             }
-        };
-        add(getCheckpoint, UI.scale(10, 10));
+        }, prev.pos("bl").adds(32, 10));
+        prev.tooltip = instructions;
 
-        Button drawLines = new Button(UI.scale(50), "Draw") {
+        prev = add(new Button(UI.scale(160), "Draw Lines") {
             @Override
             public void click() {
                 drawLines();
             }
-        };
-        add(drawLines, UI.scale(10, 40));
+        }, prev.pos("ur").adds(10, 0));
+        prev.tooltip = instructions;
 
-        Button clear = new Button(UI.scale(50), "Clear") {
-            @Override
-            public void click() {
-                lines = new ArrayList<>();
-            }
-        };
-        add(clear, UI.scale(10, 70));
+        pack();
     }
 
     public void drawLines() {
@@ -73,7 +70,7 @@ public class PointerTriangulation extends Window {
                     double calcX = gridCoords.x - curGridCoords.x;
                     double calcY = gridCoords.y - curGridCoords.y;
                     Coord2d firstCoord = new Coord2d(calcX * 1100 + grid.gc.x * 1100 + lineData.initCoords.x, calcY * 1100 + grid.gc.y * 1100 + lineData.initCoords.y);
-                    gui.mapfile.view.addSprite(new ClueSprite(firstCoord, lineData.angle, lineData.angle, 1, 10000));
+                    gui.mapfile.view.addSprite(new ClueSprite(firstCoord, lineData.angle, lineData.angle, 1, 10000, 10));
 
                 } else {
                     gui.error("You have to be in the same segment for each pointer");
@@ -87,6 +84,11 @@ public class PointerTriangulation extends Window {
 
     public void saveCheckpoint() {
         if(gui.map.player() == null){
+            gui.error("Questgiver Triangulation: I don't see you on the screen, can't calculate angle.");
+            return;
+        }
+        if (!pointerChecked){
+            gui.error("Questgiver Triangulation: You need to mouse over the pointer first. Read the instructions.");
             return;
         }
         try {
@@ -103,6 +105,7 @@ public class PointerTriangulation extends Window {
             double yValue = Math.floor((playerCoord.y - (grid.gc.y * 1100)) * 100) / 100;
             lines.add(new LineData(segment, grid.id, new Coord2d(xValue, yValue), pointerAngle));
         } catch (Exception ignored) {}
+        pointerChecked = false;
     }
 
     private static class LineData {
@@ -126,5 +129,25 @@ public class PointerTriangulation extends Window {
             gui.pointerTriangulation = null;
         } else
             super.wdgmsg(sender, msg, args);
+    }
+
+    private final Object instructions = RichText.render("How to use:\n" +
+            "1. Mouse over the Quest Giver's Pointer\n" +
+            "2. Click on \"Get Pointer Location\"\n" +
+            "3. Move to a new location (use a road for example)\n" +
+            "4. Mouse over the quest giver pointer again\n" +
+            "5. Click on \"Get Pointer Location\"\n" +
+            "6. Click on \"Draw Lines\"\n" +
+            "\n" +
+            "Now 2 lines are drawn on your map which can be used to triangulate the location.\n" +
+            "\n" +
+            "OBVIOUSLY, you need to be in the same map segment when you do this. If you travel to some road and you don't have your map connected, it won't work.\n" +
+            "\n" +
+            "Note: You can do multiple lines, not just two.\n", 300);
+
+    @Override
+    public void reqdestroy() {
+        Utils.setprefc("wndc-pointerTriangulationWindow", this.c);
+        super.reqdestroy();
     }
 }

@@ -182,6 +182,7 @@
     <copy file="Play.bat" todir="bin"/>
     <copy file="Play.sh" todir="bin"/>
     <chmod file="bin/Play.sh" perm="+x" />
+    <copy file="Play Java16+.bat" todir="bin"/>
     <chmod file="bin/hafen.jar" perm="a+x" />
     <copy todir="bin/MapIconsPresets" >
       <fileset dir="MapIconsPresets" includes="**"/>

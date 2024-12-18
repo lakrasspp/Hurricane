@@ -35,6 +35,7 @@ import javax.sound.sampled.AudioSystem;
 import java.awt.*;
 import java.io.File;
 import java.util.*;
+import java.awt.Color;
 import java.awt.event.KeyEvent;
 import java.util.List;
 
@@ -74,9 +75,9 @@ public class Fightsess extends Widget {
 		public String text(Integer v) {return("" + v);} // ND: Removed "IP" text. I only need to see the number, we already know it's the IP/Coins
 		public Integer value() {return(fv.current.oip);}
 	};
-	private static final Color stamBarBlue = new Color(47, 58, 207, 200);
-	private static final Color hpBarRed = new Color(168, 0, 0, 255);
-	private static final Color hpBarYellow = new Color(182, 165, 0, 255);
+	public static final Color stamBarBlue = new Color(47, 58, 207, 200);
+	public static final Color hpBarRed = new Color(168, 0, 0, 255);
+	public static final Color hpBarYellow = new Color(182, 165, 0, 255);
 	private static final Color barFrame = new Color(255, 255, 255, 111);
 
 	Map<String, Color> openingsColorMap = new HashMap<>() {{
@@ -248,7 +249,8 @@ public class Fightsess extends Widget {
 			} catch (NullPointerException ignore) {}
 		}
 	}
-	int alphaShiftSpeed = 2400/GLPanel.Loop.fps;
+	int fps = GLPanel.Loop.fps > 0 ? GLPanel.Loop.fps : 1;
+	int alphaShiftSpeed = 2400/fps;
 	if (combatMedAlphaShiftUp) {
 		if (combatMedColorShift + alphaShiftSpeed <= 255) {
 			combatMedColorShift += alphaShiftSpeed;
@@ -284,6 +286,11 @@ public class Fightsess extends Widget {
 				}
 			} catch (NullPointerException ignored) {}
 		}
+	}
+	if (OptWnd.drawFloatingCombatOpeningsAboveYourselfCheckBox.a) {
+		try {
+			drawSelfCombatOpenings(g);
+		} catch (Exception ignored) {}
 	}
 
 	int x = (int)(ui.gui.sz.x / 2.0);
@@ -610,17 +617,22 @@ public class Fightsess extends Widget {
 		}
 	    } catch(Loading l) {}
 	}
-	IMeter.Meter stam = ui.gui.getmeter("stam", 0);
-	IMeter.Meter hp = ui.gui.getmeter("hp", 0);
-	if (stam != null) {
-		Coord msz = UI.scale(new Coord(234, 22));
-		Coord sc = OptWnd.stamBarLocationIsTop ? new Coord(x - msz.x/2,  y + UI.scale(70)) : new Coord(x - msz.x/2,  bottom - UI.scale(68));
-		drawStamMeterBar(g, stam, sc, msz);
+	if (!OptWnd.alwaysShowCombatUIStaminaBarCheckBox.a) { // ND: Check if we're already drawing it in the gui
+		IMeter.Meter stam = ui.gui.getmeter("stam", 0);
+		if (stam != null) {
+			Coord msz = UI.scale(new Coord(234, 22));
+			Coord sc = OptWnd.stamBarLocationIsTop ? new Coord(x - msz.x/2,  y + UI.scale(70)) : new Coord(x - msz.x/2,  bottom - UI.scale(68));
+			drawStamMeterBar(g, stam, sc, msz);
+		}
 	}
-	if (hp != null) {
-		Coord msz = UI.scale(new Coord(234, 22));
-		Coord sc = new Coord(x - msz.x/2,  y + UI.scale(44));
-		drawHealthMeterBar(g, hp, sc, msz);
+
+	if (!OptWnd.alwaysShowCombatUIHealthBarCheckBox.a) { // ND: Check if we're already drawing it in the gui
+		IMeter.Meter hp = ui.gui.getmeter("hp", 0);
+		if (hp != null) {
+			Coord msz = UI.scale(new Coord(234, 22));
+			Coord sc = new Coord(x - msz.x / 2, y + UI.scale(44));
+			drawHealthMeterBar(g, hp, sc, msz);
+		}
 	}
     }
 
@@ -658,34 +670,32 @@ public class Fightsess extends Widget {
 	for(int i = 0; i < actions.length; i++) {
 	    Coord ca = new Coord(x - 18, bottom - UI.scale(150)).add(actc(i)).add(16, 16);
 	    Indir<Resource> act = (actions[i] == null) ? null : actions[i].res;
-	    try {
-		if(act != null) {
-		    Tex img = act.get().flayer(Resource.imgc).tex();
-		    ca = ca.sub(img.sz().div(2));
-		    if(c.isect(ca, img.sz())) {
-			String tip = act.get().layer(Resource.tooltip).t + " ($b{$col[255,128,0]{" + kb_acts[i].key().name() + "}})";
-//			if(kb_acts[i].key() != KeyMatch.nil)
-//			    tip += " ($b{$col[255,128,0]{" + kb_acts[i].key().name() + "}})";
-			if((acttip == null) || !acttip.text.equals(tip))
-			    acttip = RichText.render(tip, -1);
-			return(acttip);
-		    }
+	    if(act != null) {
+		Tex img = act.get().flayer(Resource.imgc).tex();
+		ca = ca.sub(img.sz().div(2));
+		if(c.isect(ca, img.sz())) {
+            String tip = act.get().flayer(Resource.tooltip).t + " ($b{$col[255,128,0]{" + kb_acts[i].key().name() + "}})";
+		    if(kb_acts[i].key() != KeyMatch.nil)
+			tip += " ($b{$col[255,128,0]{" + kb_acts[i].key().name() + "}})";
+		    if((acttip == null) || !acttip.text.equals(tip))
+			acttip = RichText.render(tip, -1);
+		    return(acttip);
 		}
-	    } catch(Loading l) {}
+	    }
 	}
-	try {
+	{
 	    Indir<Resource> lastact = this.lastact1;
 	    if(lastact != null) {
 		Coord usesz = lastact.get().flayer(Resource.imgc).sz;
-		Coord lac = pcc.add(usec1);
+		Coord lac = new Coord(x - UI.scale(69), y - UI.scale(80)).add(usesz.div(2));
 		if(c.isect(lac.sub(usesz.div(2)), usesz)) {
 		    if(lastacttip1 == null)
 			lastacttip1 = Text.render(lastact.get().flayer(Resource.tooltip).t);
 		    return(lastacttip1);
 		}
 	    }
-	} catch(Loading l) {}
-	try {
+	}
+	{
 	    Indir<Resource> lastact = this.lastact2;
 	    if(lastact != null) {
 		Coord usesz = lastact.get().flayer(Resource.imgc).sz;
@@ -696,7 +706,7 @@ public class Fightsess extends Widget {
 		    return(lastacttip2);
 		}
 	    }
-	} catch(Loading l) {}
+	}
 	return(null);
     }
 
@@ -759,7 +769,7 @@ public class Fightsess extends Widget {
 
     private UI.Grab holdgrab = null;
     private int held = -1;
-    public boolean globtype(char key, KeyEvent ev) {
+    public boolean globtype(GlobKeyEvent ev) {
 	// ev = new KeyEvent((java.awt.Component)ev.getSource(), ev.getID(), ev.getWhen(), ev.getModifiersEx(), ev.getKeyCode(), ev.getKeyChar(), ev.getKeyLocation());
 	{
 	    int n = -1;
@@ -798,8 +808,8 @@ public class Fightsess extends Widget {
 		targetNearestFoe(getparent(GameUI.class));
 		return (true);
 	}
-	if(kb_relcycle.key().match(ev, KeyMatch.S)) {
-	    if((ev.getModifiersEx() & KeyEvent.SHIFT_DOWN_MASK) == 0) {
+	if(kb_relcycle.key().match(ev.awt, KeyMatch.S)) {
+	    if((ev.mods & KeyMatch.S) == 0) {
 		Fightview.Relation cur = fv.current;
 		if(cur != null) {
 		    fv.lsrel.remove(cur);
@@ -815,15 +825,15 @@ public class Fightsess extends Widget {
 	    fv.wdgmsg("bump", (int)fv.lsrel.get(0).gobid);
 	    return(true);
 	}
-	return(super.globtype(key, ev));
+	return(super.globtype(ev));
     }
 
-    public boolean keydown(KeyEvent ev) {
+    public boolean keydown(KeyDownEvent ev) {
 	return(false);
     }
 
-    public boolean keyup(KeyEvent ev) {
-	if((holdgrab != null) && (kb_acts[held].key().match(ev, KeyMatch.MODS))) {
+    public boolean keyup(KeyUpEvent ev) {
+	if(ev.grabbed && (kb_acts[held].key().match(ev.awt, KeyMatch.MODS))) {
 	    MapView map = getparent(GameUI.class).map;
 	    new Release(held);
 	    holdgrab.remove();
@@ -861,9 +871,8 @@ public class Fightsess extends Widget {
 	}
 
 	private void drawCombatData(GOut g, Fightview.Relation rels, Coord sc, boolean showAllOpenings, boolean alwaysShowCoins) {
-		int scaledY = sc.y - UI.scale(90);
+		int scaledY = sc.y - UI.scale(86);
 		Coord topLeft = new Coord(sc.x - UI.scale(32), scaledY);
-		Coord bgTopLeftFrame = new Coord(sc.x - UI.scale(41), scaledY);
 		boolean openings;
 		boolean cleaveUsed = false;
 		long cleaveDuration = 4300;
@@ -907,6 +916,8 @@ public class Fightsess extends Widget {
 		} else {
 			openings = rels.buffs.children(Buff.class).size() > 1;
 		}
+
+		topLeft.x -= UI.scale(2) * rels.buffs.children(Buff.class).size();
 
 		// IP / OIP Text
 		boolean showCoins = true;
@@ -1022,6 +1033,62 @@ public class Fightsess extends Widget {
 			g.frect(new Coord(topLeft.x + UI.scale(4), topLeft.y - UI.scale(3)), UI.scale(new Coord((int) ((76 * timer)/rels.lastDefenceDuration), 11)));
 			g.chcolor(new Color(255, 255, 255, 255));
 			g.aimage(Text.renderstroked(getCooldownTime(timer), cleaveAdditionalFont).tex(), new Coord(topLeft.x + UI.scale(52), topLeft.y + UI.scale(2)), 1, 0.5);
+		}
+		g.chcolor(255, 255, 255, 255);
+	}
+
+	private void drawSelfCombatOpenings(GOut g) {
+		Coord3f rawc = ui.gui.map.player().placed.getc();
+		rawc.z += 15;
+		Coord sc = getparent(GameUI.class).map.screenxf(rawc).round2();
+		int scaledY = sc.y - UI.scale(86);
+		Coord topLeft = new Coord(sc.x - UI.scale(32), scaledY);
+
+		ArrayList<Buff> myOpenings = new ArrayList<>(fv.buffs.children(Buff.class));
+		myOpenings.sort((o2, o1) -> Integer.compare(getOpeningValue(o1), getOpeningValue(o2)));
+		Buff myManeuver = null;
+		for (Buff buff : myOpenings) {
+			try {
+				if (buff.res != null && buff.res.get() != null) {
+					String name = buff.res.get().name;
+					if (Config.maneuvers.contains(name)) {
+						myManeuver = buff;
+						break;
+					}
+				}
+			} catch (Loading ignored) {
+			}
+		}
+		if (myManeuver != null && myOpenings.size() > 1) {
+			myOpenings.remove(myManeuver);
+		}
+		topLeft.x -= UI.scale(3) * myOpenings.size();
+
+		List<TemporaryOpening> openingList = new ArrayList<>();
+		for (Buff buff : fv.buffs.children(Buff.class)) {
+			try {
+				if (buff.res != null && buff.res.get() != null) {
+					String name = buff.res.get().name;
+					if (openingsColorMap.containsKey(name)) {
+						int meterValue = getOpeningValue(buff);
+						openingList.add(new TemporaryOpening(meterValue, openingsColorMap.get(name)));
+					}
+				}
+			} catch (Loading ignored) {
+			}
+		}
+		openingList.sort((o2, o1) -> Integer.compare(o1.value, o2.value));
+		int openingOffsetX = 4;
+		for (TemporaryOpening opening : openingList) {
+			g.chcolor(0, 0, 0, 255);
+			g.frect(new Coord(topLeft.x + UI.scale(openingOffsetX) - UI.scale(1), topLeft.y + UI.scale(30) - UI.scale(1)), UI.scale(new Coord(20, 20)));
+			g.chcolor(opening.color);
+			g.frect(new Coord(topLeft.x + UI.scale(openingOffsetX), topLeft.y + UI.scale(30)), UI.scale(new Coord(18, 18)));
+			g.chcolor(255, 255, 255, 255);
+
+			int valueOffset = opening.value < 10 ? 15 : opening.value< 100 ? 18 : 20;
+			g.aimage(Text.renderstroked(String.valueOf(opening.value), openingAdditionalFont).tex(), new Coord(topLeft.x + UI.scale(openingOffsetX) + UI.scale(valueOffset) - UI.scale(1), topLeft.y + UI.scale(39)), 1, 0.5);
+			openingOffsetX += 19;
 		}
 		g.chcolor(255, 255, 255, 255);
 	}

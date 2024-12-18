@@ -63,6 +63,12 @@ public class EquipFromBelt implements Runnable {
                     case "Equip_FyrdsmansSwordWoodenShield":
                         equipTwoDifferentItemsFromBelt("gfx/invobjs/small/roundshield", "gfx/invobjs/small/fyrdsword", "Shield", "Fyrdsman's Sword");
                         break;
+                    case "Equip_HuntersBow":
+                        equipTwoHanderFromBelt("gfx/invobjs/small/huntersbow", "Hunter's Bow");
+                        break;
+                    case "Equip_RangersBow":
+                        equipTwoHanderFromBelt("gfx/invobjs/small/rangersbow", "Ranger's Bow");
+                        break;
                     default:
                         // ND: Default? Do nothing.
                 }
@@ -95,9 +101,10 @@ public class EquipFromBelt implements Runnable {
         }
         Inventory belt = null;
         Map<GItem, Coord> items = new HashMap<>();
-        Coord sqsz = UI.scale(new Coord(33, 33));
+        Coord sqsz = Inventory.sqsz;
         for (Widget w = gui.lchild; w != null; w = w.prev) {
             if (!(w instanceof GItem.ContentsWindow) || !((GItem.ContentsWindow) w).myOwnEquipory) continue;
+            if (!((GItem.ContentsWindow) w).cap.contains("Belt")) continue;
             for (Widget ww : w.children()) {
                 if (!(ww instanceof Inventory)) continue;
                 Coord inventorySize = ((Inventory) ww).isz;
@@ -159,9 +166,10 @@ public class EquipFromBelt implements Runnable {
         }
         Inventory belt = null;
         Map<GItem, Coord> items = new HashMap<>();
-        Coord sqsz = UI.scale(new Coord(33, 33));
+        Coord sqsz = Inventory.sqsz;
         for (Widget w = gui.lchild; w != null; w = w.prev) {
             if (!(w instanceof GItem.ContentsWindow) || !((GItem.ContentsWindow) w).myOwnEquipory) continue;
+            if (!((GItem.ContentsWindow) w).cap.contains("Belt")) continue;
             for (Widget ww : w.children()) {
                 if (!(ww instanceof Inventory)) continue;
                 Coord inventorySize = ((Inventory) ww).isz;
@@ -264,9 +272,10 @@ public class EquipFromBelt implements Runnable {
         Inventory belt = null;
         Map<GItem, Coord> firstItemInBelt = new HashMap<>();
         Map<GItem, Coord> secondItemInBelt = new HashMap<>();
-        Coord sqsz = UI.scale(new Coord(33, 33));
+        Coord sqsz = Inventory.sqsz;
         for (Widget w = gui.lchild; w != null; w = w.prev) {
             if (!(w instanceof GItem.ContentsWindow) || !((GItem.ContentsWindow) w).myOwnEquipory) continue;
+            if (!((GItem.ContentsWindow) w).cap.contains("Belt")) continue;
             for (Widget ww : w.children()) {
                 if (!(ww instanceof Inventory)) continue;
                 Coord inventorySize = ((Inventory) ww).isz;

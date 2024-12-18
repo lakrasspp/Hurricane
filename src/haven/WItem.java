@@ -35,6 +35,7 @@ import haven.render.*;
 import java.awt.image.BufferedImage;
 import java.util.List;
 
+import haven.Fuzzy;
 import haven.ItemInfo.AttrCache;
 import haven.res.ui.stackinv.ItemStack;
 import haven.resutil.Curiosity;
@@ -48,6 +49,7 @@ public class WItem extends Widget implements DTarget {
     private Message csdt = Message.nil;
 	private Boolean isNotInStudy = null;
 	public final AttrCache<Pair<String, String>> study = new AttrCache<Pair<String, String>>(this::info, AttrCache.map1(Curiosity.class, curio -> curio::remainingTip));
+	public static final Text.Foundry studyFnd = new Text.Foundry(Text.sans, 9);;
 	private String cachedStudyValue = null;
 	private String cachedTipValue = null;
 	private Tex cachedStudyTex = null;
@@ -55,7 +57,7 @@ public class WItem extends Widget implements DTarget {
 	private boolean searchItemColorShiftUp = true;
 	private int searchItemColorValue = 0;
 	public static final Text.Foundry quantityFoundry = new Text.Foundry(Text.dfont, 10);
-	private static final Color quantityColor = new Color(255, 206, 45, 255);
+	private static final Color quantityColor = new Color(255, 255, 255, 255);
 	public static final Coord TEXT_PADD_BOT = new Coord(1, 2);
 	public final AttrCache<Tex> heurnum = new AttrCache<Tex>(this::info, AttrCache.cache(info -> {
 		String num = ItemInfo.getCount(info);
@@ -122,6 +124,8 @@ public class WItem extends Widget implements DTarget {
 //	} else {
 //	    hoverstart = now;
 //	}
+	if (prev != this)
+		ttinfo = null;
 	try {
 	    List<ItemInfo> info = item.info();
 	    if(info.size() < 1)
@@ -218,8 +222,9 @@ public class WItem extends Widget implements DTarget {
 		String itemName = item.getname().toLowerCase();
 		String searchKeyword = InventorySearchWindow.inventorySearchString.toLowerCase();
 		if (searchKeyword.length() > 1) {
-			if (itemName.contains(searchKeyword)) {
-				int colorShiftSpeed = 800/GLPanel.Loop.fps;
+			if (Fuzzy.fuzzyContains(itemName, searchKeyword)) {
+				int fps = GLPanel.Loop.fps > 0 ? GLPanel.Loop.fps : 1;
+				int colorShiftSpeed = 800/fps;
 				if (searchItemColorShiftUp) {
 					if (searchItemColorValue + colorShiftSpeed <= 255) {
 						searchItemColorValue += colorShiftSpeed;
@@ -267,7 +272,6 @@ public class WItem extends Widget implements DTarget {
 				}
 			}
 		} catch (Exception e) {
-			/*CrashLogger.logCrash(e);*/
 		}
 		drawnum(g, sz);
 		if (isNotInStudy != null && isNotInStudy)
@@ -283,9 +287,9 @@ public class WItem extends Widget implements DTarget {
 	}
     }
 
-    public boolean mousedown(Coord c, int btn) {
+    public boolean mousedown(MouseDownEvent ev) {
 	boolean inv = parent instanceof Inventory;
-	if(btn == 1) {
+	if(ev.b == 1) {
 		if (OptWnd.useImprovedInventoryTransferControlsCheckBox.a && ui.modmeta && !ui.modctrl) {
 			if (inv) {
 				wdgmsg("transfer-ordered", item, false);
@@ -294,15 +298,15 @@ public class WItem extends Widget implements DTarget {
 		}
 	    if(ui.modshift) {
 		int n = ui.modctrl ? -1 : 1;
-		item.wdgmsg("transfer", c, n);
+		item.wdgmsg("transfer", ev.c, n);
 	    } else if(ui.modctrl) {
 		int n = ui.modmeta ? -1 : 1;
-		item.wdgmsg("drop", c, n);
+		item.wdgmsg("drop", ev.c, n);
 	    } else {
-		item.wdgmsg("take", c);
+		item.wdgmsg("take", ev.c);
 	    }
 	    return(true);
-	} else if(btn == 3) {
+	} else if(ev.b == 3) {
 		if (OptWnd.useImprovedInventoryTransferControlsCheckBox.a && ui.modmeta && !ui.modctrl) {
 			if (inv) {
 				wdgmsg("transfer-ordered", item, true);
@@ -315,7 +319,7 @@ public class WItem extends Widget implements DTarget {
 			if (itemname.equals("Head of Lettuce")) { // ND: Don't eat it, rather split it.
 				option = 1;
 			}
-			item.wdgmsg("iact", c, ui.modflags());
+			item.wdgmsg("iact", ev.c, ui.modflags());
 			ui.rcvr.rcvmsg(ui.lastWidgetID + 1, "cl", option, 0);
 		}
 		if(ui.modctrl && ui.modshift && OptWnd.autoRepeatFlowerMenuCheckBox.a){
@@ -331,10 +335,10 @@ public class WItem extends Widget implements DTarget {
 				}
 			} catch (Loading ignored){}
 		}
-	    item.wdgmsg("iact", c, ui.modflags());
+	    item.wdgmsg("iact", ev.c, ui.modflags());
 	    return(true);
 	}
-	return(false);
+	return(super.mousedown(ev));
     }
 
     public boolean drop(Coord cc, Coord ul) {
@@ -346,13 +350,12 @@ public class WItem extends Widget implements DTarget {
 	return(true);
     }
 
-    public boolean mousehover(Coord c, boolean on) {
-	boolean ret = super.mousehover(c, on);
+    public boolean mousehover(MouseHoverEvent ev, boolean on) {
 	if(on && (item.contents != null && (!OptWnd.showHoverInventoriesWhenHoldingShiftCheckBox.a || ui.modshift))) {
 	    item.hovering(this);
 	    return(true);
 	}
-	return(ret);
+	return(super.mousehover(ev, on));
     }
 
 	public Window parentWindow() {
@@ -393,9 +396,6 @@ public class WItem extends Widget implements DTarget {
 				tex.dispose();
 			}
 			if(studyTime != null) {
-				g.chcolor(0, 0, 0, 150);
-				int h = studyTime.sz().y;
-				g.frect(new Coord(0, sz.y - h+4), new Coord(sz.x+2, h));
 				g.chcolor();
 				g.aimage(studyTime, new Coord(sz.x / 2, sz.y), 0.5, 0.9);
 			}
@@ -420,7 +420,7 @@ public class WItem extends Widget implements DTarget {
 
 			if(cachedStudyTex == null) {
 				cachedStudyValue = value;
-				cachedStudyTex = Text.renderstroked(value).tex();
+				cachedStudyTex = PUtils.strokeTex(Text.renderstroked(value, Color.WHITE, Color.BLACK, studyFnd));
 			}
 			return cachedStudyTex;
 		}

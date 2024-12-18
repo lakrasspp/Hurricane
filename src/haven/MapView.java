@@ -35,6 +35,7 @@ import java.util.function.*;
 import java.lang.reflect.*;
 import java.util.stream.Collectors;
 
+import haven.automated.MiningSafetyAssistant;
 import haven.automated.helpers.AreaSelectCallback;
 import haven.automated.pathfinder.PFListener;
 import haven.automated.pathfinder.Pathfinder;
@@ -76,6 +77,7 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 	private AreaSelectCallback areaSelectCallback;
 	public boolean areaSelect = false;
 	public Coord currentCursorLocation;
+	public Coord3f gobPathLastClick;
 
     public interface Delayed {
 	public void run(GOut g);
@@ -100,7 +102,7 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 	    resized();
 	}
 
-	public boolean keydown(KeyEvent ev) {
+	public boolean keydown(KeyDownEvent ev) {
 	    return(false);
 	}
 
@@ -278,7 +280,7 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 
     public class FreeCam extends Camera {
 	private float dist = 400.0f, tdist = dist; // ND: This is the camera distance.
-	private float elev = (float)Math.PI / 4.0f, telev = elev;
+	public float elev = (float)Math.PI / 4.0f, telev = elev;
 	private float angl = (float) (3 * Math.PI / 2), tangl = angl; // ND: This is the angle. Changed it to look north by default.
 	private Coord dragorig = null;
 	private float elevorig, anglorig;
@@ -320,6 +322,8 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 
 	public void drag(Coord c) {
 	    telev = elevorig - (OptWnd.reverseFreeCamYAxisCheckBox.a ? -1 : 1) * ((float)(c.y - dragorig.y) * 0.00001f * OptWnd.freeCamRotationSensitivitySlider.val);
+		if (OptWnd.lockVerticalAngleAt45DegreesCheckBox.a)
+			telev = (float)Math.PI / 4.0f;
 		if (OptWnd.allowLowerFreeCamTiltCheckBox.a){
 			if(telev < -0.5f) telev = -0.5f;
 		}
@@ -356,7 +360,7 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 			}
 		}
 
-		public boolean keydown(KeyEvent ev) {
+		public boolean keydown(KeyDownEvent ev) {
 			if(kb_camSnapNorth.key().match(ev)) {
 				snapCamera("N");
 				return(true);
@@ -541,7 +545,7 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 			}
 		}
 
-	public boolean keydown(KeyEvent ev) {
+	public boolean keydown(KeyDownEvent ev) {
 //	    if(kb_camleft.key().match(ev)) {
 //		tangl = (float)(Math.PI * 0.5 * (Math.floor((tangl / (Math.PI * 0.5)) - 0.51) + 0.5));
 //		return(true);
@@ -607,6 +611,7 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 	if (OptWnd.showWorkstationProgressCheckBox.a) updatePlobWorkstationProgressHighlight();
 	this.partyHighlight = new PartyHighlight(glob.party, plgob);
 	this.partyCircles = new PartyCircles(glob.party, plgob);
+	this.gobPathLastClick = null;
     }
     
     protected void envdispose() {
@@ -965,9 +970,28 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 	    ol.tick();
     }
 
-    private static final Material gridmat = new Material(new BaseColor(255, 255, 255, 48), States.maskdepth, new MapMesh.OLOrder(null),
-							 Location.xlate(new Coord3f(0, 0, 0.5f))   /* Apparently, there is no depth bias for lines. :P */
-							 );
+	private static Material gridmat = null;
+	private static Material gridMat(UI ui) {
+		if(gridmat != null) {return gridmat;}
+		float w = 1f;
+		if(ui != null) {
+			if (ui.gprefs.rscale.val > 1.01f)
+				w = 2f;
+			if (ui.gprefs.rscale.val > 1.99f)
+				w = 3f;
+		}
+		return gridmat = new Material(new BaseColor(255, 255, 255, 96), States.maskdepth, new MapMesh.OLOrder(null),
+				new States.LineWidth(w),
+				Location.xlate(new Coord3f(0, 0, 0.5f))   /* Apparently, there is no depth bias for lines. :P */
+		);
+	}
+	public void updateGridMat() {
+		gridmat = null;
+		if(gridlines != null) {
+			showgrid(false);
+			showgrid(true);
+		}
+	}
     private class GridLines extends MapRaster {
 	final Grid grid = new Grid<RenderTree.Node>() {
 		RenderTree.Node getcut(Coord cc) {
@@ -984,7 +1008,7 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 	}
 
 	public void added(RenderTree.Slot slot) {
-	    slot.ostate(gridmat);
+		slot.ostate(gridMat(ui));
 	    slot.add(grid);
 	    super.added(slot);
 	}
@@ -1769,6 +1793,33 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 	    g.chcolor(Color.WHITE);
 	    g.atext(text, sz.div(2), 0.5, 0.5);
 	}
+	if (OptWnd.drawYourCurrentPathCheckBox.a) {
+		try {
+			MapView mapView = ui.gui.map;
+			Gob player = player();
+			if (player != null && mapView != null && mapView.gobPathLastClick != null) {
+				Coord playerc = null;
+				Coord clickc = null;
+				if (player.getattr(Moving.class) instanceof LinMove) {
+					playerc = mapView.screenxf(player.getc()).round2();
+					clickc = mapView.screenxf(gobPathLastClick).round2();
+				} else if (player.getattr(Moving.class) instanceof Following) {
+					if (player.occupiedGobID != null) {
+						Gob occupiedGob = glob.oc.getgob(player.occupiedGobID);
+						playerc = mapView.screenxf(occupiedGob.getc()).round2();
+						clickc = mapView.screenxf(gobPathLastClick).round2();
+					}
+				}
+				if (playerc != null && clickc != null) {
+					g.chcolor(Color.BLACK);
+					g.line(playerc, clickc, 4);
+					g.chcolor(Color.WHITE);
+					g.line(playerc, clickc, 2);
+				}
+			}
+		} catch (Exception ignored) {
+		}
+	}
     }
     
     private double initload = -2;
@@ -1853,11 +1904,11 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 	}
 
 	public boolean rotate(Plob plob, int amount, int modflags) {
-	    if((!OptWnd.useOGControlsForBuildingAndPlacingCheckBox.a && ((modflags & (UI.MOD_CTRL | UI.MOD_SHIFT)) == 0)) || (OptWnd.useOGControlsForBuildingAndPlacingCheckBox.a && ((modflags & UI.MOD_CTRL) == 0)) )
+	    if((!OptWnd.useOGControlsForBuildingAndPlacingCheckBox.a && ((modflags & (UI.MOD_CTRL | UI.MOD_SHIFT)) == 0)) || (OptWnd.useOGControlsForBuildingAndPlacingCheckBox.a && ((modflags & UI.MOD_SHIFT) == 0)) )
 		return(false);
 	    freerot = true;
 	    double na;
-	    if((!OptWnd.useOGControlsForBuildingAndPlacingCheckBox.a && ((modflags & UI.MOD_SHIFT) == 0)) || (OptWnd.useOGControlsForBuildingAndPlacingCheckBox.a && ((modflags & UI.MOD_SHIFT) == 0)))
+	    if((!OptWnd.useOGControlsForBuildingAndPlacingCheckBox.a && ((modflags & UI.MOD_SHIFT) == 0)) || (OptWnd.useOGControlsForBuildingAndPlacingCheckBox.a && ((modflags & UI.MOD_CTRL) == 0)))
 		na = (Math.PI / 4) * Math.round((plob.a + (amount * Math.PI / 4)) / (Math.PI / 4));
 	    else
 		na = plob.a + amount * Math.PI / plobagran;
@@ -2112,6 +2163,14 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 		Long gobid = new Long((Integer) inf.clickargs()[1]);
 		Gob gob = glob.oc.getgob(gobid);
 			if(gob != null) {
+				if (OptWnd.clickThroughContainerDecalCheckBox.a && !ui.modctrl) {
+					try {
+						if ((gob.getres().name.contains("cupboard") || gob.getres().name.contains("chest")) && (int)args[2] == 3) {
+							args[4] = 0;
+							args[7] = 0;
+						}
+					} catch (Exception ignored){}
+				}
 				if (ui.modmeta && ui.gui.vhand == null) {
 					Map<String, ChatUI.MultiChat> chats = ui.gui.chat.getMultiChannels();
 					if (clickb == 1 && (!ui.modshift || !ui.modctrl)) {
@@ -2119,7 +2178,7 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 					} else if (clickb == 3 && (!ui.modshift || !ui.modctrl)) {
 						if (chats.get("Party") != null)
 							chats.get("Party").send("@" + gob.id);
-					} else if (clickb == 2 && !(ui.modshift || ui.modctrl)){
+					} else if (OptWnd.objectPermanentHighlightingCheckBox.a && clickb == 2 && !(ui.modshift || ui.modctrl)){
 						if (Gob.permanentHighlightList.contains(gob.id)) {
 							Gob.permanentHighlightList.remove(gob.id);
 							gob.delattr(GobPermanentHighlight.class);
@@ -2187,10 +2246,10 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
     
     private UI.Grab camdrag = null;
 
-    public boolean mousedown(Coord c, int button) {
+    public boolean mousedown(MouseDownEvent ev) {
 	parent.setfocus(this);
 	Loader.Future<Plob> placing_l = this.placing;
-	if (button == 1 && areaSelect) {
+	if (ev.b == 1 && areaSelect) {
 		synchronized (this) {
 			if (selection == null) {
 				selection = new Selector();
@@ -2201,9 +2260,9 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 			}
 		}
 	}
-	if(button == 2) {
-		new Click(c, button).run();
-        if((camdrag == null) && ((Camera)camera).click(c)) {
+	if(ev.b == 2) {
+		new Click(ev.c, ev.b).run();
+        if((camdrag == null) && ((Camera)camera).click(ev.c)) {
 		camdrag = ui.grabmouse(this);
 	    }
 	} else if((placing_l != null) && placing_l.done()) {
@@ -2218,34 +2277,34 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 				modflags = modflags + 2;
 			}
 		}
-		wdgmsg("place", placing.rc.floor(posres), (int)Math.round(placing.a * 32768 / Math.PI), button, modflags);
+		wdgmsg("place", placing.rc.floor(posres), (int)Math.round(placing.a * 32768 / Math.PI), ev.b, modflags);
 		}
-	} else if((grab != null) && grab.mmousedown(c, button)) {
+	} else if((grab != null) && grab.mmousedown(ev.c, ev.b)) {
 	} else {
-	    new Click(c, button).run();
+	    new Click(ev.c, ev.b).run();
 	}
 	return(true);
     }
     
-    public void mousemove(Coord c) {
-	currentCursorLocation = c;
+    public void mousemove(MouseMoveEvent ev) {
+	currentCursorLocation = ev.c;
 	if(grab != null)
-	    grab.mmousemove(c);
+	    grab.mmousemove(ev.c);
 	Loader.Future<Plob> placing_l = this.placing;
 	if(camdrag != null) {
-	    ((Camera)camera).drag(c);
+	    camera.drag(ev.c);
 	} else if((placing_l != null) && placing_l.done()) {
 	    Plob placing = placing_l.get();
-	    if((placing.lastmc == null) || !placing.lastmc.equals(c)) {
-		placing.new Adjust(c, ui.modflags()).run();
+	    if((placing.lastmc == null) || !placing.lastmc.equals(ev.c)) {
+		placing.new Adjust(ev.c, ui.modflags()).run();
 	    }
 	}  else if (ui.modshift && ui.modctrl) {
 		long now = System.currentTimeMillis();
-		if ((now - lastmmhittest > 500 || lasthittestc.dist(c) > tilesz.x) && ui.gui.hand.isEmpty()) {
+		if ((now - lastmmhittest > 500 || lasthittestc.dist(ev.c) > tilesz.x) && ui.gui.hand.isEmpty()) {
 			lastmmhittest = now;
-			lasthittestc = c;
+			lasthittestc = ev.c;
 
-			delayB(new Hittest(c) {
+			delayB(new Hittest(ev.c) {
 				@Override
 				protected void hit(Coord pc, Coord2d mc, ClickData inf) {
 					if (inf != null) {
@@ -2362,29 +2421,29 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 
     }
     
-    public boolean mouseup(Coord c, int button) {
-	if(button == 2) {
+    public boolean mouseup(MouseUpEvent ev) {
+	if(ev.b == 2) {
 	    if(camdrag != null) {
 		camera.release();
 		camdrag.remove();
 		camdrag = null;
 	    }
 	} else if(grab != null) {
-	    grab.mmouseup(c, button);
+	    grab.mmouseup(ev.c, ev.b);
 	}
 	return(true);
     }
 
-    public boolean mousewheel(Coord c, int amount) {
+    public boolean mousewheel(MouseWheelEvent ev) {
 	Loader.Future<Plob> placing_l = this.placing;
-	if((grab != null) && grab.mmousewheel(c, amount))
+	if((grab != null) && grab.mmousewheel(ev.c, ev.a))
 	    return(true);
 	if((placing_l != null) && placing_l.done()) {
 	    Plob placing = placing_l.get();
-	    if(placing.adjust.rotate(placing, amount, ui.modflags()))
+	    if(placing.adjust.rotate(placing, ev.a, ui.modflags()))
 		return(true);
 	}
-	return(((Camera)camera).wheel(c, amount));
+	return(camera.wheel(ev.c, ev.a));
     }
     
     public boolean drop(final Coord cc, Coord ul) {
@@ -2408,13 +2467,13 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 	return(true);
     }
 
-    public boolean keydown(KeyEvent ev) {
+    public boolean keydown(KeyDownEvent ev) {
 	Loader.Future<Plob> placing_l = this.placing;
 	if((placing_l != null) && placing_l.done()) {
 	    Plob placing = placing_l.get();
-	    if((ev.getKeyCode() == KeyEvent.VK_LEFT) && placing.adjust.rotate(placing, -1, ui.modflags()))
+	    if((ev.code == KeyEvent.VK_LEFT) && placing.adjust.rotate(placing, -1, ui.modflags()))
 		return(true);
-	    if((ev.getKeyCode() == KeyEvent.VK_RIGHT) && placing.adjust.rotate(placing, 1, ui.modflags()))
+	    if((ev.code == KeyEvent.VK_RIGHT) && placing.adjust.rotate(placing, 1, ui.modflags()))
 		return(true);
 	}
 	if(camera.keydown(ev))
@@ -2423,12 +2482,12 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
     }
 
     public static final KeyBinding kb_grid = KeyBinding.get("grid", KeyMatch.forchar('G', KeyMatch.C));
-    public boolean globtype(char c, KeyEvent ev) {
+    public boolean globtype(GlobKeyEvent ev) {
 	if(kb_grid.key().match(ev)) {
 	    showgrid(gridlines == null);
 	    return(true);
 	}
-	return(false);
+	return(super.globtype(ev));
     }
 
     public Object tooltip(Coord c, Widget prev) {
@@ -2802,16 +2861,18 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 	}
 
 	public void addCheckpoint(Coord2d coord){
-		if(checkpointManager != null && checkpointManagerThread != null){
-			checkpointManager.addCoord(coord);
-		} else {
-			GameUI gameUI = ui.gui;
-			checkpointManager = new CheckpointManager(gameUI);
-			Window window = checkpointManager;
-			gameUI.add(window, new Coord(gameUI.sz.x/2 - window.sz.x/2 + 100, gameUI.sz.y - window.sz.y));
-			checkpointManagerThread = new Thread(checkpointManager, "CheckpointManager");
-			checkpointManagerThread.start();
-			checkpointManager.addCoord(coord);
+		if (OptWnd.enableQueuedMovementCheckBox.a) {
+			if(checkpointManager != null && checkpointManagerThread != null){
+				checkpointManager.addCoord(coord);
+			} else {
+				GameUI gameUI = ui.gui;
+				checkpointManager = new CheckpointManager(gameUI);
+				Window window = checkpointManager;
+				gameUI.add(window, new Coord(gameUI.sz.x/2 - window.sz.x/2 + 100, gameUI.sz.y - window.sz.y));
+				checkpointManagerThread = new Thread(checkpointManager, "CheckpointManager");
+				checkpointManagerThread.start();
+				checkpointManager.addCoord(coord);
+			}
 		}
 	}
 
@@ -2915,5 +2976,60 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 		areaSelect = false;
 		selection.destroy();
 		selection = null;
+	}
+
+	@Override
+	public void wdgmsg(String msg, Object... args) {
+		GameUI gui = ui.gui;
+		if (gui != null && gui.refillWaterContainersThread != null && gui.refillWaterContainersThread.isAlive()){
+			if (msg.equals("drop")){
+				gui.refillWaterContainersThread.interrupt();
+				gui.refillWaterContainersThread = null;
+				gui.ui.msg("Water Refill was manually stopped (One container was also dropped).");
+			} else if (msg.equals("click")){
+				if (args.length == 4) {
+					if (args[2].toString().equals("1")) {
+						gui.refillWaterContainersThread.interrupt();
+						gui.refillWaterContainersThread = null;
+						gui.ui.msg("Water Refill was manually stopped.");
+					}
+				}
+			}
+		}
+		boolean safe = true;
+		if(gui != null && gui.miningSafetyAssistantWindow != null && MiningSafetyAssistant.preventUnsafeMiningCheckBox != null && MiningSafetyAssistant.preventUnsafeMiningCheckBox.a){
+			if (ui.root.cursor != null) {
+				Resource curs = ui.root.cursor.get();
+				if (curs != null && curs.name.equals("gfx/hud/curs/mine") && msg.equals("sel")) {
+					safe = MiningSafetyAssistant.isAreaInSupportRange((Coord) args[0], (Coord) args[1], ui.gui);
+				}
+			}
+		}
+		if(!safe){
+			ui.error("Tile outside all (visible) support range. Preventing mining command");
+		} else {
+			super.wdgmsg(msg, args);
+		}
+		if (msg.equals("click")){
+			try {
+				int clickb = (Integer)args[2];
+				Coord2d mc = ((Coord)args[1]).mul(OCache.posres);
+				if (clickb == 1) {
+					if (!ui.modshift)
+						gobPathLastClick = new Coord3f((float)mc.x, (float)mc.y, glob.map.getzp(mc).z);
+					else
+						gobPathLastClick = null;
+				} else if (clickb == 3) {
+					if (args.length > 4) {
+						Long gobid = new Long((Integer) args[5]);
+						Gob gob = glob.oc.getgob(gobid);
+						if (gob != null) {
+							gobPathLastClick = new Coord3f((float)mc.x, (float)mc.y, glob.map.getzp(mc).z);
+						}
+					} else
+						gobPathLastClick = null;
+				}
+			} catch (Exception ignored){}
+		}
 	}
 }

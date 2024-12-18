@@ -76,13 +76,21 @@ public class GobGrowthInfo extends GobInfo {
 	    if(data != null) {
 		int stage = data.uint8();
 		if(stage > maxStage) {stage = maxStage;}
-		if(res != null && (res.name.contains("turnip") || res.name.contains("carrot") || res.name.contains("leek"))){
-			 if (stage == maxStage - 2){
+		if(res != null && (res.name.contains("carrot"))) {
+			if (stage == maxStage - 1) {
 				return SEEDS_STAGE_DOT;
-			} else if (stage == maxStage){
+			} else if (stage == maxStage) {
 				return FINAL_STAGE_DOT;
 			} else {
-				 return getStageImage(stage, maxStage);
+				return getStageImage(stage, maxStage);
+			}
+		} else if (res != null && (res.name.contains("turnip") || res.name.contains("leek"))){
+			if (stage == maxStage - 2) {
+				return SEEDS_STAGE_DOT;
+			} else if (stage == maxStage) {
+				return FINAL_STAGE_DOT;
+			} else {
+				return getStageImage(stage, maxStage);
 			}
 		} else {
 			if (stage == maxStage){
@@ -99,10 +107,14 @@ public class GobGrowthInfo extends GobInfo {
 	    if(data != null && !data.eom()) {
 		data.skip(1);
 		int growth = data.eom() ? -1 : data.uint8();
-		if(growth < 100 && growth >= 0) {
+		if(growth >= 0) {
 			if(res.name.contains("gfx/terobjs/trees") && !res.name.endsWith("log") && !res.name.endsWith("oldtrunk") && !(OptWnd.toggleGobHidingCheckBox.a && OptWnd.hideTreesCheckbox.a)) {
 			growth = (int) (TREE_MULT * (growth - TREE_START));
-			isHidden = false;
+			if (growth <= 100)
+				isHidden = false;
+			int oversizedTreesPercentage = OptWnd.oversizedTreesPercentageTextEntry.text().isEmpty() ? 1 : Integer.parseInt(OptWnd.oversizedTreesPercentageTextEntry.text());
+			if (OptWnd.alsoShowOversizedTreesAbovePercentageCheckBox.a && growth >= oversizedTreesPercentage)
+				isHidden = false;
 		    } else if(res.name.startsWith("gfx/terobjs/bushes") && !(OptWnd.toggleGobHidingCheckBox.a && OptWnd.hideBushesCheckbox.a)) {
 			growth = (int) (BUSH_MULT * (growth - BUSH_START));
 			isHidden = false;

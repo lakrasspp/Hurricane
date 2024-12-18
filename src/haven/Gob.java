@@ -36,6 +36,7 @@ import java.util.concurrent.Future;
 import java.util.function.*;
 import java.util.stream.Collectors;
 
+import haven.Fuzzy;
 import haven.automated.mapper.MappingClient;
 import haven.render.*;
 import haven.render.gl.GLObject;
@@ -61,7 +62,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	public ConcurrentHashMap<Class<? extends GAttrib>, GAttrib> attr = new ConcurrentHashMap<>(); // ND: Make this ConcurrentHashMap to prevent concurrent modification exceptions. It doesn't seem to affect performance
     public final Collection<Overlay> ols = new ArrayList<Overlay>();
     public final Collection<RenderTree.Slot> slots = new CopyOnWriteArrayList<>(); // ND: Make this COW to prevent concurrent modification exceptions. It doesn't seem to affect performance
-    public int updateseq = 0;
+    public int updateseq = 0, lastolid = 0;
     private final Collection<SetupMod> setupmods = new ArrayList<>();
     private final LinkedList<Runnable> deferred = new LinkedList<>();
     private Loader.Future<?> deferral = null;
@@ -70,6 +71,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	private boolean thisGobAnimationsCanBeDisabled = false;
 	public Boolean isMe = null;
 	public Boolean isMannequin = null;
+	public Boolean isSkeleton = null;
 	private boolean isLoftar = false;
 	public boolean playerNameChecked = false;
 	public final ArrayList<Gob> occupants = new ArrayList<Gob>(); // ND: The "passengers" of this gob
@@ -108,6 +110,8 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	private Overlay archeryVector;
 	private Overlay archeryRadius;
 	BarrelContentsGobInfo barrelContentsGobInfo;
+	IconSignGobInfo iconSignGobInfo;
+	public boolean combatFoeHighlighted = false;
 
     public static class Overlay implements RenderTree.Node {
 	public final int id;
@@ -202,7 +206,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	    slots.add(slot);
 		if (this.spr != null && this.spr.res != null && this.spr.res.name.contains("decal")){
 			if (OptWnd.flatCupboardsCheckBox.a && this.spr.owner.getres().name.equals("gfx/terobjs/cupboard"))
-				slot.cstate(Pipe.Op.compose(Location.scale(1, 1, 1.8f), Location.xlate(new Coord3f(0, 0, -6.3f))));
+				slot.cstate(Pipe.Op.compose(Location.scale(1, 1, 1.6f), Location.xlate(new Coord3f(0, 0, -5.4f))));
 			slot.ostate(new MixColor(new Color(255, 255, 255, 0)));
 		}
 	}
@@ -519,7 +523,9 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	growthInfo = new GobGrowthInfo(this);
 	setattr(GobGrowthInfo.class, growthInfo);
 	barrelContentsGobInfo = new BarrelContentsGobInfo(this);
+	iconSignGobInfo = new IconSignGobInfo(this);
 	setattr(BarrelContentsGobInfo.class, barrelContentsGobInfo);
+	setattr(IconSignGobInfo.class, iconSignGobInfo);
 	updwait(this::updateDrawableStuff, waiting -> {});
     }
 
@@ -560,9 +566,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	}
 	if (isMe != null) {
 		setCustomPlayerName();
-		if (!isLoftar) {
-			playPlayerAlarm();
-		}
+		playPlayerAlarm();
 	}
 	if (getattr(Moving.class) instanceof Following){
 		Following following = (Following) getattr(Moving.class);
@@ -584,7 +588,8 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	Drawable d = getattr(Drawable.class);
 	if(d != null)
 	    d.gtick(g);
-	for(Overlay ol : ols) {
+	List<Overlay> olsSnapshot = new ArrayList<>(ols); // ND: Idk if this will break anything, but THIS PIECE OF SHIT SEEMS TO BE THE ROOT CAUSE OF ALL OLS CRASHES
+	for(Overlay ol : olsSnapshot) {
 	    if(ol.spr != null)
 		ol.spr.gtick(g);
 	}
@@ -625,6 +630,19 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	}
     }
 
+    public static int olidcmp(int a, int b) {
+	/* This assumes that overlay IDs are 31 bits. This is indeed
+	 * the case, but should arguably be considered more like a
+	 * protocol detail. */
+	int delta = (a << 1) - (b << 1);
+	if(delta > 0)
+	    return(1);
+	else if(delta < 0)
+	    return(-1);
+	else
+	    return(0);
+    }
+
     public void addol(Overlay ol, boolean async) {
 	if (getres() != null) {
 		if(OptWnd.disableIndustrialSmokeCheckBox.a && !getres().name.equals("gfx/terobjs/clue")) {
@@ -633,9 +651,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 			}
 		}
 		if(OptWnd.disableScentSmokeCheckBox.a && getres().name.equals("gfx/terobjs/clue")) {
-			if (ol.spr != null && ol.spr.res != null && ol.spr.res.name.contains("ismoke")) {
-				return;
-			}
+			return;
 		}
 	}
 	if(async) {
@@ -657,6 +673,9 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 			}
 		}
 	} catch (Loading ignored) {}
+	// ND: Update these here as well, just to make sure they don't bug out with the collision box overlay when initialised (idfk why it breaks)
+	updateContainerFullnessHighlight();
+	updateWorkstationProgressHighlight();
     }
     public void addol(Overlay ol) {
 	addol(ol, true);
@@ -698,7 +717,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
     public void move(Coord2d c, double a) {
 	Moving m = getattr(Moving.class);
 	if(m != null)
-	    m.move(c);
+		m.move(c);
 	this.gobSpeed = m != null ? m.getv() : 0;
 		if(isMe != null && isMe && MappingClient.getInstance() != null) {
 			if (OptWnd.uploadMapTilesCheckBox.a)
@@ -798,6 +817,8 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 				occupiedGobID = null;
 			}
 		}
+		if (isMe != null && isMe)
+			glob.sess.ui.gui.map.gobPathLastClick = null;
 	}
 	if (a instanceof Moving) {
 		if (gobChaseVector != null) {
@@ -809,11 +830,15 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		Homing homing = (Homing) a;
 		if (gobChaseVector == null && homing != null) {
 			gobChaseVector = new Overlay(this, new ChaseVectorSprite(this, homing));
-			addol(gobChaseVector);
+			synchronized (ols) {
+				addol(gobChaseVector);
+			}
 		} else if (gobChaseVector != null && homing != null) {
 			gobChaseVector.remove();
 			gobChaseVector = new Overlay(this, new ChaseVectorSprite(this, homing));
-			addol(gobChaseVector);
+			synchronized (ols) {
+				addol(gobChaseVector);
+			}
 		} else if (gobChaseVector != null) {
 			gobChaseVector.remove();
 			gobChaseVector = null;
@@ -826,7 +851,10 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
     }
 
     public void delattr(Class<? extends GAttrib> c) {
-	setattr(attrclass(c), null);
+	Class<? extends GAttrib> ac = attrclass(c);
+	GAttrib attr = this.attr.get(ac);
+	if(c.isInstance(attr))
+	    setattr(attrclass(c), null);
     }
 
     public Supplier<? extends Pipe.Op> eqpoint(String nm, Message dat) {
@@ -1207,6 +1235,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		updateCustomIcons();
 		updateCritterAuras();
 		updateSpeedBuffAuras();
+		updateMidgesAuras();
 		updateBeastDangerRadii();
 		updateTroughsRadius();
 		updateBeeSkepRadius();
@@ -1217,12 +1246,23 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 
 	public void updPose(HashSet<String> poses) {
 		isComposite = true;
-		knocked = (poses.contains("knock") || poses.contains("dead") || poses.contains("waterdead"));
-		if (this.getres().name.equals("gfx/borka/body"))
+		Iterator<String> iter = poses.iterator();
+		while (iter.hasNext()) { // ND: Some animals have stupid names for the knock or dead pose, like "chicken-knock". Doing it this way is easier than manually adding every single one.
+			String s = iter.next();
+			if (s.contains("knock") || s.contains("dead") || s.contains("waterdead") || s.contains("banzai")) {
+				knocked = true;
+				break;
+			} else {
+				knocked = false;
+			}
+		}
+		if (this.getres().name.equals("gfx/borka/body")) {
 			isMannequin = (poses.contains("mannequinlift"));
+			isSkeleton = (poses.contains("deadskeletonpose"));
+		}
 		updateCritterAuras();
 		updateBeastDangerRadii();
-		if (this.getres().name.equals("gfx/borka/body") && isMannequin != null && !isMannequin){
+		if (this.getres().name.equals("gfx/borka/body") && isMannequin != null && !isMannequin && isSkeleton != null && !isSkeleton){
 			setPlayerGender();
 			if  (!isDeadPlayer){
 				checkIfPlayerIsDead(poses);
@@ -1326,7 +1366,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 
 	public void setCustomPlayerName() {
 		if (!playerNameChecked) {
-			if (getattr(Buddy.class) == null && getattr(haven.res.ui.obj.buddy_n.Named.class) == null && isMannequin != null && !isMannequin && glob.sess.ui.gui != null && glob.sess.ui.gui.map != null) {
+			if (getattr(Buddy.class) == null && getattr(haven.res.ui.obj.buddy_n.Named.class) == null && isMannequin != null && !isMannequin && isSkeleton != null && !isSkeleton && glob.sess.ui.gui != null && glob.sess.ui.gui.map != null) {
 				if (getres() != null) {
 					if (getres().name.equals("gfx/borka/body")) {
 						long plgobid = glob.sess.ui.gui.map.plgob;
@@ -1335,8 +1375,9 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 								setattr(new Buddy(this, -1, "Loftar", Color.WHITE));
 							else if ((getattr(Vilmate.class) != null))
 								setattr(new Buddy(this, -1, "Village/Realm Member", Color.WHITE));
-							else
+							else {
 								setattr(new Buddy(this, -1, "Unknown", Color.GRAY));
+							}
 						}
 					}
 				}
@@ -1392,6 +1433,20 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		if (updateseq == 0) {
 			return;
 		}
+		boolean mapIconVisible = false;
+		try { // ND: If we don't try catch this, "Tried to wait for unwaitable event" is thrown and the gob (noticed with players) is loaded but won't move around. Spooky.
+			if (OptWnd.dontHideObjectsThatHaveTheirMapIconEnabledCheckBox.a) {
+				// TODO: ND: I've spent 3 hours trying to figure out how to make this map icon thing work on login (if you're already hiding objects and have an icon enabled)
+				//  It's probably something to do with this conf.show changing at some point somewhere, AFTER the hiding boxes are updated, BUT WHERE?. Seems to only happen on login.
+				GobIcon icon = getattr(GobIcon.class);
+				if (icon != null && glob.sess.ui.gui != null && glob.sess.ui.gui.iconconf != null) {
+					GobIcon.Setting conf = glob.sess.ui.gui.iconconf.get(icon.icon());
+					if (conf != null && conf.show) {
+						mapIconVisible = true;
+					}
+				}
+			}
+		} catch (Loading ignored) {}
 		boolean doHide = false;
 		boolean doShowHidingBox = false;
 		Resource res = Gob.this.getres();
@@ -1421,10 +1476,15 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 			} else if (OptWnd.hideCropsCheckbox.a && resName.startsWith("gfx/terobjs/plants") && !resName.endsWith("trellis")) {
 				doHide = OptWnd.toggleGobHidingCheckBox.a;
 				doShowHidingBox = false; // ND: You can walk through them anyway, so it doesn't matter. Their resource doesn't have an actual hitbox layer and we'll have an endless lag loop of trying to draw one.
+			} else if (OptWnd.hideTrellisCheckbox.a && resName.endsWith("trellis")) {
+				doHide = OptWnd.toggleGobHidingCheckBox.a;
+				doShowHidingBox = true;
 			}
+			doHide = (doHide && !mapIconVisible);
+			doShowHidingBox = (doShowHidingBox && !mapIconVisible);
 			isHidden = doHide;
 			Drawable d = getattr(Drawable.class);
-			if (d != null && d.skipRender != doHide) {
+			if (d != null && d.skipRender != (doHide) ) {
 				d.skipRender = doHide;
 				if (doHide) {
 					if (d.slots != null) {
@@ -1459,7 +1519,9 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 					HidingBox hidingBoxHollow = HidingBox.forGob(this, false);
 					if (hidingBoxHollow != null) {
 						this.hidingBoxHollow = new HitBoxGobSprite<>(this, hidingBoxHollow);
-						addol(this.hidingBoxHollow);
+						synchronized (ols) {
+							addol(this.hidingBoxHollow);
+						}
 					}
 				}
 			} else if (hidingBoxHollow != null) {
@@ -1475,7 +1537,9 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 					HidingBox hidingBoxFilled = HidingBox.forGob(this, true);
 					if (hidingBoxFilled != null) {
 						this.hidingBoxFilled = new HitBoxGobSprite<>(this, hidingBoxFilled);
-						addol(this.hidingBoxFilled);
+						synchronized (ols) {
+							addol(this.hidingBoxFilled);
+						}
 					}
 				}
 			} else if(hidingBoxFilled != null) {
@@ -1499,7 +1563,9 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 					CollisionBox collisionBox = CollisionBox.forGob(this);
 					if (collisionBox != null) {
 						this.collisionBox = new HitBoxGobSprite<>(this, collisionBox);
-						addol(this.collisionBox);
+						synchronized (ols) {
+							addol(this.collisionBox);
+						}
 					}
 				}
 			} else if (collisionBox != null) {
@@ -1534,6 +1600,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 				case "gfx/terobjs/cupboard":
 				case "gfx/terobjs/chest":
 				case "gfx/terobjs/exquisitechest":
+				case "gfx/terobjs/map/stonekist":
 					if (peekrbuf == 30 || peekrbuf == 29) {
 						if (OptWnd.showContainerFullnessFullCheckBox.a) setGobStateHighlight(OptWnd.showContainerFullnessFullColorOptionWidget.currentColor);
 						else delattr(GobStateHighlight.class);
@@ -1559,6 +1626,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 					}
 					break;
 				case "gfx/terobjs/leatherbasket":
+				case "gfx/terobjs/thatchbasket":
 					if (peekrbuf == 4) {
 						if (OptWnd.showContainerFullnessFullCheckBox.a) setGobStateHighlight(OptWnd.showContainerFullnessFullColorOptionWidget.currentColor);
 						else delattr(GobStateHighlight.class);
@@ -1610,6 +1678,27 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 						else delattr(GobStateHighlight.class);
 					}
 					break;
+				case "gfx/terobjs/map/jotunclam":
+					if ((peekrbuf == 113) || (peekrbuf == 114)){
+						if (OptWnd.showContainerFullnessFullCheckBox.a) setGobStateHighlight(OptWnd.showContainerFullnessFullColorOptionWidget.currentColor);
+						else delattr(GobStateHighlight.class);
+					} else if (peekrbuf == 2 || peekrbuf == 1) {
+						if (OptWnd.showContainerFullnessEmptyCheckBox.a) setGobStateHighlight(OptWnd.showContainerFullnessEmptyColorOptionWidget.currentColor);
+						else delattr(GobStateHighlight.class);
+					} else {
+						if (OptWnd.showContainerFullnessPartialCheckBox.a) setGobStateHighlight(OptWnd.showContainerFullnessPartialColorOptionWidget.currentColor);
+						else delattr(GobStateHighlight.class);
+					}
+					break;
+				case "gfx/terobjs/barrel":
+					int olsSize = ols.size();
+					if(collisionBox != null)
+						olsSize = olsSize - 1;
+					if (olsSize < 1) {
+						if (OptWnd.showContainerFullnessEmptyCheckBox.a) setGobStateHighlight(OptWnd.showContainerFullnessEmptyColorOptionWidget.currentColor);
+						else delattr(GobStateHighlight.class);
+					} else delattr(GobStateHighlight.class);
+					break;
 				default:
 					break;
 			}
@@ -1634,14 +1723,18 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 			if (collisionBox != null) {
 				collisionBox.fx.updateState();
 			}
-			for (Overlay ol : ols){
-				if (ol.spr != null && ol.spr.res != null && ol.spr.res.name.equals("gfx/terobjs/items/parchment-decal") && ol.slots != null){
-					for (RenderTree.Slot slot : ol.slots){
-						if (OptWnd.flatCupboardsCheckBox.a) {
-							slot.cstate(Pipe.Op.compose(Location.scale(1, 1, 2), Location.xlate(new Coord3f(0, 0, -6.5f))));
+			synchronized (ols) {
+				for (Overlay ol : ols) {
+					if (ol.spr != null && ol.spr.res != null && ol.spr.res.name.equals("gfx/terobjs/items/parchment-decal") && ol.slots != null) {
+						synchronized (ol.slots) {
+							for (RenderTree.Slot slot : ol.slots) {
+								if (OptWnd.flatCupboardsCheckBox.a) {
+									slot.cstate(Pipe.Op.compose(Location.scale(1, 1, 1.6f), Location.xlate(new Coord3f(0, 0, -5.4f))));
+								} else {
+									slot.cstate(Pipe.Op.compose(Location.scale(1, 1, 1), Location.xlate(new Coord3f(0, 0, 0))));
+								}
+							}
 						}
-						else
-							slot.cstate(Pipe.Op.compose(Location.scale(1, 1, 1), Location.xlate(new Coord3f(0, 0, 0))));
 					}
 				}
 			}
@@ -1752,7 +1845,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		if (getres() == null) return;
 		String resourceName = getres().basename().toLowerCase().replace("stockpile", "");
 		String searchKeyword = ObjectSearchWindow.objectSearchString.toLowerCase();
-		boolean result = resourceName.contains(searchKeyword) && searchKeyword.length() > 1;
+		boolean result = searchKeyword.length() > 1 && Fuzzy.fuzzyContains(resourceName, searchKeyword);
 		String barterStandOverlays = null;
 		if (resourceName.contains("barter")) {
 			try {
@@ -1776,7 +1869,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 			}
 		}
 		if (barterStandOverlays != null) {
-			if (searchKeyword.startsWith("@") && searchKeyword.length() > 2 && barterStandOverlays.contains(searchKeyword.replaceAll("@", ""))) {
+			if (searchKeyword.startsWith("@") && Fuzzy.fuzzyContains(barterStandOverlays, searchKeyword.replaceAll("@", "")) && searchKeyword.length() > 2) {
 				result = true;
 			}
 		}
@@ -1786,10 +1879,9 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 
 	private void setSearchOl(boolean on) {
 		if (on) {
-			for (Overlay ol : ols) {
-				if (ol.spr instanceof haven.sprites.GobSearchHighlight) {
-					return;
-				}
+			if (customSearchOverlay != null) {
+				removeOl(customSearchOverlay);
+				customSearchOverlay = null;
 			}
 			customSearchOverlay = new Overlay(this, new haven.sprites.GobSearchHighlight(this, null));
 			synchronized (ols) {
@@ -1849,6 +1941,14 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 			String resourceName = getres().name;
 			if (resourceName.equals("gfx/terobjs/boostspeed"))
 				setAuraCircleOverlay(OptWnd.showSpeedBuffAurasCheckBox.a, OptWnd.speedBuffAuraColorOptionWidget.currentColor, 6f);
+		}
+	}
+
+	public void updateMidgesAuras() {
+		if (getres() != null) {
+			String resourceName = getres().name;
+			if (resourceName.equals("gfx/kritter/midgeswarm/midgeswarm"))
+				setAuraCircleOverlay(OptWnd.showMidgesCircleAurasCheckBox.a, new Color(192, 0, 0, 140), 6f);
 		}
 	}
 
@@ -1919,7 +2019,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		if (getres() != null) {
 			String resourceName = getres().name;
 			if (resourceName.equals("gfx/terobjs/beehive")){
-				setRadiusOverlay(OptWnd.showFoodTroughsRadiiCheckBox.a, new Color(255, 242, 0, 128), 150f);
+				setRadiusOverlay(OptWnd.showBeeSkepsRadiiCheckBox.a, new Color(255, 242, 0, 128), 150f);
 			}
 		}
 	}
@@ -2114,7 +2214,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	public void playPlayerAlarm() {
 		if (!alarmPlayed.contains(id)){
 			if (getres() != null) {
-				if (isMannequin != null && isMannequin == false){
+				if (isMannequin != null && !isMannequin && isSkeleton != null && !isSkeleton){
 					if (getres().name.equals("gfx/borka/body")) {
 						Buddy buddyInfo = getattr(Buddy.class);
 						boolean isVillager = getattr(Vilmate.class) != null;
@@ -2123,7 +2223,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 							if (buddyInfo != null) {
 								if ((buddyInfo.customName != null && buddyInfo.customName.equals("Unknown"))) {
 									playPlayerColorAlarm(OptWnd.whitePlayerAlarmEnabledCheckbox.a, OptWnd.whitePlayerAlarmFilename.buf.line(), OptWnd.whitePlayerAlarmVolumeSlider.val);
-								} else if ((buddyInfo.customName != null && buddyInfo.customName.equals("Village/Realm Member") && isVillager) || (buddyInfo.customName == null && buddyInfo.b != null && buddyInfo.rgrp == 0)) {
+								} else if ((buddyInfo.customName != null && buddyInfo.customName.equals("Village/Realm Member") && isVillager)) {
 									playPlayerColorAlarm(OptWnd.whiteVillageOrRealmPlayerAlarmEnabledCheckbox.a, OptWnd.whiteVillageOrRealmPlayerAlarmFilename.buf.line(), OptWnd.whiteVillageOrRealmPlayerAlarmVolumeSlider.val);
 								} else if (buddyInfo.rgrp == 1) {
 									playPlayerColorAlarm(OptWnd.greenPlayerAlarmEnabledCheckbox.a, OptWnd.greenPlayerAlarmFilename.buf.line(), OptWnd.greenPlayerAlarmVolumeSlider.val);
@@ -2221,10 +2321,27 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		}
 	}
 
+	public void setCombatFoeHighlightOverlay() {
+		if (OptWnd.highlightCombatFoesCheckBox.a && !combatFoeHighlighted) {
+			combatFoeHighlighted = true;
+			setattr(new GobCombatHighlight(this));
+		} else if (!OptWnd.highlightCombatFoesCheckBox.a && combatFoeHighlighted) {
+			combatFoeHighlighted = false;
+			delattr(GobCombatHighlight.class);
+		}
+	}
+
 	public void removeCombatFoeCircleOverlay(){
 		if (combatFoeCircleOverlay != null) {
 			removeOl(combatFoeCircleOverlay);
 			combatFoeCircleOverlay = null;
+		}
+	}
+
+	public void removeCombatFoeHighlight(){
+		if (combatFoeHighlighted) {
+			combatFoeHighlighted = false;
+			delattr(GobCombatHighlight.class);
 		}
 	}
 
@@ -2341,6 +2458,22 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		checkIfObjectJustDied();
 		growthInfo.clear();
 		barrelContentsGobInfo.clear();
+		iconSignGobInfo.signInfoTex = null;
+		iconSignGobInfo.clear();
+		setGobSearchOverlay();
+	}
+
+	public void refreshGrowthInfo(){
+		growthInfo.clear();
+	}
+
+	public Message sdtm() {
+		Drawable d = getattr(Drawable.class);
+		if(d instanceof ResDrawable) {
+			ResDrawable dw = (ResDrawable) d;
+			return dw.sdt.clone();
+		}
+		return null;
 	}
 
 }

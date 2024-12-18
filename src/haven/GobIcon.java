@@ -84,6 +84,15 @@ public class GobIcon extends GAttrib {
 	    public Icon create(OwnerContext owner, Resource res, Message sdt);
 	    public Collection<? extends Icon> enumerate(OwnerContext owner, Resource res, Message sdt);
 	}
+
+		public String tooltip() {
+			String tt = name();
+			try {
+				Resource.Tooltip name = res.layer(Resource.tooltip);
+				tt = (name == null) ? res.name : name.t;
+			} catch (Resource.Loading ignored) {}
+			return tt;
+		}
     }
 
     public static class Image {
@@ -781,6 +790,10 @@ public class GobIcon extends GAttrib {
 							}
 							SettingsWindow.this.conf.dsave();
 							updateSelectAllCheckbox();
+							if (ui != null && ui.gui != null) {
+								ui.sess.glob.oc.gobAction(Gob::updateHidingBoxes);
+								ui.gui.map.updatePlobHidingBox();
+							}
 						}
 					}.state(() -> icon.conf.show).settip("Show icon on map"),
 				prev.c.x - UI.scale(2) - (sz.y / 2), sz.y / 2, 0.5, 0.5);
@@ -829,8 +842,8 @@ public class GobIcon extends GAttrib {
 		super.tick(dt);
 	    }
 
-	    public boolean keydown(java.awt.event.KeyEvent ev) {
-//		if(ev.getKeyCode() == java.awt.event.KeyEvent.VK_SPACE) {
+	    public boolean keydown(KeyDownEvent ev) {
+//		if(ev.code == ev.awt.VK_SPACE) {
 //		    if(sel != null) {
 //			sel.conf.show = !sel.conf.show;
 //			conf.dsave();
@@ -870,6 +883,10 @@ public class GobIcon extends GAttrib {
 						}
 						SettingsWindow.this.conf.dsave();
 						updateSelectAllCheckbox();
+						if (ui != null && ui.gui != null) {
+							ui.sess.glob.oc.gobAction(Gob::updateHidingBoxes);
+							ui.gui.map.updatePlobHidingBox();
+						}
 					}
 				}.state(() -> conf.show),
 				  0, 0);
@@ -974,6 +991,10 @@ public class GobIcon extends GAttrib {
 							icon.conf.show = val;
 					});
 					conf.dsave();
+					if (ui != null && ui.gui != null) {
+						ui.sess.glob.oc.gobAction(Gob::updateHidingBoxes);
+						ui.gui.map.updatePlobHidingBox();
+					}
 				} catch (Loading ignored){} // ND: It crashes if you click on "Select all" while some buttons are still loading. This should prevent it.
 			}}, 0);
 	    list = cont.last(new IconList(UI.scale(280, 500)), 0);
@@ -1041,7 +1062,8 @@ public class GobIcon extends GAttrib {
 		left.last(new Button(UI.scale(170), "Delete Selected Preset", false).action(() -> {
 			if (!selectedPreset.equals("")) {
 				mapIconPresets.remove(selectedPreset);
-				ui.gui.msg(selectedPreset + " map icons preset has been deleted!", Color.WHITE, UI.MessageWidget.msgsfx);
+
+				ui.gui.msg(new UI.InfoMessage(selectedPreset + " map icons preset has been deleted!", Color.WHITE, UI.InfoMessage.sfx));
 				selectedPreset = "";
 				iconPresetsDropbox.change(0);
 				savePresetsToFile();
@@ -1053,11 +1075,11 @@ public class GobIcon extends GAttrib {
 		left.last(new Label(""), UI.scale(0));
 		Widget newPresetWidget = left.last(new Label("New Preset:"), UI.scale(8));
 		newPresetName = new TextEntry(UI.scale(120), ""){
-			public boolean keydown(KeyEvent e) {
-				if(e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+			public boolean keydown(KeyDownEvent e) {
+				if(e.awt.getKeyCode() == KeyEvent.VK_ESCAPE) {
 					setfocus(SettingsWindow.this.cont);
 				}
-				return(buf.key(e));
+				return(buf.key(e.awt));
 			}
 		};
 		left.last(new Button(UI.scale(170), "Save New Preset", false).action(() -> {
@@ -1154,7 +1176,11 @@ public class GobIcon extends GAttrib {
 					icon.conf.show = true;
 			});
 			conf.dsave();
-			ui.gui.msg(selectedPreset + " map icons preset has been set!", Color.WHITE, UI.MessageWidget.msgsfx);
+			ui.gui.msg(new UI.InfoMessage(selectedPreset + " map icons preset has been set!", Color.WHITE, UI.InfoMessage.sfx));
+			if (ui != null && ui.gui != null) {
+				ui.sess.glob.oc.gobAction(Gob::updateHidingBoxes);
+				ui.gui.map.updatePlobHidingBox();
+			}
 		}
 	}
 
@@ -1169,7 +1195,7 @@ public class GobIcon extends GAttrib {
 					}
 				});
 			}});
-			ui.gui.msg(presetName + " map icons preset has been saved!", Color.WHITE, UI.MessageWidget.msgsfx);
+			ui.gui.msg(new UI.InfoMessage(presetName + " map icons preset has been saved!", Color.WHITE, UI.InfoMessage.sfx));
 			newPresetName.settext("");
 			savePresetsToFile();
 		}

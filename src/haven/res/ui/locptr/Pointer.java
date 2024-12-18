@@ -1,11 +1,14 @@
 /* Preprocessed source code */
+package haven.res.ui.locptr;
+
 import haven.*;
+import haven.automated.PointerTriangulation;
 import haven.render.*;
 import java.awt.Color;
 import static java.lang.Math.*;
 
 /* >wdg: Pointer */
-@haven.FromResource(name = "ui/locptr", version = 20)
+@haven.FromResource(name = "ui/locptr", version = 21)
 public class Pointer extends Widget {
     public static final BaseColor col = new BaseColor(new Color(241, 227, 157, 255));
     public Indir<Resource> icon;
@@ -27,7 +30,7 @@ public class Pointer extends Widget {
 	Indir<Resource> icon = (iconid < 0) ? null : ui.sess.getres(iconid);
 	return(new Pointer(icon));
     }
-	
+
     public void presize() {
 	resize(parent.sz);
     }
@@ -160,14 +163,14 @@ public class Pointer extends Widget {
 	this.gobid = gobid;
     }
 
-    public boolean mousedown(Coord c, int button) {
+    public boolean mousedown(MouseDownEvent ev) {
 	if(click && (lc != null)) {
-	    if(lc.dist(c) < 20) {
-		wdgmsg("click", button, ui.modflags());
+	    if(lc.dist(ev.c) < 20) {
+		wdgmsg("click", ev.b, ui.modflags());
 		return(true);
 	    }
 	}
-	return(super.mousedown(c, button));
+	return(super.mousedown(ev));
     }
 
     public void uimsg(String name, Object... args) {
@@ -196,6 +199,14 @@ public class Pointer extends Widget {
 		if ((lc != null) && (lc.dist(c) < 20) && this.ui.gui.map.player() != null) {
 			if (tooltip instanceof Widget.KeyboundTip) {
 				try {
+					try {
+						Coord2d playerCoord = ui.gui.map.player().rc;
+						Coord2d targetCoord = tc;
+						double dx = targetCoord.x - playerCoord.x;
+						double dy = playerCoord.y - targetCoord.y;
+						PointerTriangulation.pointerAngle = Math.atan2(dy, dx);
+						PointerTriangulation.pointerChecked = true;
+					} catch (Exception ignored){}
 					if (tt != null && tt.tex() != null)
 						tt.tex().dispose();
 					if (dist > 990) {

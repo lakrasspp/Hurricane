@@ -16,8 +16,7 @@ public class GobIconsCustom {
 
 		put("gfx/terobjs/vehicle/wheelbarrow", "customclient/mapicons/wheelbarrow");
 		put("gfx/terobjs/vehicle/cart", "customclient/mapicons/cart");
-		put("gfx/terobjs/vehicle/plow", "customclient/mapicons/woodenplow");
-		put("gfx/terobjs/vehicle/metalplow", "customclient/mapicons/metalplow");
+		put("gfx/terobjs/vehicle/plow", "customclient/mapicons/plow");
 
 		put("gfx/kritter/horse/stallion", "customclient/mapicons/tamedHorse");
 		put("gfx/kritter/horse/mare", "customclient/mapicons/tamedHorse");
@@ -25,10 +24,8 @@ public class GobIconsCustom {
 		put("gfx/terobjs/pclaim", "customclient/mapicons/pclaim");
 		put("gfx/terobjs/villageidol", "customclient/mapicons/vclaim");
 
-		put("gfx/terobjs/burrow", "customclient/mapicons/burrow");
 		put("gfx/terobjs/minehole", "customclient/mapicons/minehole");
 		put("gfx/terobjs/ladder", "customclient/mapicons/mineladder");
-		put("gfx/terobjs/wonders/wellspring", "customclient/mapicons/wellspring");
 
 		put("gfx/terobjs/items/mandrakespirited", "customclient/mapicons/mandrakespirited");
 		put("gfx/kritter/opiumdragon/opiumdragon", "customclient/mapicons/opiumdragon");
@@ -50,6 +47,9 @@ public class GobIconsCustom {
 		put("gfx/terobjs/items/arrow", "customclient/mapicons/arrow");
 		put("gfx/terobjs/road/milestone-wood-e", "customclient/mapicons/roadsign");
 		put("gfx/terobjs/road/milestone-stone-e", "customclient/mapicons/milestone");
+
+		put("gfx/terobjs/map/starshard", "customclient/mapicons/starshard");
+		put("gfx/terobjs/map/gemstone", "customclient/mapicons/gemboulder");
     }};
 
 

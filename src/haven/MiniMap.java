@@ -36,6 +36,7 @@ import haven.MapFile.GridInfo;
 import haven.MapFile.Marker;
 import haven.MapFile.PMarker;
 import haven.MapFile.SMarker;
+import haven.res.ui.obj.buddy.Buddy;
 import haven.sprites.MapSprite;
 
 import static haven.MCache.cmaps;
@@ -67,7 +68,6 @@ public class MiniMap extends Widget {
 	private static final Color BIOME_BG = new Color(0, 0, 0, 110);
 	private String biome;
 	private Tex biometex;
-	private final Tex invalidMapWarningTex = Text.renderstroked("Warning: Map unstable, using workaround!", Color.RED, Color.BLACK).tex(); // ND: Idk if this bug still exists, but I'm adding this fix anyway
 	public static boolean showMapViewRange = Utils.getprefb("showMapViewRange", true);
 	public static boolean showMapGridLines = Utils.getprefb("showMapGridLines", false);
 	public static boolean highlightMapTiles = Utils.getprefb("highlightMapTiles", false);
@@ -92,7 +92,7 @@ public class MiniMap extends Widget {
     }
 
     public static class Location {
-	public final Segment seg;
+	public Segment seg;
 	public final Coord tc;
 
 	public Location(Segment seg, Coord tc) {
@@ -315,7 +315,7 @@ public class MiniMap extends Widget {
 	}
 
 	public void dispupdate() {
-	    if((this.rc == null) || (sessloc == null) || (dloc == null) /*|| (dloc.seg != sessloc.seg)*/) // ND: Commented this for the bugged segment workaround.
+	    if((this.rc == null) || (sessloc == null) || (dloc == null) || (dloc.seg != sessloc.seg))
 		this.sc = null;
 	    else
 		this.sc = p2c(this.rc);
@@ -348,6 +348,10 @@ public class MiniMap extends Widget {
 		return(true);
 	    return(false);
 	}
+
+		public Object tooltip() {
+			return icon.tooltip();
+		}
     }
 
     public static class MarkerID extends GAttrib {
@@ -696,7 +700,7 @@ public class MiniMap extends Widget {
     }
 
     public void drawicons(GOut g) {
-	if((sessloc == null) /*|| (dloc.seg != sessloc.seg)*/) // ND: Commented this for the bugged segment workaround.
+	if((sessloc == null) || (dloc.seg != sessloc.seg))
 	    return;
 	for(DisplayIcon disp : icons) {
 	    if((disp.sc == null) || filter(disp))
@@ -729,9 +733,27 @@ public class MiniMap extends Widget {
 		Coord2d ppc = m.getc();
 		if(ppc == null)
 		    continue;
+		Coord p2cppc = p2c(ppc);
 		g.chcolor(m.col.getRed(), m.col.getGreen(), m.col.getBlue(), 255);
 		g.rotimage(plp, p2c(ppc), plp.sz().div(2), -m.geta() - (Math.PI / 2));
 		g.chcolor();
+			if (!compact) {
+				String name;
+				if (GameUI.gobIdToKinName.containsKey(m.gobid)) {
+					name = GameUI.gobIdToKinName.get(m.gobid);
+					g.image(Text.renderstroked(name, Color.white, Color.BLACK, Text.num12boldFnd).tex(),p2cppc.add(-name.length()*4,-30));
+				} else if (m.getgob() != null) {
+					Buddy buddyInfo = m.getgob().getattr(Buddy.class);
+					if (buddyInfo != null) {
+						name = buddyInfo.rnm;
+						if (name == null && buddyInfo.customName!= null)
+							name = buddyInfo.customName;
+						if (!GameUI.gobIdToKinName.containsKey(m.gobid) && name != null) {
+							GameUI.gobIdToKinName.put(m.gobid, name);
+						}
+					}
+				}
+			}
 	    } catch(Loading l) {}
 	}
     }
@@ -746,8 +768,10 @@ public class MiniMap extends Widget {
 	    drawicons(g);
 	drawparty(g);
 	drawbiome(g);
-	drawInvalidWarning(g);
 	drawsprites(g);
+	if (dloc.seg != sessloc.seg){ // ND: Attempts to fix the bug where the segments desync, idk why they desync and it's annoying me alot
+		sessloc.seg = dloc.seg;
+	}
     }
 
     public void draw(GOut g) {
@@ -901,71 +925,71 @@ public class MiniMap extends Widget {
     private Location dsloc;
     private DisplayIcon dsicon;
     private DisplayMarker dsmark;
-    public boolean mousedown(Coord c, int button) {
-	dsloc = xlate(c);
+    public boolean mousedown(MouseDownEvent ev) {
+	dsloc = xlate(ev.c);
 	if(dsloc != null) {
-	    dsicon = iconat(c);
+	    dsicon = iconat(ev.c);
 	    dsmark = markerat(dsloc.tc);
-	    if((dsicon != null) && clickicon(dsicon, dsloc, button, true))
+	    if((dsicon != null) && clickicon(dsicon, dsloc, ev.b, true))
 		return(true);
-	    if((dsmark != null) && clickmarker(dsmark, dsloc, button, true))
+	    if((dsmark != null) && clickmarker(dsmark, dsloc, ev.b, true))
 		return(true);
-	    if(clickloc(dsloc, button, true))
+	    if(clickloc(dsloc, ev.b, true))
 		return(true);
 	} else {
 	    dsloc = null;
 	    dsicon = null;
 	    dsmark = null;
 	}
-	if(dragp(button)) {
+	if(dragp(ev.b)) {
 	    Location loc = curloc;
 	    if((drag == null) && (loc != null)) {
 		drag = ui.grabmouse(this);
-		dsc = c;
+		dsc = ev.c;
 		dmc = loc.tc;
 		dragging = false;
 	    }
 	    return(true);
 	}
-	return(super.mousedown(c, button));
+	return(super.mousedown(ev));
     }
 
-    public void mousemove(Coord c) {
+    public void mousemove(MouseMoveEvent ev) {
 	if(drag != null) {
 	    if(dragging) {
 		setloc = null;
 		follow = false;
-		curloc = new Location(curloc.seg, dmc.add(dsc.sub(c).mul(scalef())));
-	    } else if(c.dist(dsc) > 5) {
+		curloc = new Location(curloc.seg, dmc.add(dsc.sub(ev.c).mul(scalef())));
+	    } else if(ev.c.dist(dsc) > 5) {
 		dragging = true;
 	    }
 	}
-	super.mousemove(c);
+	super.mousemove(ev);
     }
 
-    public boolean mouseup(Coord c, int button) {
-	if((drag != null) && (button == 1)) {
+    public boolean mouseup(MouseUpEvent ev) {
+	if((drag != null) && (ev.b == 1)) {
 	    drag.remove();
 	    drag = null;
 	}
 	release: if(!dragging && (dsloc != null)) {
-	    if((dsicon != null) && clickicon(dsicon, dsloc, button, false))
+	    if((dsicon != null) && clickicon(dsicon, dsloc, ev.b, false))
 		break release;
-	    if((dsmark != null) && clickmarker(dsmark, dsloc, button, false))
+	    if((dsmark != null) && clickmarker(dsmark, dsloc, ev.b, false))
 		break release;
-	    if(clickloc(dsloc, button, false))
+	    if(clickloc(dsloc, ev.b, false))
 		break release;
 	}
 	dsloc = null;
 	dsicon = null;
 	dsmark = null;
 	dragging = false;
-	return(super.mouseup(c, button));
+	return(super.mouseup(ev));
     }
 
-    public boolean mousewheel(Coord c, int amount) {
+    public boolean mousewheel(MouseWheelEvent ev) {
 	if (allowZooming){
-		zoomMomentum += (float) (1.5*Math.signum(amount));
+		zoomMomentum += (OptWnd.mapZoomSpeedSlider.val/10f*Math.signum(ev.a));
 		allowZooming = false;
 	}
 	return(true);
@@ -978,6 +1002,11 @@ public class MiniMap extends Widget {
 	    if(mark != null) {
 		return(mark.tip);
 	    }
+
+		DisplayIcon icon = iconat(c);
+		if(icon != null) {
+			return icon.tooltip();
+		}
 	}
 	return(super.tooltip(c, prev));
     }
@@ -1026,20 +1055,6 @@ public class MiniMap extends Widget {
 		}
 	}
     }
-
-	void drawInvalidWarning(GOut g) {
-		if (dloc.seg != sessloc.seg){
-			if (invalidMapWarningTex != null) {
-				Coord tsz = invalidMapWarningTex.sz();
-				Coord mid = new Coord(g.sz().x / 2, UI.scale(16));
-				g.chcolor(BIOME_BG);
-				g.frect(mid.sub(2 + tsz.x /2, 0), tsz.add(4, 2));
-				g.chcolor();
-				g.aimage(invalidMapWarningTex, mid, 0.5f, 0);
-			}
-
-		}
-	}
 
 	void drawbiome(GOut g) {
 		if(biometex != null) {

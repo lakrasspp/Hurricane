@@ -155,49 +155,8 @@ public class TileHighlight {
 			add("gfx/tiles/rocks/sodalite");
 			add("gfx/tiles/rocks/sunstone");
 			add("gfx/tiles/rocks/zincspar");
+			add("gfx/tiles/rocks/halite"); // rock salt
 		}});
-//		put("Pavement", new ArrayList<String>(){{
-//			add("gfx/tiles/paving/acrebrick");
-//			add("gfx/tiles/paving/alabaster");
-//			add("gfx/tiles/paving/apatite");
-//			add("gfx/tiles/paving/arkose");
-//			add("gfx/tiles/paving/ballbrick");
-//			add("gfx/tiles/paving/basalt");
-//			add("gfx/tiles/paving/breccia");
-//			add("gfx/tiles/paving/catgold");
-//			add("gfx/tiles/paving/cuprite");
-//			add("gfx/tiles/paving/diabase");
-//			add("gfx/tiles/paving/diorite");
-//			add("gfx/tiles/paving/dolomite");
-//			add("gfx/tiles/paving/eclogite");
-//			add("gfx/tiles/paving/feldspar");
-//			add("gfx/tiles/paving/flint");
-//			add("gfx/tiles/paving/fluorospar");
-//			add("gfx/tiles/paving/gabbro");
-//			add("gfx/tiles/paving/gneiss");
-//			add("gfx/tiles/paving/granite");
-//			add("gfx/tiles/paving/greenschist");
-//			add("gfx/tiles/paving/hornblende");
-//			add("gfx/tiles/paving/kyanite");
-//			add("gfx/tiles/paving/limestone");
-//			add("gfx/tiles/paving/marble");
-//			add("gfx/tiles/paving/mica");
-//			add("gfx/tiles/paving/microlite");
-//			add("gfx/tiles/paving/olivine");
-//			add("gfx/tiles/paving/orthoclase");
-//			add("gfx/tiles/paving/pegmatite");
-//			add("gfx/tiles/paving/porphyry");
-//			add("gfx/tiles/paving/pumice");
-//			add("gfx/tiles/paving/quarryquartz");
-//			add("gfx/tiles/paving/quartz");
-//			add("gfx/tiles/paving/rhyolite");
-//			add("gfx/tiles/paving/sandstone");
-//			add("gfx/tiles/paving/slag");
-//			add("gfx/tiles/paving/slate");
-//			add("gfx/tiles/paving/soapstone");
-//			add("gfx/tiles/paving/sodalite");
-//			add("gfx/tiles/paving/zincspar");
-//		}});
 	}};
 	public static List<String> savedHighlightedMapTiles = new ArrayList<String>(Arrays.asList(Utils.getprefsa("savedHighlightedMapTiles_2", new String[0])));
     
@@ -409,8 +368,8 @@ public class TileHighlight {
 		return (item.name.toLowerCase().contains(filter.toLowerCase()));
 	    }
 	    
-	    public boolean keydown(java.awt.event.KeyEvent ev) {
-		if(ev.getKeyCode() == java.awt.event.KeyEvent.VK_SPACE) {
+	    public boolean keydown(KeyDownEvent ev) {
+		if(ev.awt.getKeyCode() == java.awt.event.KeyEvent.VK_SPACE) {
 		    if(sel != null) {
 			toggle(sel.res);
 			Utils.setprefsa("savedHighlightedMapTiles_2", savedHighlightedMapTiles.toArray(new String[0]));
@@ -433,10 +392,10 @@ public class TileHighlight {
 	    }
 	    
 	    @Override
-	    public boolean mousedown(Coord c, int button) {
-		int idx = idxat(c);
+	    public boolean mousedown(MouseDownEvent ev) {
+		int idx = idxat(ev.c);
 		if((idx >= 0) && (idx < listitems())) {
-		    Coord ic = c.sub(idxc(idx));
+		    Coord ic = ev.c.sub(idxc(idx));
 		    TileItem item = listitem(idx);
 		    if(ic.x < showc.x + CheckBox.sbox.sz().x) {
 			toggle(item.res);
@@ -445,7 +404,7 @@ public class TileHighlight {
 			return (true);
 		    }
 		}
-		return (super.mousedown(c, button));
+		return (super.mousedown(ev));
 	    }
 	}
 	
@@ -500,14 +459,14 @@ public class TileHighlight {
 					&& items.stream().allMatch(icon -> isHighlighted(icon.res));
 		}
 		@Override
-		public boolean mouseup(Coord c, int button) {
+		public boolean mouseup(MouseUpEvent ev) {
 			if(dm != null) {
 				dm.remove();
 				dm = null;
 				preventDraggingOutside();
 				Utils.setprefc("tileHighlightWnd", ui.gui.tileHighlight.c);
 			} else {
-				super.mouseup(c, button);
+				super.mouseup(ev);
 			}
 			return(true);
 		}

@@ -74,7 +74,6 @@ public class Grainslot extends Widget implements DTarget, ItemInfo.Owner {
 		    iconc = icon.get().layer(Resource.imgc).tex();
 		g.image(iconc, new Coord(ic + 1, ic + 1));
 	    } catch(Loading e) {
-			/*CrashLogger.logCrash(e);*/
 	    }
 	}
 	super.draw(g);
@@ -117,13 +116,13 @@ public class Grainslot extends Widget implements DTarget, ItemInfo.Owner {
 	return(super.tooltip(c, prev));
     }
 
-    public boolean mousedown(Coord c, int button) {
+    public boolean mousedown(MouseDownEvent ev) {
 	int ic = (sz.y - invsq.sz().y) / 2;
-	if(c.isect(new Coord(ic, ic), invsq.sz())) {
-	    wdgmsg("click", button, ui.modflags());
+	if(ev.c.isect(new Coord(ic, ic), invsq.sz())) {
+	    wdgmsg("click", ev.b, ui.modflags());
 	    return(true);
 	}
-	return(super.mousedown(c, button));
+	return(super.mousedown(ev));
     }
 
     public boolean drop(Coord cc, Coord ul) {

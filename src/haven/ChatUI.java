@@ -37,7 +37,6 @@ import java.io.File;
 import java.util.*;
 import java.awt.Color;
 import java.awt.Font;
-import java.awt.event.KeyEvent;
 import java.awt.font.TextAttribute;
 import java.awt.font.TextHitInfo;
 import java.awt.image.BufferedImage;
@@ -448,8 +447,8 @@ public class ChatUI extends Widget {
 	    dy = ty + (Math.pow(2, -dt * 40) * (dy - ty));
 	}
 
-	public boolean mousewheel(Coord c, int amount) {
-	    sb.ch(amount * 45);
+	public boolean mousewheel(MouseWheelEvent ev) {
+	    sb.ch(ev.a * 45);
 	    return(true);
 	}
 
@@ -567,18 +566,18 @@ public class ChatUI extends Widget {
 	private CharPos selorig, lasthit, selstart, selend;
 	private UI.Grab grab;
 	private boolean dragging;
-	public boolean mousedown(Coord c, int btn) {
-	    if(super.mousedown(c, btn))
+	public boolean mousedown(MouseDownEvent ev) {
+	    if(ev.propagate(this) || super.mousedown(ev))
 		return(true);
 	    if(grab != null)
 		return(true);
-	    CharPos ch = charat(c);
+	    CharPos ch = charat(ev.c);
 	    selorig = ch;
 	    if(ch != null) {
-		if(ch.rm.msg.mousedown(this, ch, c, btn))
+		if(ch.rm.msg.mousedown(this, ch, ev.c, ev.b))
 		    return(true);
 	    }
-	    if(btn == 1) {
+	    if(ev.b == 1) {
 		selstart = selend = null;
 		if(ch != null) {
 		    lasthit = ch;
@@ -590,9 +589,10 @@ public class ChatUI extends Widget {
 	    return(true);
 	}
 
-	public void mousemove(Coord c) {
+	public void mousemove(MouseMoveEvent ev) {
+	    super.mousemove(ev);
 	    if(grab != null) {
-		CharPos ch = charat(c);
+		CharPos ch = charat(ev.c);
 		if((ch != null) && !ch.equals(lasthit)) {
 		    lasthit = ch;
 		    if(!dragging && !ch.equals(selorig))
@@ -606,15 +606,13 @@ public class ChatUI extends Widget {
 			selstart = selend = null;
 		    }
 		}
-	    } else {
-		super.mousemove(c);
 	    }
 	}
 
-	public boolean mouseup(Coord c, int btn) {
-	    if(super.mouseup(c, btn))
+	public boolean mouseup(MouseUpEvent ev) {
+	    if(ev.propagate(this) || super.mouseup(ev))
 		return(true);
-	    if((btn == 1) && (grab != null)) {
+	    if((ev.b == 1) && (grab != null)) {
 		grab.remove();
 		grab = null;
 		dragging = false;
@@ -623,14 +621,14 @@ public class ChatUI extends Widget {
 		    return(true);
 		}
 	    }
-	    CharPos ch = charat(c);
+	    CharPos ch = charat(ev.c);
 	    if(ch != null) {
-		if(ch.rm.msg.mouseup(this, ch, c, btn))
+		if(ch.rm.msg.mouseup(this, ch, ev.c, ev.b))
 		    return(true);
 		if(!dragging && (selorig != null) && ch.equals(selorig)) {
-		    if(ch.rm.msg.clicked(this, ch, c, btn))
+		    if(ch.rm.msg.clicked(this, ch, ev.c, ev.b))
 			return(true);
-		    if(clicked(selorig, btn))
+		    if(clicked(selorig, ev.b))
 			return(true);
 		}
 	    }
@@ -822,7 +820,7 @@ public class ChatUI extends Widget {
 			hpos = history.size();
 		    }
 
-		    public boolean keydown(KeyEvent ev) {
+		    public boolean keydown(KeyDownEvent ev) {
 			if(ConsoleHost.kb_histprev.key().match(ev)) {
 			    if(hpos > 0) {
 				if(hpos == history.size())
@@ -1027,9 +1025,9 @@ public class ChatUI extends Widget {
 					Gob gob = ui.gui.map.glob.oc.getgob(Long.parseLong(matcher.group(1)));
 					if (gob != null) {
 						if (name.equals("Area Chat")) {
-							gob.highlight(new Color(255, 183, 0, 255));
+							gob.highlight(OptWnd.areaChatPingColorOptionWidget.currentColor);
 						} else if (name.equals("Party")) {
-							gob.highlight(new Color(243, 0, 0, 255));
+							gob.highlight(OptWnd.partyChatPingColorOptionWidget.currentColor);
 						}
 					}
 					return false;
@@ -1254,7 +1252,9 @@ public class ChatUI extends Widget {
 	    chan.resize(sz.x - marg.x - chan.c.x, sz.y - chan.c.y);
 	    super.add(w);
 	    chansel.add(chan);
-	    select(chan, false);
+		boolean autoSelect = OptWnd.autoSelectNewChatCheckBox.a;
+		if(autoSelect) select(chan, false);
+		if(!autoSelect) chan.hide();
 	    return(w);
 	} else {
 	    return(super.add(w));
@@ -1465,26 +1465,26 @@ public class ChatUI extends Widget {
 	    return(null);
 	}
 
-	public boolean mousedown(Coord c, int button) {
-	    Channel chan = bypos(c);
+	public boolean mousedown(MouseDownEvent ev) {
+	    Channel chan = bypos(ev.c);
 	    cstart = chan;
 	    if(chan != null) {
-		if(button == 1) {
+		if(ev.b == 1) {
 		    select(chan);
 		} else {
-		    chan.selmousedown(c, button);
+		    chan.selmousedown(ev.c, ev.b);
 		}
 	    }
 	    return(true);
 	}
 
-	public boolean mouseup(Coord c, int button) {
-	    Channel chan = bypos(c);
+	public boolean mouseup(MouseUpEvent ev) {
+	    Channel chan = bypos(ev.c);
 	    if(chan != null) {
-		if(button != 1) {
-		    chan.selmouseup(c, button);
+		if(ev.b != 1) {
+		    chan.selmouseup(ev.c, ev.b);
 		    if(cstart == chan)
-			chan.selclicked(c, button);
+			chan.selclicked(ev.c, ev.b);
 		}
 	    }
 	    cstart = null;
@@ -1496,13 +1496,13 @@ public class ChatUI extends Widget {
 	    return(Math.max(Math.min(s, maxh), 0));
 	}
 
-	public boolean mousewheel(Coord c, int amount) {
+	public boolean mousewheel(MouseWheelEvent ev) {
 	    if(!ui.modshift) {
-		ts = clips(ts + (amount * UI.scale(40)));
+		ts = clips(ts + (ev.a * UI.scale(40)));
 	    } else {
-		if(amount < 0)
+		if(ev.a < 0)
 		    up();
-		else if(amount > 0)
+		else if(ev.a > 0)
 		    down();
 	    }
 	    return(true);
@@ -1615,7 +1615,26 @@ public class ChatUI extends Widget {
 	    synchronized(notifs) {
 		notifs.addFirst(new Notification(chan, msg));
 	    }
-	    ui.sfx(notifsfx);
+
+		boolean playSound = OptWnd.chatAlertSoundsCheckBox.a;
+
+		if (chan instanceof PrivChat && playSound) {
+			playSound = OptWnd.privateChatAlertSoundsCheckBox.a;
+		}
+		else if (chan instanceof MultiChat && playSound) {
+			if (chan.name().equals("Area Chat")) {
+				playSound = OptWnd.areaChatAlertSoundsCheckBox.a;
+			}
+			else if (chan.name().equals("Party")) {
+				playSound = OptWnd.partyChatAlertSoundsCheckBox.a;
+			}
+			else if (chan.name().equals(OptWnd.villageNameTextEntry.text())) {
+				playSound = OptWnd.villageChatAlertSoundsCheckBox.a;
+			}
+		}
+
+		if(playSound) ui.sfx(notifsfx);
+
 	}
     }
 
@@ -1705,12 +1724,12 @@ public class ChatUI extends Widget {
 	    cancel();
 	}
 
-	public boolean key(KeyEvent ev) {
+	public boolean key(KbdEvent ev) {
 	    if(key_esc.match(ev)) {
 		cancel();
 		return(true);
 	    } else {
-		return(buf.key(ev));
+		return(buf.key(ev.awt));
 	    }
 	}
     }
@@ -1719,60 +1738,59 @@ public class ChatUI extends Widget {
     private Coord doff;
     private static final int minh = 96;
 	private String resizing = "none";
-    public boolean mousedown(Coord c, int button) {
-	if ((button == 1) && (c.x + UI.scale(4) > sz.x - bvlb.sz().x) && (c.y - UI.scale(4) < bhb.sz().y)) {
+    public boolean mousedown(MouseDownEvent ev) {
+	if ((ev.b == 1) && (ev.c.x + UI.scale(4) > sz.x - bvlb.sz().x) && (ev.c.y - UI.scale(4) < bhb.sz().y)) {
 		dm = ui.grabmouse(this);
-		doff = c;
+		doff = ev.c;
 		resizing = "both";
 		return (true);
-	} else if ((button == 1) && (c.x + UI.scale(4) > sz.x - bvlb.sz().x)) {
+	} else if ((ev.b == 1) && (ev.c.x + UI.scale(4) > sz.x - bvlb.sz().x)) {
 		dm = ui.grabmouse(this);
-		doff = c;
+		doff = ev.c;
 		resizing = "horizontally";
 		return (true);
-	} else if ((button == 1) && (c.y - UI.scale(4) < bhb.sz().y)) {
+	} else if ((ev.b == 1) && (ev.c.y - UI.scale(4) < bhb.sz().y)) {
 	    dm = ui.grabmouse(this);
-	    doff = c;
+	    doff = ev.c;
 		resizing = "vertically";
 	    return(true);
 	} else {
-	    return(super.mousedown(c, button));
+	    return(super.mousedown(ev));
 	}
     }
 
-    public void mousemove(Coord c) {
-	if(dm != null) {
-		if (resizing.equals("both")) {
-			resize(Math.max(UI.scale(410), Math.min(parent.sz.x - UI.scale(226), c.x + UI.scale(5))), Math.max(UI.scale(minh), Math.min(parent.sz.y - UI.scale(120), sz.y + UI.scale(5) - c.y)));
-		} else if (resizing.equals("horizontally")) {
-			resize(Math.max(UI.scale(410), Math.min(parent.sz.x - UI.scale(226), c.x + UI.scale(5))), sz.y);
-		} else if (resizing.equals("vertically")) {
-			resize(sz.x, Math.max(UI.scale(minh), Math.min(parent.sz.y - UI.scale(120), sz.y + UI.scale(5) - c.y)));
-		}
-		if (GameUI.questObjectivesPanel != null){ // ND: IF IT EXISTS.
-			GameUI.questObjectivesPanel.presize(); // ND: move the quest objectives panel as we resize the chat
-		}
-	} else {
-	    super.mousemove(c);
-	}
+    public void mousemove(MouseMoveEvent ev) {
+	super.mousemove(ev);
+        if(dm != null) {
+            if (resizing.equals("both")) {
+                resize(Math.max(UI.scale(410), Math.min(parent.sz.x - UI.scale(226), ev.c.x + UI.scale(5))), Math.max(UI.scale(minh), Math.min(parent.sz.y - UI.scale(120), sz.y + UI.scale(5) - ev.c.y)));
+            } else if (resizing.equals("horizontally")) {
+                resize(Math.max(UI.scale(410), Math.min(parent.sz.x - UI.scale(226), ev.c.x + UI.scale(5))), sz.y);
+            } else if (resizing.equals("vertically")) {
+                resize(sz.x, Math.max(UI.scale(minh), Math.min(parent.sz.y - UI.scale(120), sz.y + UI.scale(5) - ev.c.y)));
+            }
+            if (GameUI.questObjectivesPanel != null){ // ND: IF IT EXISTS.
+                GameUI.questObjectivesPanel.presize(); // ND: move the quest objectives panel as we resize the chat
+            }
+        }
     }
 
-    public boolean mouseup(Coord c, int button) {
+    public boolean mouseup(MouseUpEvent ev) {
 	if(dm != null) {
 	    dm.remove();
 	    dm = null;
-		Utils.setprefc("chatsize", UI.unscale(sz));
+		Utils.setprefc("chatsize", sz);
 		resizing = "none";
 	    return(true);
 	} else {
-	    return(super.mouseup(c, button));
+	    return(super.mouseup(ev));
 	}
     }
 
-    public boolean keydown(KeyEvent ev) {
-	boolean M = (ev.getModifiersEx() & (KeyEvent.META_DOWN_MASK | KeyEvent.ALT_DOWN_MASK)) != 0;
+    public boolean keydown(KeyDownEvent ev) {
+	boolean M = (ev.mods & KeyMatch.M) != 0;
 	if(qline != null) {
-	    if(M && (ev.getKeyCode() == KeyEvent.VK_UP)) {
+	    if(M && (ev.code == ev.awt.VK_UP)) {
 		Channel prev = this.sel;
 		while(chansel.up()) {
 		    if(this.sel instanceof EntryChannel)
@@ -1784,7 +1802,7 @@ public class ChatUI extends Widget {
 		}
 		qline = new QuickLine((EntryChannel)sel);
 		return(true);
-	    } else if(M && (ev.getKeyCode() == KeyEvent.VK_DOWN)) {
+	    } else if(M && (ev.code == ev.awt.VK_DOWN)) {
 		Channel prev = this.sel;
 		while(chansel.down()) {
 		    if(this.sel instanceof EntryChannel)
@@ -1800,10 +1818,10 @@ public class ChatUI extends Widget {
 	    qline.key(ev);
 	    return(true);
 	} else {
-	    if(M && (ev.getKeyCode() == KeyEvent.VK_UP)) {
+	    if(M && (ev.code == ev.awt.VK_UP)) {
 		chansel.up();
 		return(true);
-	    } else if(M && (ev.getKeyCode() == KeyEvent.VK_DOWN)) {
+	    } else if(M && (ev.code == ev.awt.VK_DOWN)) {
 		chansel.down();
 		return(true);
 	    }
@@ -1811,8 +1829,8 @@ public class ChatUI extends Widget {
 	}
     }
 
-    public static final KeyBinding kb_quick = KeyBinding.get("chat-quick", KeyMatch.forcode(KeyEvent.VK_ENTER, 0));
-    public boolean globtype(char key, KeyEvent ev) {
+    public static final KeyBinding kb_quick = KeyBinding.get("chat-quick", KeyMatch.forcode(java.awt.event.KeyEvent.VK_ENTER, 0));
+    public boolean globtype(GlobKeyEvent ev) {
 //	if(kb_quick.key().match(ev)) {
 //	    if(!visible && (sel instanceof EntryChannel)) {
 //		qgrab = ui.grabkeys(this);
@@ -1820,7 +1838,7 @@ public class ChatUI extends Widget {
 //		return(true);
 //	    }
 //	}
-	return(super.globtype(key, ev));
+	return(super.globtype(ev));
     }
 
 	public Map<String, ChatUI.MultiChat> getMultiChannels() {

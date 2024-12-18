@@ -33,6 +33,7 @@ public class Buddy extends GAttrib implements InfoPart {
 		info = Info.add(gob, this);
 		this.customName = customName;
 		this.customNameColor = customNameColor;
+		this.rgrp = 0;
 	}
 
     public static void parse(Gob gob, Message dat) {
@@ -74,6 +75,7 @@ public class Buddy extends GAttrib implements InfoPart {
 	if(b != null) {
 	    Color col = BuddyWnd.gc[rgrp = b.group];
 	    cmp.add(InfoPart.rendertext(rnm = b.name, col), Coord.z);
+		GameUI.gobIdToKinName.put(gob.id, rnm);
 	}
 	this.b = b;
 	}
@@ -83,7 +85,7 @@ public class Buddy extends GAttrib implements InfoPart {
 	super.ctick(dt);
 	if((bw != null) && (bw.serial != bseq)) {
 	    bseq = bw.serial;
-	    if((bw.find(id) != b) || ((b != null) && ((rnm != b.name) || (rgrp != b.group))))
+	    if((bw.find(id) != b) || ((b != null) && (!(rnm.equals(b.name)) || (rgrp != b.group))))
 		info.dirty();
 	}
     }

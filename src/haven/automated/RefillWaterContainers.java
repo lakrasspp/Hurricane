@@ -27,6 +27,7 @@ public class RefillWaterContainers implements Runnable {
                     if (res != null) {
                         if (res.name.equals("gfx/tiles/water") || res.name.equals("gfx/tiles/deep")) {
                             Inventory belt = returnBelt();
+                            Equipory equipory = gui.getequipory();
                             Map<WItem, Coord> inventoryItems = getInventoryContainers();
                             for (Map.Entry<WItem, Coord> item : inventoryItems.entrySet()) {
                                 try {
@@ -46,9 +47,21 @@ public class RefillWaterContainers implements Runnable {
                                     item.getKey().item.wdgmsg("take", Coord.z);
                                     Thread.sleep(5);
                                     gui.map.wdgmsg("itemact", Coord.z, gui.map.player().rc.floor(posres), 0);
-                                    Thread.sleep(30);
+                                    Thread.sleep(40);
                                     belt.wdgmsg("drop", item.getValue());
-                                    gui.maininv.wdgmsg("drop", item.getValue());
+                                    Thread.sleep(5);
+                                } catch (InterruptedException ignored) {
+                                    return;
+                                }
+                            }
+                            Map<WItem, Integer> equiporyPouchItems = getEquiporyPouchContainers();
+                            for (Map.Entry<WItem, Integer> item : equiporyPouchItems.entrySet()) {
+                                try {
+                                    item.getKey().item.wdgmsg("take", Coord.z);
+                                    Thread.sleep(5);
+                                    gui.map.wdgmsg("itemact", Coord.z, gui.map.player().rc.floor(posres), 0);
+                                    Thread.sleep(40);
+                                    equipory.wdgmsg("drop", item.getValue());
                                     Thread.sleep(5);
                                 } catch (InterruptedException ignored) {
                                     return;
@@ -66,7 +79,7 @@ public class RefillWaterContainers implements Runnable {
                     gui.ui.error("Refill Water Script: You must be on a water tile, in order to refill your containers!");
                     return;
                 }
-            } while (getInventoryContainers().size() != 0 || getBeltContainers().size() != 0);
+            } while (getInventoryContainers().size() != 0 || getBeltContainers().size() != 0 || getEquiporyPouchContainers().size() != 0);
             gui.ui.msg("Water Refilled!");
         } catch (Exception e) {
 //            gui.ui.error("Refill Water Containers Script: An Unknown Error has occured.");
@@ -76,7 +89,7 @@ public class RefillWaterContainers implements Runnable {
 
     public Map<WItem, Coord> getBeltContainers() {
         Map<WItem, Coord> containers = new HashMap<>();
-        Coord sqsz = UI.scale(new Coord(33, 33));
+        Coord sqsz = Inventory.sqsz;
         for (Widget w = gui.lchild; w != null; w = w.prev) {
             if (!(w instanceof GItem.ContentsWindow) || !((GItem.ContentsWindow) w).myOwnEquipory) continue;
             for (Widget ww : w.children()) {
@@ -90,11 +103,6 @@ public class RefillWaterContainers implements Runnable {
                             if (entry.getValue().c.equals(calculatedCoord)) {
                                 String resName = entry.getKey().res.get().name;
                                 ItemInfo.Contents.Content content = getContent(entry.getKey());
-//                                if(content != null){
-//                                    System.out.println(resName + " - " + content.count + " - " + content.name + " _ " + content.unit);
-//                                } else {
-//                                    System.out.println(resName);
-//                                }
                                 if (resName.equals("gfx/invobjs/small/waterskin") && shouldAddToContainers(content, 3.0F)) {
                                     containers.put(entry.getValue(), indexCoord);
                                 } else if (resName.equals("gfx/invobjs/waterflask") && shouldAddToContainers(content, 2.0F)) {
@@ -115,6 +123,7 @@ public class RefillWaterContainers implements Runnable {
         Inventory belt = null;
         for (Widget w = gui.lchild; w != null; w = w.prev) {
             if (!(w instanceof GItem.ContentsWindow) || !((GItem.ContentsWindow) w).myOwnEquipory) continue;
+            if (!((GItem.ContentsWindow) w).cap.contains("Belt")) continue;
             for (Widget ww : w.children()) {
                 if (!(ww instanceof Inventory)) continue;
                 belt = (Inventory) ww;
@@ -126,7 +135,7 @@ public class RefillWaterContainers implements Runnable {
     public Map<WItem, Coord> getInventoryContainers() {
         Inventory playerInventory = gui.maininv;
         Coord inventorySize = playerInventory.isz;
-        Coord sqsz = UI.scale(new Coord(33, 33));
+        Coord sqsz = Inventory.sqsz;
         Map<WItem, Coord> containers = new HashMap<>();
         for (int i = 0; i < inventorySize.x; i++) {
             for (int j = 0; j < inventorySize.y; j++) {
@@ -146,6 +155,31 @@ public class RefillWaterContainers implements Runnable {
                         }
                     }
                 }
+            }
+        }
+        return containers;
+    }
+
+    public Map<WItem, Integer> getEquiporyPouchContainers() {
+        WItem leftPouch = gui.getequipory().slots[19];
+        WItem rightPouch = gui.getequipory().slots[20];
+        Map<WItem, Integer> containers = new HashMap<>();
+        if (leftPouch != null) {
+            String resName = leftPouch.item.res.get().name;
+            ItemInfo.Contents.Content content = getContent(leftPouch.item);
+            if ((resName.equals("gfx/invobjs/small/waterskin") && shouldAddToContainers(content, 3.0F))
+                    || (resName.equals("gfx/invobjs/waterflask") && shouldAddToContainers(content, 2.0F))
+                    || (resName.equals("gfx/invobjs/small/glassjug") && shouldAddToContainers(content, 5.0F))) {
+                containers.put(leftPouch, 19);
+            }
+        }
+        if (rightPouch != null) {
+            String resName = rightPouch.item.res.get().name;
+            ItemInfo.Contents.Content content = getContent(rightPouch.item);
+            if ((resName.equals("gfx/invobjs/small/waterskin") && shouldAddToContainers(content, 3.0F))
+                    || (resName.equals("gfx/invobjs/waterflask") && shouldAddToContainers(content, 2.0F))
+                    || (resName.equals("gfx/invobjs/small/glassjug") && shouldAddToContainers(content, 5.0F))) {
+                containers.put(rightPouch, 20);
             }
         }
         return containers;

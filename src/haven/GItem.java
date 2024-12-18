@@ -150,7 +150,7 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 
 	@Override
 	public Color numcolor() {
-		return(new Color(255, 206, 45, 255));
+		return(new Color(255, 255, 255, 255));
 	}
 	}
 
@@ -181,20 +181,25 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 	if(spr == null) {
 	    try {
 		spr = this.spr = GSprite.create(this, res.get(), sdt.clone());
-		if (OptWnd.autoDropManagerWindow != null) {
-			checkAutoDropItem();
-		}
 	    } catch(Loading l) {
 	    }
 	}
+	try {
+		if (spr != null) {
+			if (OptWnd.autoDropManagerWindow != null) {
+				checkAutoDropItem();
+			}
+		}
+	} catch (Exception ignored) {}
 	return(spr);
     }
 
     public void tick(double dt) {
 	super.tick(dt);
 	GSprite spr = spr();
-	if(spr != null)
-	    spr.tick(dt);
+	if(spr != null) {
+		spr.tick(dt);
+	}
 	updcontinfo();
 	if(!hoverset)
 	    hovering = null;
@@ -396,37 +401,36 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 	    return((c.x >= hovermarg.x) && (c.y >= hovermarg.y));
 	}
 
-	public boolean mousedown(Coord c, int btn) {
-	    if(super.mousedown(c, btn))
+	public boolean mousedown(MouseDownEvent ev) {
+	    if(ev.propagate(this))
 		return(true);
-	    if(checkhit(c) && (btn == 1)) {
+	    if(checkhit(ev.c) && (ev.b == 1)) {
 		dm = ui.grabmouse(this);
-		doff = c;
+		doff = ev.c;
 		return(true);
 	    }
-	    return(false);
+	    return(super.mousedown(ev));
 	}
 
-	public boolean mouseup(Coord c, int btn) {
-	    if((dm != null) && (btn == 1)) {
+	public boolean mouseup(MouseUpEvent ev) {
+	    if((dm != null) && (ev.b == 1)) {
 		dm.remove();
 		dm = null;
 		return(true);
 	    }
-	    return(super.mouseup(c, btn));
+	    return(super.mouseup(ev));
 	}
 
-	public void mousemove(Coord c) {
+	public void mousemove(MouseMoveEvent ev) {
+	    super.mousemove(ev);
 	    if(dm != null) {
-		if(c.dist(doff) > 10) {
+		if(ev.c.dist(doff) > 10) {
 		    dm.remove();
 		    dm = null;
 		    ContentsWindow wnd = (ContentsWindow)parent;
 		    wnd.drag(doff);
 		    wnd.chstate("wnd");
 		}
-	    } else {
-		super.mousemove(c);
 	    }
 	}
     }
@@ -558,9 +562,9 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 	    }
 	}
 
-	public boolean mousehover(Coord c, boolean on) {
+	public boolean mousehover(MouseHoverEvent ev, boolean on) {
 	    hovering = on;
-	    return(super.mousehover(c, on));
+	    return(true);
 	}
 
 	public void wndshow(boolean show) {
@@ -594,24 +598,53 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 
 	private void checkAutoDropItem() {
 		if (!checkedAutodrop) {
+			if (AutoDropManagerWindow.onlyDropWhenPickaxeCursorIsActiveCheckBox.a && !ui.checkCursorImage("gfx/hud/curs/mine")){
+				checkedAutodrop = true;
+				return;
+			}
+			if (this.parent instanceof Equipory || // ND: Don't drop from the equipment window
+					this.parent instanceof StudyInventory || // ND: Don't drop from the study report window
+					this.parent instanceof GameUI) { // ND: Don't drop from the cursor
+				checkedAutodrop = true;
+				return;
+			}
 			if (AutoDropManagerWindow.autoDropItemsCheckBox.a) {
+				if (contentswnd != null) { // ND: If it has a contents window, it means that this is a stack GItem. We don't drop whole stacks (cause they have an averaged quality). We only drop from inside the stacks.
+					checkedAutodrop = true;
+				}
+				if(!AutoDropManagerWindow.includeOtherContainerInventoriesCheckBox.a) {
+					if (this.parent instanceof haven.res.ui.stackinv.ItemStack) {
+						GItem stackItem = ((GItem.ContentsWindow) this.parent.parent).cont;
+						if (stackItem.parent != ui.gui.maininv) {
+							checkedAutodrop = true;
+							return;
+						}
+					} else if (this.parent != ui.gui.maininv) {
+						checkedAutodrop = true;
+						return;
+					}
+				}
 				String itemBaseName = this.resource().basename();
 				double quality = 0.0;
 				if(this.rawinfo != null){
 					quality = this.info().stream().filter(info -> info instanceof Quality).mapToDouble(info -> ((Quality) info).q).findFirst().orElse(0.0);
 				}
-				if (AutoDropManagerWindow.autoDropStonesCheckbox.a && Config.stoneItemBaseNames.contains(itemBaseName) && parseTextEntryInt(AutoDropManagerWindow.autoDropStonesQualityTextEntry) > quality) {
-					this.wdgmsg("drop", Coord.z);
-				} else if (AutoDropManagerWindow.autoDropOresCheckbox.a && Config.oreItemBaseNames.contains(itemBaseName) && parseTextEntryInt(AutoDropManagerWindow.autoDropOresQualityTextEntry) > quality) {
-					this.wdgmsg("drop", Coord.z);
-				} else if (AutoDropManagerWindow.autoDropPreciousOresCheckbox.a && Config.preciousOreItemBaseNames.contains(itemBaseName) && parseTextEntryInt(AutoDropManagerWindow.autoDropPreciousOresQualityTextEntry) > quality) {
-					this.wdgmsg("drop", Coord.z);
-				} else if (AutoDropManagerWindow.autoDropMinedCuriosCheckbox.a && Config.minedCuriosItemBaseNames.contains(itemBaseName) && parseTextEntryInt(AutoDropManagerWindow.autoDropMinedCuriosQualityTextEntry) > quality) {
-					this.wdgmsg("drop", Coord.z);
-				} else if (AutoDropManagerWindow.autoDropQuarryartzCheckbox.a && itemBaseName.equals("quarryartz") && parseTextEntryInt(AutoDropManagerWindow.autoDropQuarryartzQualityTextEntry) > quality) {
-					this.wdgmsg("drop", Coord.z);
+				if (quality > 0.1 && contentswnd == null) {
+					if (AutoDropManagerWindow.autoDropStonesCheckbox.a && Config.stoneItemBaseNames.contains(itemBaseName) && parseTextEntryInt(AutoDropManagerWindow.autoDropStonesQualityTextEntry) > quality) {
+						this.wdgmsg("drop", Coord.z);
+					} else if (AutoDropManagerWindow.autoDropCoalsCheckbox.a && Config.coalItemBaseNames.contains(itemBaseName) && parseTextEntryInt(AutoDropManagerWindow.autoDropCoalsQualityTextEntry) > quality) {
+						this.wdgmsg("drop", Coord.z);
+					} else if (AutoDropManagerWindow.autoDropOresCheckbox.a && Config.oreItemBaseNames.contains(itemBaseName) && parseTextEntryInt(AutoDropManagerWindow.autoDropOresQualityTextEntry) > quality) {
+						this.wdgmsg("drop", Coord.z);
+					} else if (AutoDropManagerWindow.autoDropPreciousOresCheckbox.a && Config.preciousOreItemBaseNames.contains(itemBaseName) && parseTextEntryInt(AutoDropManagerWindow.autoDropPreciousOresQualityTextEntry) > quality) {
+						this.wdgmsg("drop", Coord.z);
+					} else if (AutoDropManagerWindow.autoDropMinedCuriosCheckbox.a && Config.minedCuriosItemBaseNames.contains(itemBaseName) && parseTextEntryInt(AutoDropManagerWindow.autoDropMinedCuriosQualityTextEntry) > quality) {
+						this.wdgmsg("drop", Coord.z);
+					} else if (AutoDropManagerWindow.autoDropQuarryartzCheckbox.a && itemBaseName.equals("quarryquartz") && parseTextEntryInt(AutoDropManagerWindow.autoDropQuarryartzQualityTextEntry) > quality) {
+						this.wdgmsg("drop", Coord.z);
+					}
+					checkedAutodrop = true;
 				}
-				checkedAutodrop = true;
 			}
 		}
 	}

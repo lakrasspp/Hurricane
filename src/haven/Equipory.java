@@ -34,10 +34,10 @@ import java.util.*;
 import static haven.Inventory.invsq;
 
 public class Equipory extends Widget implements DTarget {
-    private static final Tex bg = Resource.loadtex("gfx/hud/equip/bg");
-    private static final int
-	rx = invsq.sz().x + bg.sz().x,
-	yo = Inventory.sqsz.y;
+    private static final Resource.Image bgi = Resource.loadrimg("gfx/hud/equip/bg");
+    private static final int yo = Inventory.sqsz.y, sh = 10;
+    private static final Tex bg = new TexI(PUtils.uiscale(bgi.img, Coord.of((sh * yo * bgi.sz.x) / bgi.sz.y, sh * yo)));
+    private static final int rx = invsq.sz().x + bg.sz().x;
     public static final Coord bgc = new Coord(invsq.sz().x, 0);
     public static final Coord ecoords[] = {
 	new Coord( 0, 0 * yo),
@@ -52,13 +52,15 @@ public class Equipory extends Widget implements DTarget {
 	new Coord(rx, 5 * yo),
 	new Coord( 0, 6 * yo),
 	new Coord(rx, 6 * yo),
-	new Coord( 0, 7 * yo),
-	new Coord(rx, 7 * yo),
 	new Coord( 0, 8 * yo),
 	new Coord(rx, 8 * yo),
+	new Coord( 0, 9 * yo),
+	new Coord(rx, 9 * yo),
 	new Coord(invsq.sz().x, 0 * yo),
 	new Coord(rx, 0 * yo),
 	new Coord(rx, 1 * yo),
+	new Coord( 0, 7 * yo),
+	new Coord(rx, 7 * yo),
     };
     public static final Tex[] ebgs = new Tex[ecoords.length];
     public static final Text[] etts = new Text[ecoords.length];
@@ -94,8 +96,10 @@ public class Equipory extends Widget implements DTarget {
 	private Button expandButton = null;
 	public boolean myOwnEquipory = false;
 	public static CheckBox autoDropLeechesCheckBox;
+	public static CheckBox autoDropTicksCheckBox;
 	public static CheckBox autoEquipBunnySlippersPlateBootsCheckBox;
 	boolean checkForLeeches = false;
+	boolean checkForTicks = false;
 
     @RName("epry")
     public static class $_ implements Factory {
@@ -122,7 +126,7 @@ public class Equipory extends Widget implements DTarget {
 	if (gobid == GameUI.playerId)
 		myOwnEquipory = true;
 	ava = add(new Avaview(bg.sz(), gobid, "equcam") {
-		public boolean mousedown(Coord c, int button) {
+		public boolean mousedown(MouseDownEvent ev) {
 		    return(false);
 		}
 
@@ -161,6 +165,14 @@ public class Equipory extends Widget implements DTarget {
 			}
 		}, prev.pos("ur").adds(10, 0));
 		autoEquipBunnySlippersPlateBootsCheckBox.tooltip = OptWnd.autoEquipBunnySlippersPlateBootsCheckBox.tooltip;
+		prev = add(autoDropTicksCheckBox = new CheckBox("Auto-Drop Ticks"){
+			{a = Utils.getprefb("autoDropTicks", true);}
+			public void set(boolean val) {
+				if (OptWnd.autoDropTicksCheckBox != null)
+					OptWnd.autoDropTicksCheckBox.set(val);
+				a = val;
+			}
+		}, prev.pos("bl").adds(0, 2).x(UI.scale(10)));
 	}
 	pack();
     }
@@ -195,6 +207,7 @@ public class Equipory extends Widget implements DTarget {
 		updateBottomText = true;
 		delayedUpdateTime = System.currentTimeMillis();
 		checkForLeeches = true;
+		checkForTicks = true;
 		try {
 			if (g.resource() != null && g.resource().name.equals("gfx/invobjs/batcape")) {
 				Gob.batWingCapeEquipped = true;
@@ -221,6 +234,7 @@ public class Equipory extends Widget implements DTarget {
 	updateBottomText = true;
 	delayedUpdateTime = System.currentTimeMillis();
 	checkForLeeches = true;
+	checkForTicks = true;
 		try {
 			if (i.resource() != null && i.resource().name.equals("gfx/invobjs/batcape")) {
 				Gob.batWingCapeEquipped = false;
@@ -264,7 +278,7 @@ public class Equipory extends Widget implements DTarget {
 	}
 	for(int i = 0; i < ecoords.length; i++) {
 	    if((slots & (1 << i)) != 0) {
-		g.chcolor(255, 255, 0, 64);
+		g.chcolor(0, 200, 0, 96);
 		g.frect(ecoords[i].add(1, 1), invsq.sz().sub(2, 2));
 		g.chcolor();
 	    }
@@ -275,9 +289,6 @@ public class Equipory extends Widget implements DTarget {
     }
 
     public Object tooltip(Coord c, Widget prev) {
-	Object tt = super.tooltip(c, prev);
-	if(tt != null)
-	    return(tt);
 	int sl = epat(c);
 	if(sl >= 0)
 	    return(etts[sl]);
@@ -371,13 +382,24 @@ public class Equipory extends Widget implements DTarget {
 		super.tick(dt);
 		if (OptWnd.autoDropLeechesCheckBox.a && myOwnEquipory && checkForLeeches) {
 			long now = System.currentTimeMillis();
-			if ((now - delayedUpdateTime) > 200){
+			if ((now - delayedUpdateTime) > 300){
 				for (WItem equippedItem : slots) {
 					if (equippedItem != null && equippedItem.item != null && equippedItem.item.getname() != null && equippedItem.item.getname().contains("Leech")){
 						equippedItem.item.wdgmsg("drop", new Coord(equippedItem.sz.x / 2, equippedItem.sz.y / 2));
 					}
 				}
 				checkForLeeches = false;
+			}
+		}
+		if (OptWnd.autoDropTicksCheckBox.a && myOwnEquipory && checkForTicks) {
+			long now = System.currentTimeMillis();
+			if ((now - delayedUpdateTime) > 300){
+				for (WItem equippedItem : slots) {
+					if (equippedItem != null && equippedItem.item != null && equippedItem.item.getname() != null && equippedItem.item.getname().contains("Tick")){
+						equippedItem.item.wdgmsg("drop", new Coord(equippedItem.sz.x / 2, equippedItem.sz.y / 2));
+					}
+				}
+				checkForTicks = false;
 			}
 		}
 	}

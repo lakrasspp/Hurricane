@@ -34,10 +34,8 @@ import java.util.*;
 import java.awt.Color;
 import java.awt.event.KeyEvent;
 import java.awt.image.WritableRaster;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -49,7 +47,7 @@ import haven.res.ui.stackinv.ItemStack;
 
 import static haven.Inventory.invsq;
 
-public class GameUI extends ConsoleHost implements Console.Directory, UI.MessageWidget {
+public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.Handler {
     private static final int blpw = UI.scale(0), brpw = UI.scale(142);
     public final String chrid, genus;
     public final long plid;
@@ -65,7 +63,6 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
     private double msgtime;
     private Window invwnd, equwnd, /*makewnd,*/ srchwnd, iconwnd;
 	public CraftWindow makewnd;
-    private Coord makewndc = Utils.getprefc("makewndc", new Coord(400, 200));
     public Inventory maininv;
     public CharWnd chrwdg;
     public MapWnd mapfile;
@@ -76,6 +73,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
     public HelpWnd help;
     public OptWnd opts;
     public Collection<DraggedItem> hand = new LinkedList<DraggedItem>();
+	private Collection<DraggedItem> handSave = new LinkedList<>();
     public WItem vhand;
     public ChatUI chat;
     public ChatUI.Channel syslog;
@@ -110,11 +108,18 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 	public boolean areaChatLoaded = false;
 	private static ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
 	private static Future<?> areaChatFuture;
+	public static boolean verifiedAccount = false;
+	public static boolean subscribedAccount = false;
+	public QuestHelper questhelper;
+	public static Map<Long,String> gobIdToKinName = new ConcurrentHashMap<>();
+	public static boolean showUI = true;
+	public MiniStudy miniStudy;
 
 	// Script Threads
 	public Thread autoRepeatFlowerMenuScriptThread;
 	public Thread interactWithNearestObjectThread;
 	public Thread enterNearestVehicleThread;
+	public Thread wagonNearestLiftableThread;
 	public Thread cloverScriptThread;
 	public Thread coracleScriptThread;
 	public Thread skisScriptThread;
@@ -270,16 +275,16 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 
 	public abstract int beltslot(Coord c);
 
-	public boolean mousedown(Coord c, int button) {
-	    int slot = beltslot(c);
+	public boolean mousedown(MouseDownEvent ev) {
+	    int slot = beltslot(ev.c);
 	    if(slot != -1) {
-		if(button == 1)
+		if(ev.b == 1)
 		    act(slot, new MenuGrid.Interaction(1, ui.modflags()));
-		if(button == 3)
+		if(ev.b == 3)
 		    GameUI.this.wdgmsg("setbelt", slot, null);
 		return(true);
 	    }
-	    return(super.mousedown(c, button));
+	    return(super.mousedown(ev));
 	}
 
 	public boolean drop(Coord c, Coord ul) {
@@ -380,6 +385,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 	add(new Widget(new Coord(360, umpanel.sz.y)) {
 		@Override
 		public void draw(GOut g) {
+			if (showUI) {
 				if (c.x != umpanel.c.x - (int) (this.sz.x * 0.98))
 					c.x = umpanel.c.x - (int) (this.sz.x * 0.98);
 				Tex mtime = ui.sess.glob.mservertimetex.get().b;
@@ -405,12 +411,14 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 					y += btime.sz().y;
 				}
 				if (sz.y != y) resize(sz.x, y);
+			}
 		}
 	}, new Coord(umpanel.c.x - (int)(this.sz.x*0.98), UI.scale(1)));
 
 	add(new StatusWdg(){
 		@Override
 		public void draw(GOut g) {
+			if (showUI){
 				if (c.x != umpanel.c.x + umpanel.sz.x - UI.scale(10))
 					c.x = umpanel.c.x + umpanel.sz.x - UI.scale(10);
 				g.image(players, Coord.z);
@@ -419,6 +427,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 				if (pingtime.sz().x > w)
 					w = pingtime.sz().x;
 				this.sz = new Coord(w, players.sz().y + pingtime.sz().y);
+			}
 		}
 	}, new Coord(umpanel.sz.x, UI.scale(11)));
 
@@ -428,17 +437,10 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 	opts.hide();
 	zerg = add(new Zergwnd(), Utils.getprefc("wndc-zerg", UI.scale(new Coord(187, 50))));
 	zerg.hide();
-	quickslots = add(new QuickSlotsWdg(){
-		@Override
-		public void draw(GOut g) {
-			super.draw(g);
-		}
-
-		@Override
-		public boolean mousedown(Coord c, int button) {
-			return super.mousedown(c, button);
-		}
-	}, Utils.getprefc("wndc-quickslots", UI.scale(new Coord(426, 10))));
+	questhelper = new QuestHelper();
+	questhelper.hide();
+	add(questhelper, Utils.getprefc("wndc-autoDropManagerWindow", UI.unscale(new Coord(187, 50))));
+	quickslots = add(new QuickSlotsWdg(), Utils.getprefc("wndc-quickslots", UI.scale(new Coord(426, 10))));
 	if (!Utils.getprefb("showQuickSlotsBar", true)) {
 		quickslots.hide();
 	}
@@ -450,9 +452,8 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 	actionBar3.raise();
 	actionBar4.c = Utils.getprefc("wndc-actionBar4", UI.unscale(new Coord(0, 620)));
 	actionBar4.raise();
-	OptWnd.flowerMenuAutoSelectManagerWindow = null;
 
-	makewnd = add(new CraftWindow(), UI.scale(400, 200));
+	makewnd = add(new CraftWindow(), Utils.getprefc("wndc-makewnd", new Coord(400, 200)));
 	makewnd.hide();
     }
 
@@ -976,6 +977,10 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 		mapfile.fixAndSavePos(mapfile.compact);
 	if(quickslots != null)
 		Utils.setprefc("wndc-quickslots", quickslots.c);
+	if(makewnd != null)
+		Utils.setprefc("wndc-makewnd", makewnd.c);
+	if (miniStudy != null)
+		Utils.setprefc("wndc-miniStudy", miniStudy.c);
 	}
     }
 
@@ -1069,6 +1074,8 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 	    hand.add(new DraggedItem(g, lc));
 	    updhand();
 	} else if(place == "chr") {
+		miniStudy = add(new MiniStudy(), Utils.getprefc("wndc-miniStudy", new Coord(300, 50)));
+		if (!OptWnd.alwaysOpenMiniStudyOnLoginCheckBox.a) miniStudy.hide();
 	    chrwdg = add((CharWnd)child, Utils.getprefc("wndc-chr", new Coord(300, 50)));
 	    chrwdg.hide();
 	} else if(place == "craft") {
@@ -1121,13 +1128,26 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 		    {add(cref);}
 
 		    protected Coord getc() {
-			return(new Coord(10, GameUI.this.sz.y - chat.sz.y - this.sz.y - UI.scale( 10)));
+			return(new Coord(10, GameUI.this.sz.y - chat.sz.y - this.sz.y - UI.scale( 26)));
 		    }
 
 		    public void cdestroy(Widget ch) {
 			qqview = null;
 			destroy();
 		    }
+
+			@Override
+			public void draw(GOut g) {
+				if (showUI)
+					super.draw(g);
+			}
+
+			@Override
+			public boolean mousedown(MouseDownEvent ev) {
+				if (!showUI)
+					return(false);
+				return super.mousedown(ev);
+			}
 		});
 	} else if(place == "misc") {
 	    Coord c;
@@ -1253,7 +1273,6 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 	private static final Resource.Anim progt = Resource.local().loadwait("gfx/hud/prog").layer(Resource.animc);
 	public double prog;
 	private TexI curi;
-	private String tip;
 
 	public Progress(double prog) {
 	    super(progt.f[0][0].ssz);
@@ -1277,48 +1296,79 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 
 	    double d = Math.abs(prog - this.prog);
 	    int dec = Math.max(0, (int)Math.round(-Math.log10(d)) - 2);
-	    this.tip = String.format("%." + dec + "f%%", prog * 100);
+	    this.tooltip = String.format("%." + dec + "f%%", prog * 100);
 	    this.prog = prog;
 	}
 
 	public void draw(GOut g) {
-	    g.image(curi, Coord.z);
+		if (showUI)
+	    	g.image(curi, Coord.z);
 	}
 
 	public boolean checkhit(Coord c) {
 	    return(Utils.checkhit(curi.back, c, 10));
 	}
-
-	public Object tooltip(Coord c, Widget prev) {
-	    if(checkhit(c))
-		return(tip);
-	    return(super.tooltip(c, prev));
-	}
     }
+	private class SysTimedMessage{
+		public Text text;
+		public double time;
+		public SysTimedMessage(Text text, double time){
+			this.text = text;
+			this.time = time;
+		}
+	}
+	Deque<SysTimedMessage> msgDeque = new ArrayDeque<>();
 
-    public void draw(GOut g) {
+	public void draw(GOut g) {
 //	beltwdg.c = new Coord(chat.c.x, Math.min(chat.c.y - beltwdg.sz.y, sz.y - beltwdg.sz.y));
 	super.draw(g);
 	int by = sz.y;
 	if(chat.visible())
-	    by = Math.min(by, chat.c.y);
+		by = Math.min(by, chat.c.y);
 //	if(beltwdg.visible())
 //	    by = Math.min(by, beltwdg.c.y);
 	if(cmdline != null) {
-	    drawcmd(g, new Coord(blpw + UI.scale(10), by -= UI.scale(20)));
-	} else if(lastmsg != null) {
-	    if((Utils.rtime() - msgtime) > 3.0) {
-		lastmsg = null;
-	    } else {
-		g.chcolor(0, 0, 0, 192);
-		g.frect(new Coord(blpw + UI.scale(8), by - UI.scale(22)), lastmsg.sz().add(UI.scale(4), UI.scale(4)));
-		g.chcolor();
-		g.image(lastmsg.tex(), new Coord(blpw + UI.scale(10), by -= UI.scale(20)));
-	    }
+		drawcmd(g, new Coord(UI.scale(200), by -= UI.scale(40)));
+	} else if(msgDeque.size() > 0) {
+		Iterator<SysTimedMessage> iter = msgDeque.descendingIterator();
+		int cur_limit = 0;
+		while(iter.hasNext()) {
+			SysTimedMessage msg = iter.next();
+			if((Utils.rtime() - msg.time) > (double) OptWnd.systemMessagesDurationSlider.val || ++cur_limit > OptWnd.systemMessagesListSizeSlider.val){
+				iter.remove();
+			}else{
+				g.chcolor(0, 0, 0, 192);
+				g.frect(new Coord(UI.scale(18), by - UI.scale(22)), msg.text.sz().add(UI.scale(4), UI.scale(4)));
+				g.chcolor();
+				g.image(msg.text.tex(), new Coord(UI.scale(20), by -= UI.scale(20)));
+				by -= UI.scale(4);
+			}
+		}
 	}
 	if(!chat.visible()) {
-	    chat.drawsmall(g, new Coord(blpw + UI.scale(10), by), UI.scale(100));
+	    chat.drawsmall(g, new Coord(UI.scale(10), by), UI.scale(100));
 	}
+
+	int x = (int)(ui.gui.sz.x / 2.0);
+	int y = (int)(ui.gui.sz.y - ((ui.gui.sz.y / 500.0) * OptWnd.combatUITopPanelHeightSlider.val));
+	int bottom = (int)(ui.gui.sz.y - ((ui.gui.sz.y / 500.0) * OptWnd.combatUIBottomPanelHeightSlider.val));
+	if (OptWnd.alwaysShowCombatUIStaminaBarCheckBox.a && showUI) {
+		IMeter.Meter stam = ui.gui.getmeter("stam", 0);
+		if (stam != null) {
+			Coord msz = UI.scale(new Coord(234, 22));
+			Coord sc = OptWnd.stamBarLocationIsTop ? new Coord(x - msz.x/2,  y + UI.scale(70)) : new Coord(x - msz.x/2,  bottom - UI.scale(68));
+			drawStamMeterBar(g, stam, sc, msz);
+		}
+	}
+	if (OptWnd.alwaysShowCombatUIHealthBarCheckBox.a && showUI) {
+		IMeter.Meter hp = ui.gui.getmeter("hp", 0);
+		if (hp != null) {
+			Coord msz = UI.scale(new Coord(234, 22));
+			Coord sc = new Coord(x - msz.x/2,  y + UI.scale(44));
+			drawHealthMeterBar(g, hp, sc, msz);
+		}
+	}
+
     }
     
     private String iconconfname() {
@@ -1457,7 +1507,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 		if (getmeter("stam", 0).a < meterFullness) {
 			if(System.currentTimeMillis() > lastAutoDrinkTime + 1000 || System.currentTimeMillis() > lastAutoDrinkTime + 3500){
 				lastAutoDrinkTime = System.currentTimeMillis();
-				drink(0.99);
+				wdgmsg("act", "drink");
 			}
 		}
 	}
@@ -1727,18 +1777,23 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 	public static KeyBinding kb_leftQuickSlotButton  = KeyBinding.get("leftQuickSlotButtonKB",  KeyMatch.forchar('Z', KeyMatch.M));
 	public static KeyBinding kb_nightVision  = KeyBinding.get("nightVisionKB",  KeyMatch.forchar('N', KeyMatch.C));
 	public static KeyBinding kb_clickNearestObject  = KeyBinding.get("clickNearestObjectKB",  KeyMatch.forchar('Q', 0));
+	public static KeyBinding kb_clickNearestCursorObject  = KeyBinding.get("clickNearestCursorObjectKB",  KeyMatch.nil);
 	public static KeyBinding kb_enterNearestVehicle  = KeyBinding.get("enderNearestVehicle",  KeyMatch.forchar('Q', KeyMatch.C));
+	public static KeyBinding kb_wagonNearestLiftable  = KeyBinding.get("wagonNearestLiftable",  KeyMatch.nil);
 	public static KeyBinding kb_toggleHidingBoxes  = KeyBinding.get("toggleHidingBoxesKB",  KeyMatch.forchar('H', KeyMatch.C));
 	public static KeyBinding kb_toggleCollisionBoxes  = KeyBinding.get("toggleCollisionBoxesKB",  KeyMatch.forchar('B', KeyMatch.S));
 	public static KeyBinding kb_toggleGrowthInfo  = KeyBinding.get("toggleGrowthInfoKB",  KeyMatch.forchar('I',  KeyMatch.C | KeyMatch.S));
+	public static KeyBinding kb_toggleCursorItem = KeyBinding.get("toggleCursorItemKB",  KeyMatch.nil);
+	public static KeyBinding kb_instantLogout = KeyBinding.get("instantLogoutKB",  KeyMatch.nil);
 	public static KeyBinding kb_aggroNearestTargetButton = KeyBinding.get("AggroNearestTargetButtonKB",  KeyMatch.forcode(KeyEvent.VK_SPACE, KeyMatch.S));
 	public static KeyBinding kb_aggroOrTargetNearestCursor = KeyBinding.get("AggroOrTargetNearestCursorButtonKB",  KeyMatch.nil);
 	public static KeyBinding kb_aggroNearestPlayerButton = KeyBinding.get("AggroNearestPlayerButtonKB",  KeyMatch.nil);
 	public static KeyBinding kb_aggroAllNonFriendlyPlayers = KeyBinding.get("AggroAllNonFriendlyPlayers",   KeyMatch.nil);
 	public static KeyBinding kb_aggroLastTarget = KeyBinding.get("aggroLastTarget",  KeyMatch.forchar('T', KeyMatch.S));
 	public static KeyBinding kb_peaceCurrentTarget  = KeyBinding.get("peaceCurrentTargetKB",  KeyMatch.forchar('P', KeyMatch.M));
-    public boolean globtype(char key, KeyEvent ev) {
-	if(key == ':') {
+	public static KeyBinding kb_miniStudy = KeyBinding.get("miniStudyKB",  KeyMatch.forchar('S', KeyMatch.M));
+    public boolean globtype(GlobKeyEvent ev) {
+	if(ev.c == ':') {
 	    entercmd();
 	    return(true);
 //	} else if(kb_shoot.key().match(ev) && (Screenshooter.screenurl.get() != null)) {
@@ -1821,6 +1876,17 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 			interactWithNearestObjectThread.start();
 		}
 		return (true);
+	} else if (kb_clickNearestCursorObject.key().match(ev)) {
+		if (interactWithNearestObjectThread == null) {
+			interactWithNearestObjectThread = new Thread(new InteractWithCursorNearest(this), "InteractWithCursorNearest");
+			interactWithNearestObjectThread.start();
+		} else {
+			interactWithNearestObjectThread.interrupt();
+			interactWithNearestObjectThread = null;
+			interactWithNearestObjectThread = new Thread(new InteractWithCursorNearest(this), "InteractWithCursorNearest");
+			interactWithNearestObjectThread.start();
+		}
+		return (true);
 	} else if (kb_enterNearestVehicle.key().match(ev)) {
 		if (enterNearestVehicleThread == null) {
 			enterNearestVehicleThread = new Thread(new EnterNearestVehicle(this), "EnterNearestVehicle");
@@ -1832,6 +1898,17 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 			enterNearestVehicleThread.start();
 		}
 		return (true);
+	} else if (kb_wagonNearestLiftable.key().match(ev)) {
+		if (wagonNearestLiftableThread == null) {
+			wagonNearestLiftableThread = new Thread(new WagonNearestLiftable(this), "WagonNearestLiftable");
+			wagonNearestLiftableThread.start();
+		} else {
+			wagonNearestLiftableThread.interrupt();
+			wagonNearestLiftableThread = null;
+			wagonNearestLiftableThread = new Thread(new WagonNearestLiftable(this), "WagonNearestLiftable");
+			wagonNearestLiftableThread.start();
+		}
+		return (true);
 	} else if(kb_toggleHidingBoxes.key().match(ev)) {
 		OptWnd.toggleGobHidingCheckBox.set(!OptWnd.toggleGobHidingCheckBox.a);
 		return(true);
@@ -1841,6 +1918,11 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 	} else if(kb_toggleGrowthInfo.key().match(ev)) {
 		OptWnd.displayGrowthInfoCheckBox.set(!OptWnd.displayGrowthInfoCheckBox.a);
 		return(true);
+	} else if(kb_toggleCursorItem.key().match(ev)) {
+		toggleCursorItem();
+		return(true);
+	} else if (kb_instantLogout.key().match(ev)) {
+		ui.sess.close();
 	} else if(kb_aggroNearestTargetButton.key().match(ev)) {
 		this.runActionThread(new Thread(new AggroNearestTarget(this), "AggroNearestTarget"));
 		return(true);
@@ -1859,15 +1941,14 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 	} else if(kb_peaceCurrentTarget.key().match(ev)) {
 		peaceCurrentTarget();
 		return(true);
-	} else if((key == 27) && (map != null) && !map.hasfocus) {
+	} else if(kb_miniStudy.key().match(ev)) {
+		miniStudy.show(!miniStudy.visible);
+		return(true);
+	} else if((ev.c == 27) && (map != null) && !map.hasfocus) {
 	    setfocus(map);
 	    return(true);
 	}
-	return(super.globtype(key, ev));
-    }
-    
-    public boolean mousedown(Coord c, int button) {
-	return(super.mousedown(c, button));
+	return(super.globtype(ev));
     }
 
     private int uimode = 1;
@@ -1897,13 +1978,18 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
     }
 
     public void toggleui() {
-	toggleui((uimode + 1) % 3);
+		chat.show(!showUI);
+		mapfile.show(!showUI);
+		Hidepanel[] panels = {brpanel, ulpanel, umpanel, urpanel, menupanel};
+		for(Hidepanel p : panels)
+			p.mshow(!showUI);
+		showUI = !showUI;
     }
 
     public void resize(Coord sz) {
 	super.resize(sz);
 //	chat.resize(sz.x - blpw - brpw);
-	chat.move(new Coord(blpw, sz.y));
+	chat.move(new Coord(0, sz.y));
 	if(map != null)
 	    map.resize(sz);
 	if(prog != null)
@@ -1920,67 +2006,80 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 	resize(parent.sz);
     }
     
-    public void msg(String msg, Color color, Color logcol) {
-	msgtime = Utils.rtime();
-	lastmsg = RootWidget.msgfoundry.render(msg, color);
-	syslog.append(msg, logcol);
-	Gob g = lastInspectedGob;
-		if(g != null) {
-			Matcher m = GobQualityInfo.GOB_Q.matcher(msg);
-			if(m.matches()) {
-				try {
-					int q = Integer.parseInt(m.group(1));
-					g.setQualityInfo(q);
-				} catch (Exception ignored) {}
-				lastInspectedGob = null;
-			}
-		}
+    public static interface LogMessage extends UI.Notice {
+	public ChatUI.Channel.Message logmessage();
     }
 
-    public void msg(String msg, Color color) {
-	msg(msg, color, color);
-    }
-
-    public void msg(String msg, Color color, Audio.Clip sfx) {
-	if (msg.contains("There are no claims under siege"))
+    public boolean msg(UI.Notice msg) {
+	if(msg.handler(this))
+	    return(true);
+	Color color = msg.color();
+	if (msg.message().contains("There are no claims under siege"))
 		color = Color.green;
 	boolean noMsgTho = false;
-	if (msg.startsWith("Swimming is now turned")) {
-		togglebuff(msg, Bufflist.buffswim);
-	} else if (msg.startsWith("Tracking is now turned")) {
-		togglebuff(msg, Bufflist.bufftrack);
-	} else if (msg.startsWith("Criminal acts are now turned")) {
-		togglebuff(msg, Bufflist.buffcrime);
-	} else if (msg.startsWith("Party permissions are now")) {
-		togglebuff(msg, Bufflist.partyperm);
+	if (msg.message().startsWith("Swimming is now turned")) {
+		togglebuff(msg.message(), Bufflist.buffswim);
+	} else if (msg.message().startsWith("Tracking is now turned")) {
+		togglebuff(msg.message(), Bufflist.bufftrack);
+	} else if (msg.message().startsWith("Criminal acts are now turned")) {
+		togglebuff(msg.message(), Bufflist.buffcrime);
+	} else if (msg.message().startsWith("Party permissions are now")) {
+		togglebuff(msg.message(), Bufflist.partyperm);
 		if (!partyPermsOnLoginToggleSet){
 			noMsgTho = true;
-			if((OptWnd.togglePartyPermissionsOnLoginCheckBox.a && msg.endsWith("off.")) || (!OptWnd.togglePartyPermissionsOnLoginCheckBox.a && msg.endsWith("on."))){
+			if((OptWnd.togglePartyPermissionsOnLoginCheckBox.a && msg.message().endsWith("off.")) || (!OptWnd.togglePartyPermissionsOnLoginCheckBox.a && msg.message().endsWith("on."))){
 				wdgmsg("act", "permshare"); // ND: set it again
 			} else {
 				partyPermsOnLoginToggleSet = true;
 			}
 		}
-	} else if (msg.startsWith("Stacking is now")) {
-		togglebuff(msg, Bufflist.itemstacking);
+	} else if (msg.message().startsWith("Stacking is now")) {
+		togglebuff(msg.message(), Bufflist.itemstacking);
 		if (!itemStackingOnLoginToggleSet){
 			noMsgTho = true;
-			if((OptWnd.toggleItemStackingOnLoginCheckBox.a && msg.endsWith("off.")) || (!OptWnd.toggleItemStackingOnLoginCheckBox.a && msg.endsWith("on."))){
+			if((OptWnd.toggleItemStackingOnLoginCheckBox.a && msg.message().endsWith("off.")) || (!OptWnd.toggleItemStackingOnLoginCheckBox.a && msg.message().endsWith("on."))){
 				wdgmsg("act", "itemcomb"); // ND: set it again
 			} else {
 				itemStackingOnLoginToggleSet = true;
 			}
 		}
 	}
-	if ((!noMsgTho && partyPermsOnLoginToggleSet && itemStackingOnLoginToggleSet) || msg.contains("siege")){
-		msg(msg, color);
-		if (!msg.contains("There are no claims under siege"))
-			ui.sfxrl(sfx);
+	ChatUI.Channel.Message logged;
+	if(msg instanceof LogMessage)
+	    logged = ((LogMessage)msg).logmessage();
+	else
+	    logged = new ChatUI.Channel.SimpleMessage(msg.message(), color);
+	if ((!noMsgTho && partyPermsOnLoginToggleSet && itemStackingOnLoginToggleSet) || msg.message().contains("siege")){
+		msgDeque.offerLast( new SysTimedMessage(RootWidget.msgfoundry.render(msg.message(), color), Utils.rtime()) );
+		syslog.append(logged);
+		if (!msg.message().contains("There are no claims under siege"))
+			ui.sfxrl(msg.sfx());
 	}
+	Gob g = lastInspectedGob;
+	if(g != null) {
+		Matcher m = GobQualityInfo.GOB_Q.matcher(msg.message());
+		if(m.matches()) {
+			try {
+				int q = Integer.parseInt(m.group(1));
+				g.setQualityInfo(q);
+			} catch (Exception ignored) {}
+			lastInspectedGob = null;
+		}
+	}
+	return(true);
     }
 
+	public void msg(String msg, Color color, Audio.Clip sfx){
+		msg(new UI.SimpleMessage(msg, color, sfx));
+	}
+
+	public void msg(String msg, Color color){
+		msg(new UI.SimpleMessage(msg, color, null));
+	}
+
 	public void optionInfoMsg(String msg, Color color, Audio.Clip sfx) {
-		msg(msg, color, color);
+		msgDeque.offerLast( new SysTimedMessage(RootWidget.msgfoundry.render(msg, color), Utils.rtime()) );
+		syslog.append(msg, color);
 		double now = Utils.rtime();
 		if(now - lastmsgsfx > 0.1) {
 			ui.sfx(sfx);
@@ -2147,7 +2246,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 //	    return(true);
 //	}
 //    }
-    
+
     {
 //	String val = Utils.getpref("belttype", "n");
 //	if(val.equals("n")) {
@@ -2323,22 +2422,25 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 		}
 
 		public void draw(GOut g) {
-			for(int i = 0; i < 10; i++) {
-				int slot = i + (curbelt * 12);
-				Coord c = beltc(i);
-				g.image(invsq, beltc(i));
-				try {
-					if(belt[slot] != null) {
-						belt[slot].draw(g.reclip(c.add(UI.scale(1), UI.scale(1)), invsq.sz().sub(UI.scale(2), UI.scale(2))));
+			if (showUI) {
+				for (int i = 0; i < 10; i++) {
+					int slot = i + (curbelt * 12);
+					Coord c = beltc(i);
+					g.image(invsq, beltc(i));
+					try {
+						if (belt[slot] != null) {
+							belt[slot].draw(g.reclip(c.add(UI.scale(1), UI.scale(1)), invsq.sz().sub(UI.scale(2), UI.scale(2))));
+						}
+					} catch (Exception ignored) {
 					}
-				} catch(Exception ignored) {}
-				String keybindString = beltkeys[i].key().name();
-				g.aimage(new TexI(Utils.outline2(actBarKeybindsFoundry.render(keybindString).img, Color.BLACK, true)), c.add(invsq.sz().sub(UI.scale(2), 0)), 1, 1);
+					String keybindString = beltkeys[i].key().name();
+					g.aimage(new TexI(Utils.outline2(actBarKeybindsFoundry.render(keybindString).img, Color.BLACK, true)), c.add(invsq.sz().sub(UI.scale(2), 0)), 1, 1);
+				}
+				super.draw(g);
 			}
-			super.draw(g);
 		}
 
-		public boolean globtype(char key, KeyEvent ev) {
+		public boolean globtype(GlobKeyEvent ev) {
 			if (this.visible()) {
 				for (int i = 0; i < beltkeys.length; i++) {
 					if (beltkeys[i].key().match(ev)) {
@@ -2396,32 +2498,34 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 		}
 
 		@Override
-		public boolean mousedown(Coord c, int button) {
-			if ((ui.modshift && button == 1) || button == 2) {
+		public boolean mousedown(MouseDownEvent ev) {
+			if (!showUI)
+				return(false);
+			if (ev.b == 2) {
 				if((dragging != null)) { // ND: I need to do this extra check and remove it in case you do another click before the mouseup. Idk why it has to be done like this, but it solves the issue.
 					dragging.remove();
 					dragging = null;
 				}
 				dragging = ui.grabmouse(this);
-				dc = c;
+				dc = ev.c;
 				return true;
 			}
-			int slot = beltslot(c);
+			int slot = beltslot(ev.c);
 			if (slot != -1) {
-				if (button == 1) {
+				if (ev.b == 1) {
 					use(slot);
-				} else if (button == 3) {
+				} else if (ev.b == 3) {
 					GameUI.this.wdgmsg("setbelt", slot, null);
 					belt[slot] = null;
 					saveLocally();
 				}
 				return(true);
 			}
-			return(super.mousedown(c, button));
+			return(super.mousedown(ev));
 		}
 
 		@Override
-		public boolean mouseup(Coord c, int button) {
+		public boolean mouseup(MouseUpEvent ev) {
 			checkIfOutsideOfUI(); // ND: Prevent the widget from being dragged outside the current window size
 			if((dragging != null)) {
 				dragging.remove();
@@ -2429,16 +2533,16 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 				Utils.setprefc("wndc-actionBar" + barNumber, this.c);
 				return true;
 			}
-			return super.mouseup(c, button);
+			return super.mouseup(ev);
 		}
 
 		@Override
-		public void mousemove(Coord c) {
+		public void mousemove(MouseMoveEvent ev) {
 			if (dragging != null) {
-				this.c = this.c.add(c.x, c.y).sub(dc);
+				this.c = this.c.add(ev.c.x, ev.c.y).sub(dc);
 				return;
 			}
-			super.mousemove(c);
+			super.mousemove(ev);
 		}
 
 		private void use(int slot) {
@@ -2787,6 +2891,58 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Message
 	public void setAreaChatLoaded() {
 		areaChatLoaded = true;
 		areaChatFuture.cancel(true);
+	}
+
+	public void changeCombatDeck(int deck) {
+		if (chrwdg != null && chrwdg.fight != null)
+			chrwdg.fight.changebutton(deck);
+	}
+
+	private void drawHealthMeterBar(GOut g, IMeter.Meter m, Coord sc, Coord msz) {
+		int w = msz.x;
+		int w1 = (int) Math.ceil(w * m.a);
+		int w2 = (int) Math.ceil(w * (IMeter.characterSoftHealthPercent/100));
+		g.chcolor(Fightsess.hpBarYellow);
+		g.frect(sc, new Coord(w1, msz.y));
+		g.chcolor(Fightsess.hpBarRed);
+		g.frect(sc, new Coord(w2, msz.y));
+		g.chcolor(Color.BLACK);
+		g.line(new Coord(sc.x+w1, sc.y), new Coord(sc.x+w1, sc.y+msz.y), 2);
+		g.rect(sc, new Coord(msz.x, msz.y));
+
+		g.chcolor(Color.WHITE);
+		String HHPpercentage = OptWnd.includeHHPTextHealthBarCheckBox.a ? " ("+(Fightsess.fmt1DecPlace((int)(m.a*100))) + "% HHP)" : "";
+		g.aimage(Text.renderstroked((IMeter.characterCurrentHealth + HHPpercentage), Text.num12boldFnd).tex(), new Coord(sc.x+msz.x/2, sc.y+msz.y/2), 0.5, 0.5);
+	}
+
+	private void drawStamMeterBar(GOut g, IMeter.Meter m, Coord sc, Coord msz) {
+		int w = msz.x;
+		int w1 = (int) Math.ceil(w * m.a);
+		g.chcolor(Fightsess.stamBarBlue);
+		g.frect(sc, new Coord(w1, msz.y));
+		g.chcolor(Color.BLACK);
+		g.line(new Coord(sc.x+w1, sc.y), new Coord(sc.x+w1, sc.y+msz.y), 2);
+		g.rect(sc, new Coord(msz.x, msz.y));
+		g.chcolor(Color.WHITE);
+		String staminaBarText = Fightsess.fmt1DecPlace((int)(m.a*100));
+		Gob myself = ui.gui.map.player();
+		if (myself != null && myself.imDrinking) {
+			g.chcolor(new Color(0, 222, 0));
+			staminaBarText = staminaBarText + " (Drinking)";
+		}
+		g.aimage(Text.renderstroked(staminaBarText, Text.num12boldFnd).tex(), new Coord(sc.x+msz.x/2, sc.y+msz.y/2), 0.5, 0.5);
+	}
+
+	public void toggleCursorItem() {
+		if (hand.isEmpty()) {
+			hand.addAll(handSave);
+			handSave.clear();
+			updhand();
+		} else {
+			handSave.addAll(hand);
+			hand.clear();
+			updhand();
+		}
 	}
 
 }
