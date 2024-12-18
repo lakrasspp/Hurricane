@@ -923,6 +923,7 @@ public class OptWnd extends Window {
 	public static CheckBox yourselfDamageInfoCheckBox;
 	public static CheckBox partyMembersDamageInfoCheckBox;
 	public static boolean stamBarLocationIsTop = Utils.getprefb("stamBarLocationIsTop", true);
+	public static boolean healthBarLocationIsTop = Utils.getprefb("healthBarLocationIsTop", true);
 	public class CombatUIPanel extends Panel {
 		public CombatUIPanel(Panel back) {
 			Widget prev;
@@ -988,6 +989,32 @@ public class OptWnd extends Window {
 				prev = expWindowGrp.add("Top Panel", prev.pos("bl").adds(0, 3));
 				prev = expWindowGrp.add("Bottom Panel", prev.pos("ur").adds(30, 0));
 				if (Utils.getprefb("stamBarLocationIsTop", true)){
+					expWindowGrp.check(0);
+				} else {
+					expWindowGrp.check(1);
+				}
+			}
+
+			prev = add(new Label("HP Bar Location:"), prev.pos("bl").adds(0, 8));{
+				RadioGroup expWindowGrp = new RadioGroup(this) {
+					public void changed(int btn, String lbl) {
+						try {
+							if(btn==0) {
+								Utils.setprefb("healthBarLocationIsTop", true);
+								healthBarLocationIsTop = true;
+							}
+							if(btn==1) {
+								Utils.setprefb("healthBarLocationIsTop", false);
+								healthBarLocationIsTop = false;
+							}
+						} catch (Exception e) {
+							throw new RuntimeException(e);
+						}
+					}
+				};
+				prev = expWindowGrp.add("Top Panel", prev.pos("bl").adds(0, 3));
+				prev = expWindowGrp.add("Bottom Panel", prev.pos("ur").adds(30, 0));
+				if (Utils.getprefb("healthBarLocationIsTop", true)){
 					expWindowGrp.check(0);
 				} else {
 					expWindowGrp.check(1);

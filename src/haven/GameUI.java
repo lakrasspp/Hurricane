@@ -1356,7 +1356,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 		IMeter.Meter stam = ui.gui.getmeter("stam", 0);
 		if (stam != null) {
 			Coord msz = UI.scale(new Coord(234, 22));
-			Coord sc = OptWnd.stamBarLocationIsTop ? new Coord(x - msz.x/2,  y + UI.scale(70)) : new Coord(x - msz.x/2,  bottom - UI.scale(68));
+			Coord sc = OptWnd.stamBarLocationIsTop ? new Coord(x - msz.x/2,  y + UI.scale(70)) : new Coord(x - msz.x/2,  bottom - UI.scale(222));
 			drawStamMeterBar(g, stam, sc, msz);
 		}
 	}
@@ -1364,7 +1364,8 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 		IMeter.Meter hp = ui.gui.getmeter("hp", 0);
 		if (hp != null) {
 			Coord msz = UI.scale(new Coord(234, 22));
-			Coord sc = new Coord(x - msz.x/2,  y + UI.scale(44));
+//			Coord sc = new Coord(x - msz.x/2,  y + UI.scale(44));
+			Coord sc = OptWnd.healthBarLocationIsTop ? new Coord(x - msz.x/2,  y + UI.scale(44)) : new Coord(x - msz.x/2,  bottom - UI.scale(245));
 			drawHealthMeterBar(g, hp, sc, msz);
 		}
 	}
