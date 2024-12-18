@@ -995,7 +995,7 @@ public class OptWnd extends Window {
 				}
 			}
 
-			prev = add(new Label("HP Bar Location:"), prev.pos("bl").adds(0, 8));{
+			prev = add(new Label("Health Bar Location:"), prev.pos("bl").adds(-103, 8));{
 				RadioGroup expWindowGrp = new RadioGroup(this) {
 					public void changed(int btn, String lbl) {
 						try {
