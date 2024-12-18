@@ -264,10 +264,10 @@ public class SkelSprite extends Sprite implements Sprite.CUpd, EquipTarget, Spri
     }
     
     public void added(RenderTree.Slot slot) {
-	if (this.res.name.equals("gfx/terobjs/items/hats/propellercap")) {
+	if (this.res.name.equals("gfx/terobjs/items/hats/propellercap") && OptWnd.CoolerHatsCheckBox.a) {
 		slot.cstate(Pipe.Op.compose(Location.rot(new Coord3f(0, 0, 1), 3.15f), Location.rot(new Coord3f(0, 1, 0), -0.2f),
 				Location.scale(1.05f, 1.05f, 1.2f), Location.xlate(new Coord3f(0, 0, -0.5f))));
-	} else if (this.res.name.equals("gfx/terobjs/items/hats/hbicap")) {
+	} else if (this.res.name.equals("gfx/terobjs/items/hats/hbicap") && OptWnd.CoolerHatsCheckBox.a) {
 		slot.cstate(Pipe.Op.compose(Location.rot(new Coord3f(0, 0, 1), 3.15f), Location.rot(new Coord3f(0, 1, 0), 0.2f),
 				Location.scale(1f, 0.9f, 0.8f), Location.xlate(new Coord3f(0.1f, 0, 0.1f))));
 	}

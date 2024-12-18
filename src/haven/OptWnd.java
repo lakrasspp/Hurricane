@@ -3007,6 +3007,7 @@ public class OptWnd extends Window {
 	public static CheckBox disableIndustrialSmokeCheckBox;
 	public static CheckBox disableScentSmokeCheckBox;
 	public static CheckBox flatCupboardsCheckBox;
+	public static CheckBox CoolerHatsCheckBox;
 
 	public class WorldGraphicsSettingsPanel extends Panel {
 
@@ -3221,6 +3222,16 @@ public class OptWnd extends Window {
 					}
 				}
 			}, prev.pos("bl").adds(12, 8));
+			prev = add(CoolerHatsCheckBox = new CheckBox ("Cooler Hats (Requies Restart)") {
+						{
+							a = (Utils.getprefb("CoolerHats", false));
+						}
+
+						public void changed(boolean val) {
+							Utils.setprefb("CoolerHats", val);
+						}
+					}, prev.pos("bl").add(0,2));
+
 
 			Widget backButton;
 			add(backButton = new PButton(UI.scale(200), "Back", 27, back, "Advanced Settings"), prev.pos("bl").adds(0, 18));
