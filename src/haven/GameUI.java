@@ -2912,7 +2912,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 		g.chcolor(Fightsess.hpBarRed);
 		g.frect(sc, new Coord(w2, msz.y));
 		g.chcolor(Color.BLACK);
-		g.line(new Coord(sc.x+w1, sc.y), new Coord(sc.x+w1, sc.y+msz.y), 2);
+		g.line(new Coord(sc.x+w1, sc.y), new Coord(sc.x+w1, sc.y+msz.y), 1);
 		g.rect(sc, new Coord(msz.x, msz.y));
 
 		g.chcolor(Color.WHITE);
@@ -2926,7 +2926,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 		g.chcolor(Fightsess.stamBarBlue);
 		g.frect(sc, new Coord(w1, msz.y));
 		g.chcolor(Color.BLACK);
-		g.line(new Coord(sc.x+w1, sc.y), new Coord(sc.x+w1, sc.y+msz.y), 2);
+		g.line(new Coord(sc.x+w1, sc.y), new Coord(sc.x+w1, sc.y+msz.y), 1);
 		g.rect(sc, new Coord(msz.x, msz.y));
 		g.chcolor(Color.WHITE);
 		String staminaBarText = Fightsess.fmt1DecPlace((int)(m.a*100));
