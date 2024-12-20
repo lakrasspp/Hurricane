@@ -1785,6 +1785,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	public static KeyBinding kb_toggleCursorItem = KeyBinding.get("toggleCursorItemKB",  KeyMatch.nil);
 	public static KeyBinding kb_instantLogout = KeyBinding.get("instantLogoutKB",  KeyMatch.nil);
 	public static KeyBinding kb_pushNearestPlayer = KeyBinding.get("pushNearestKB", KeyMatch.nil);
+	public static KeyBinding kb_pushCurrentPlayer = KeyBinding.get("pushCurrentKB", KeyMatch.nil);
 	public static KeyBinding kb_aggroNearestTargetButton = KeyBinding.get("AggroNearestTargetButtonKB",  KeyMatch.forcode(KeyEvent.VK_SPACE, KeyMatch.S));
 	public static KeyBinding kb_aggroOrTargetNearestCursor = KeyBinding.get("AggroOrTargetNearestCursorButtonKB",  KeyMatch.nil);
 	public static KeyBinding kb_aggroNearestPlayerButton = KeyBinding.get("AggroNearestPlayerButtonKB",  KeyMatch.nil);
@@ -1927,6 +1928,9 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 		ui.sess.close();
 	} else if(kb_pushNearestPlayer.key().match(ev)) {
 		this.runActionThread(new Thread(new PushNearestPlayer(this), "PushNearestPlayer"));
+		return(true);
+	} else if(kb_pushCurrentPlayer.key().match(ev)) {
+		this.runActionThread(new Thread(new PushCurrentTarget(this), "PushCurrentPlayer"));
 		return(true);
 	} else if(kb_aggroNearestTargetButton.key().match(ev)) {
 		this.runActionThread(new Thread(new AggroNearestTarget(this), "AggroNearestTarget"));
