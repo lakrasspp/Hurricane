@@ -78,7 +78,7 @@ public class AnimSprite extends Sprite {
     }
 
     public void added(RenderTree.Slot slot) {
-	if (this.res.name.equals("gfx/terobjs/items/hats/hipstersskullcap")) {
+	if (this.res.name.equals("gfx/terobjs/items/hats/hipstersskullcap") && OptWnd.CoolerHatsCheckBox.a) {
 		slot.cstate(Pipe.Op.compose(Location.rot(new Coord3f(0, 0, 1), 3.15f), Location.rot(new Coord3f(0, 1, 0), 0.2f),
 				Location.scale(1.2f, 1.1f, 1.1f), Location.xlate(new Coord3f(0, 0, -0.1f))));
 	}
