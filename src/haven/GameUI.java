@@ -27,9 +27,7 @@
 package haven;
 
 import java.awt.image.BufferedImage;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.util.*;
 import java.awt.Color;
 import java.awt.event.KeyEvent;
@@ -1794,6 +1792,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	public static KeyBinding kb_peaceCurrentTarget  = KeyBinding.get("peaceCurrentTargetKB",  KeyMatch.forchar('P', KeyMatch.M));
 	public static KeyBinding kb_miniStudy = KeyBinding.get("miniStudyKB",  KeyMatch.forchar('S', KeyMatch.M));
 	public static KeyBinding kb_traverse = KeyBinding.get("kb_traverse", KeyMatch.forchar('A', KeyMatch.S));
+	public static KeyBinding kb_yap = KeyBinding.get("kb_yap", KeyMatch.nil);
     public boolean globtype(GlobKeyEvent ev) {
 	if(ev.c == ':') {
 	    entercmd();
@@ -1949,7 +1948,15 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	} else if(kb_traverse.key().match(ev)) {
 		this.runActionThread(new Thread(new Traverse(this), "Traverse"));
 		return (true);
-	} else if((ev.c == 27) && (map != null) && !map.hasfocus) {
+	} else if(kb_yap.key().match(ev)) {
+		Map<String, ChatUI.MultiChat> chats = ui.gui.chat.getMultiChannels();
+        try {
+            chats.get("Area Chat").send(yapper());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+		return(true);
+    } else if((ev.c == 27) && (map != null) && !map.hasfocus) {
 	    setfocus(map);
 	    return(true);
 	}
@@ -2948,6 +2955,18 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 			hand.clear();
 			updhand();
 		}
+	}
+
+	public String yapper() throws Exception {
+		File file = new File("yap/text.txt");
+		final RandomAccessFile f = new RandomAccessFile(file, "r");
+		final long randomLocation = (long) (Math.random() * f.length());
+		f.seek(randomLocation);
+		f.readLine();
+		String randomLine = f.readLine();
+		f.close();
+		return randomLine;
+
 	}
 
 }
