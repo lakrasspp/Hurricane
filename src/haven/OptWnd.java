@@ -426,6 +426,8 @@ public class OptWnd extends Window {
 	public static HSlider quernSoundVolumeSlider;
 	public static HSlider cauldronSoundVolumeSlider;
 	public static HSlider squeakSoundVolumeSlider;
+	public static HSlider butcherSoundVolumeSlider;
+	public static HSlider whiteDuckCapSoundVolumeSlider;
 	private final int audioSliderWidth = 220;
 
     public class AudioPanel extends Panel {
@@ -556,6 +558,24 @@ public class OptWnd extends Window {
 			}
 		}, prev.pos("bl").adds(0, 2));
 
+		prev = add(new Label("Butcher Sound Volume"), prev.pos("bl").adds(0, 5).x(0));
+		prev = add(butcherSoundVolumeSlider = new HSlider(UI.scale(audioSliderWidth), 0, 100, Utils.getprefi("butcherSoundVolume", 75)) {
+			protected void attach(UI ui) {
+				super.attach(ui);
+			}
+			public void changed() {
+				Utils.setprefi("butcherSoundVolume", val);
+			}
+		}, prev.pos("bl").adds(0, 2));
+		prev = add(new Label("White Duck Cap Sound Volume"), prev.pos("bl").adds(0, 5).x(0));
+		prev = add(whiteDuckCapSoundVolumeSlider = new HSlider(UI.scale(audioSliderWidth), 0, 100, Utils.getprefi("whiteDuckCapSoundVolume", 75)) {
+			protected void attach(UI ui) {
+				super.attach(ui);
+			}
+			public void changed() {
+				Utils.setprefi("whiteDuckCapSoundVolume", val);
+			}
+		}, prev.pos("bl").adds(0, 2));
 
 	    add(new PButton(UI.scale(200), "Back", 27, back, "Options            "), prev.pos("bl").adds(0, 30));
 	    pack();
@@ -1342,6 +1362,7 @@ public class OptWnd extends Window {
 	public static CheckBox showBeastDangerRadiiCheckBox;
 	public static CheckBox showBeeSkepsRadiiCheckBox;
 	public static CheckBox showFoodTroughsRadiiCheckBox;
+	public static CheckBox showMoundBedsRadiiCheckBox;
 	public static CheckBox showBarrelContentsTextCheckBox;
 	public static CheckBox showIconSignTextCheckBox;
 	public static CheckBox drawChaseVectorsCheckBox;
@@ -1713,7 +1734,7 @@ public class OptWnd extends Window {
 					}
 					a = val;
 				}
-			}, leftColumn.pos("bl").adds(0, 2));
+			}, leftColumn.pos("bl").adds(0, 12));
 			enableMineSweeperCheckBox.tooltip = enableMineSweeperTooltip;
 			leftColumn = add(new Label("Sweeper Display Duration (Min):"), leftColumn.pos("bl").adds(0, 2));
 			leftColumn.tooltip = RichText.render("Use this to set how long you want the numbers to be displayed on the ground, in minutes. The numbers will be visible as long as the dust particle effect stays on the tile." +
@@ -1910,6 +1931,18 @@ public class OptWnd extends Window {
 				}
 			}, middleColumn.pos("bl").adds(0, 2));
 			showFoodTroughsRadiiCheckBox.tooltip = showFoodThroughsRadiiTooltip;
+			middleColumn = add(showMoundBedsRadiiCheckBox = new CheckBox("Show Mound Beds Radii"){
+				{a = (Utils.getprefb("showMoundBedsRadii", false));}
+				public void set(boolean val) {
+					Utils.setprefb("showMoundBedsRadii", val);
+					a = val;
+					if (ui != null && ui.gui != null){
+						ui.sess.glob.oc.gobAction(Gob::updateMoundBedsRadius);
+						ui.gui.optionInfoMsg("Mound Beds Radii are now " + (val ? "SHOWN" : "HIDDEN") + "!", (val ? msgGreen : msgGray), Audio.resclip(val ? Toggle.sfxon : Toggle.sfxoff));
+					}
+				}
+			}, middleColumn.pos("bl").adds(0, 2));
+			showMoundBedsRadiiCheckBox.tooltip = showMoundBedsRadiiTooltip;
 			middleColumn = add(showBarrelContentsTextCheckBox = new CheckBox("Show Barrel Contents Text"){
 				{a = (Utils.getprefb("showBarrelContentsText", true));}
 				public void set(boolean val) {
@@ -4603,6 +4636,7 @@ public class OptWnd extends Window {
 			"\n$col[185,185,185]{Select from below what states you want to be highlighted, and what colors you want each of them to show.}", UI.scale(330));
 	private final Object showBeeSkepsRadiiTooltip = RichText.render("$col[218,163,0]{Action Button:} $col[185,185,185]{This setting can also be turned on/off using an action button from the menu grid (Custom Client Extras → Toggles).}", UI.scale(320));
 	private final Object showFoodThroughsRadiiTooltip = RichText.render("$col[218,163,0]{Action Button:} $col[185,185,185]{This setting can also be turned on/off using an action button from the menu grid (Custom Client Extras → Toggles).}", UI.scale(320));
+	private final Object showMoundBedsRadiiTooltip = RichText.render("$col[218,163,0]{Action Button:} $col[185,185,185]{This setting can also be turned on/off using an action button from the menu grid (Custom Client Extras → Toggles).}", UI.scale(320));
 	private final Object drawChaseVectorsTooltip = RichText.render("If this setting is enabled, colored lines will be drawn between chasers and chased targets." +
 			"\n=====================" +
 			"\n$col[255,255,255]{White: }You are the chaser." +

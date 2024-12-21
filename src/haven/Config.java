@@ -41,7 +41,7 @@ public class Config {
     public static final String confid = "Hurricane";
     public static final Variable<Boolean> par = Variable.def(() -> true);
     public final Properties localprops = getlocalprops();
-	public static final String clientVersion = "v1.17";
+	public static final String clientVersion = "v1.18";
 	public static String githubLatestVersion = "Loading...";
 
     private static Config global = null;
@@ -913,7 +913,6 @@ public class Config {
 		cures.put("paginae/wound/blackeye", new String[]{
 				"gfx/invobjs/hartshornsalve",
 				"gfx/invobjs/honeybroadaid",
-				"gfx/invobjs/rootfill",
 				"gfx/invobjs/toadbutter"
 		});
 		cures.put("paginae/wound/bladekiss", new String[]{
@@ -1026,6 +1025,12 @@ public class Config {
 		});
 		cures.put("paginae/wound/wretchedgore", new String[]{
 				"gfx/invobjs/stitchpatch"
+		});
+		cures.put("paginae/wound/soresnout", new String[]{
+				"gfx/invobjs/antpaste",
+				"gfx/invobjs/mudointment",
+				"gfx/invobjs/toadbutter",
+				"gfx/invobjs/graygrease"
 		});
 	}
 
