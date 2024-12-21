@@ -1285,7 +1285,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	    PUtils.blendblit(buf, progt.f[fr + 1][0].scaled().getRaster(), Coord.z, bf);
 
 		BufferedImage img = PUtils.rasterimg(buf);
-		BufferedImage txt = Text.renderstroked(String.format("%d%%", (int) (100 * prog))).img;
+		BufferedImage txt = Text.renderstroked(String.format("%d%%", (int) (100 * prog)),Text.num16boldFnd).img;
 		img.getGraphics().drawImage(txt, (img.getWidth() - txt.getWidth()) / 2, UI.scale(8) - txt.getHeight() / 2, null);
 
 	    if(this.curi != null)
