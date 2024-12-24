@@ -42,7 +42,7 @@ public class GobHealth extends GAttrib implements Gob.SetupMod {
 	if(level >= 0) {
 	    Random rnd = g.mkrandoom();
 	    this.fx = Pipe.Op.compose(
-				      new ColorMask(new Color(255, 0, 0, 128 - (Math.round(hp * 64)))));
+				      new ColorMask(new Color(255, 0, 0, 128 - (Math.round(hp * 128)))));
 	} else {
 	    this.fx = null;
 	}
