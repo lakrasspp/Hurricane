@@ -1813,8 +1813,8 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 				if (playerc != null && clickc != null) {
 //					g.chcolor(Color.BLACK);
 //					g.line(playerc, clickc, 4);
-					g.chcolor(Color.WHITE);
-					g.line(playerc, clickc, 2);
+					g.chcolor(OptWnd.drawYourCurrentPathColorOptionWidget.currentColor);
+					g.line(playerc, clickc, 2.5);
 				}
 			}
 		} catch (Exception ignored) {

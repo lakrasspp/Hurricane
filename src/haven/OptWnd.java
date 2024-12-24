@@ -1367,6 +1367,8 @@ public class OptWnd extends Window {
 	public static CheckBox showIconSignTextCheckBox;
 	public static CheckBox drawChaseVectorsCheckBox;
 	public static CheckBox drawYourCurrentPathCheckBox;
+	public static ColorOptionWidget drawYourCurrentPathColorOptionWidget;
+	public static String[] drawYourCurrentPathColorSetting = Utils.getprefsa("currentPath" + "_colorSetting", new String[]{"255", "255", "255", "120"});
 	public static CheckBox highlightCliffsCheckBox;
 	public static ColorOptionWidget highlightCliffsColorOptionWidget;
 	public static String[] highlightCliffsColorSetting = Utils.getprefsa("highlightCliffs" + "_colorSetting", new String[]{"255", "0", "0", "200"});
@@ -1996,13 +1998,25 @@ public class OptWnd extends Window {
 					Utils.setprefb("drawChaseVectors", val);
 				}
 			}, UI.scale(480, 0));
+			drawChaseVectorsCheckBox.tooltip = drawChaseVectorsTooltip;
 			rightColumn = add(drawYourCurrentPathCheckBox = new CheckBox("Draw Your Current Path"){
 				{a = Utils.getprefb("drawYourCurrentPath", false);}
 				public void changed(boolean val) {
 					Utils.setprefb("drawYourCurrentPath", val);
 				}
 			}, rightColumn.pos("bl").adds(0, 2));
-			drawChaseVectorsCheckBox.tooltip = drawChaseVectorsTooltip;
+			rightColumn = add(drawYourCurrentPathColorOptionWidget = new ColorOptionWidget("Your path color:", "yourCurrentPath", 115, Integer.parseInt(drawYourCurrentPathColorSetting[0]), Integer.parseInt(drawYourCurrentPathColorSetting[1]), Integer.parseInt(drawYourCurrentPathColorSetting[2]), Integer.parseInt(drawYourCurrentPathColorSetting[3]), (Color col) -> {
+				if (ui != null && ui.gui != null) {
+					ui.sess.glob.oc.gobAction(Gob::updateSpeedBuffAuras);
+				}
+			}){}, rightColumn.pos("bl").adds(0, 2));
+			add(new Button(UI.scale(70), "Reset", false).action(() -> {
+				Utils.setprefsa("drawYourCurrentPath" + "_colorSetting", new String[]{"255", "255", "255", "120"});
+				drawYourCurrentPathColorOptionWidget.cb.colorChooser.setColor(drawYourCurrentPathColorOptionWidget.currentColor = new Color(255, 255, 255, 120));
+				if (ui != null && ui.gui != null) {
+					ui.sess.glob.oc.gobAction(Gob::updateSpeedBuffAuras);
+				}
+			}), drawYourCurrentPathColorOptionWidget.pos("ur").adds(10, 0));
 			rightColumn = add(highlightPartyMembersCheckBox = new CheckBox("Highlight Party Members"){
 				{a = Utils.getprefb("highlightPartyMembers", false);}
 				public void changed(boolean val) {
