@@ -15,7 +15,7 @@ public class CurrentTargetSprite extends Sprite {
 
     static {
 	final Coord2d[][] shapes = new Coord2d[4][4];
-	final Coord2d offset = new Coord2d(8, 0);
+	final Coord2d offset = new Coord2d(10, 0);
 	final int thickness = 5;
 	{
 	    shapes[0][0] = offset.rotate(Math.toRadians(45 - thickness));
@@ -39,7 +39,7 @@ public class CurrentTargetSprite extends Sprite {
 		shapes[3][3] = offset.rotate(Math.toRadians(270 + thickness));
 
 	}
-	mesh = makeMesh(shapes, col.color(), 0.55F);
+	mesh = makeMesh(shapes, col.color(), 1.2F);
     }
 
     public CurrentTargetSprite(final Gob g) {

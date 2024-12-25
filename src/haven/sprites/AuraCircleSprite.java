@@ -11,6 +11,6 @@ public class AuraCircleSprite extends ColoredCircleSprite {
         super(g, col, 0f, 10f, 0.45f);
     }
     public AuraCircleSprite(final Gob g, final Color col, float size) {
-        super(g, col, 0f, size, 0.45f);
+        super(g, col, 0f, size, 1.2F);
     }
 }
