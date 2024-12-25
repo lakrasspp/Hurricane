@@ -599,6 +599,8 @@ public class OptWnd extends Window {
 	public static CheckBox soundAlertForFinishedCuriositiesCheckBox;
 	public static CheckBox alwaysShowCombatUIStaminaBarCheckBox;
 	public static CheckBox alwaysShowCombatUIHealthBarCheckBox;
+	public static CheckBox drawPlayerSpeedBarCheckBox;
+	public static CheckBox drawTargetSpeedBarCheckbox;
 	public static HSlider mapZoomSpeedSlider;
 	public static CheckBox alwaysOpenMiniStudyOnLoginCheckBox;
 
@@ -2017,6 +2019,20 @@ public class OptWnd extends Window {
 					ui.sess.glob.oc.gobAction(Gob::updateSpeedBuffAuras);
 				}
 			}), drawYourCurrentPathColorOptionWidget.pos("ur").adds(10, 0));
+
+			rightColumn = add(drawPlayerSpeedBarCheckBox = new CheckBox("Draw Player Speed Bar"){
+				{a = Utils.getprefb("drawSpeedBar", false);}
+				public void changed(boolean val) {
+					Utils.setprefb("drawSpeedBar", val);
+				}
+			}, rightColumn.pos("bl").adds(0, 2));
+			rightColumn = add(drawTargetSpeedBarCheckbox = new CheckBox("Draw Current Targeted Player Speed Bar"){
+				{a = Utils.getprefb("drawTargetSpeedBar", false);}
+				public void changed(boolean val) {
+					Utils.setprefb("drawTargetSpeedBar", val);
+				}
+			}, rightColumn.pos("bl").add(0, 2));
+
 			rightColumn = add(highlightPartyMembersCheckBox = new CheckBox("Highlight Party Members"){
 				{a = Utils.getprefb("highlightPartyMembers", false);}
 				public void changed(boolean val) {

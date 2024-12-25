@@ -1367,8 +1367,41 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 		}
 	}
 
+
+
+	if(OptWnd.drawPlayerSpeedBarCheckBox.a && showUI) {
+		Coord msz = UI.scale(new Coord(235,22));
+		Coord sc = new Coord(x - msz.x/2,  bottom - UI.scale(275));
+		Gob player = ui.gui.map.player();
+		drawSpeedBar(g, player, sc, msz);
+	}
+
+	if(OptWnd.drawTargetSpeedBarCheckbox.a && this.fv != null && showUI) {
+		Gob currEnemy = getEnemy();
+		Coord msz = UI.scale(new Coord(235, 22));
+		Coord sc = new Coord(x - msz.x/2,  y + UI.scale(44));
+
+		if(currEnemy != null && currEnemy.getres().name.contains("gfx/borka")) {
+			drawSpeedBar(g, currEnemy, sc, msz);
+		}
+		}
+
     }
-    
+
+	private Gob getEnemy() {
+		if (fv.current != null) {
+			long id = fv.current.gobid;
+			synchronized (map.glob.oc) {
+				for (Gob gob : map.glob.oc) {
+					if (gob.id == id) {
+						return gob;
+					}
+				}
+			}
+		}
+		return null;
+	}
+
     private String iconconfname() {
 	StringBuilder buf = new StringBuilder();
 	buf.append("data/mm-icons-2");
@@ -2963,6 +2996,10 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 			staminaBarText = staminaBarText + " (Drinking)";
 		}
 		g.aimage(Text.renderstroked(staminaBarText, Text.num12boldFnd).tex(), new Coord(sc.x+msz.x/2, sc.y+msz.y/2), 0.5, 0.5);
+	}
+
+	private void drawSpeedBar(GOut g, Gob target, Coord sc, Coord msz) {
+		g.aimage(Text.renderstroked(String.format("%.2f", target.gobSpeed), Text.num16boldFnd).tex(), new Coord(sc.x+msz.x/2, sc.y+msz.y/2), 0.5,0.5);
 	}
 
 	public void toggleCursorItem() {
