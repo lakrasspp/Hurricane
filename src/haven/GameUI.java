@@ -2999,7 +2999,9 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	}
 
 	private void drawSpeedBar(GOut g, Gob target, Coord sc, Coord msz) {
-		g.aimage(Text.renderstroked(String.format("%.2f", target.gobSpeed), Text.num16boldFnd).tex(), new Coord(sc.x+msz.x/2, sc.y+msz.y/2), 0.5,0.5);
+		if(target != null) {
+			g.aimage(Text.renderstroked(String.format("%.2f", target.gobSpeed), Text.num16boldFnd).tex(), new Coord(sc.x + msz.x / 2, sc.y + msz.y / 2), 0.5, 0.5);
+		}
 	}
 
 	public void toggleCursorItem() {
