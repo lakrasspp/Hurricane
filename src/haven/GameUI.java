@@ -1126,7 +1126,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 		    {add(cref);}
 
 		    protected Coord getc() {
-			return(new Coord(10, GameUI.this.sz.y - chat.sz.y - this.sz.y - UI.scale( 26)));
+			return(new Coord(10, GameUI.this.sz.y - chat.sz.y - this.sz.y - UI.scale( 100)));
 		    }
 
 		    public void cdestroy(Widget ch) {
