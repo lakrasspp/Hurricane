@@ -2919,6 +2919,15 @@ public class OptWnd extends Window {
 									ui.gui.map.setcam("Ortho");
 								}
 							}
+							if(btn==2) {
+								Utils.setpref("defcam", "TopDown");
+								setFreeCameraSettingsVisibility(false);
+								setOrthoCameraSettingsVisibility(false);
+								MapView.currentCamera = 3;
+								if (ui != null && ui.gui != null && ui.gui.map != null) {
+									ui.gui.map.setcam("TopDown");
+								}
+							}
 						} catch (Exception e) {
 							throw new RuntimeException(e);
 						}
@@ -2926,6 +2935,7 @@ public class OptWnd extends Window {
 				};
 			TopPrev = camGrp.add("Free Camera", TopPrev.pos("bl").adds(16, 2));
 			TopPrev = camGrp.add("Ortho Camera", TopPrev.pos("bl").adds(0, 1));
+			TopPrev = camGrp.add("Top Down Camera", TopPrev.pos("bl").adds(0, 1));
 			TopPrev = add(new Label("Selected Camera Settings:"), TopPrev.pos("bl").adds(0, 6).x(0));
 			// ND: The Ortho Camera Settings
 			OrthoPrev = add(reverseOrthoCameraAxesCheckBox = new CheckBox("Reverse Ortho Look Axis"){
@@ -3040,13 +3050,20 @@ public class OptWnd extends Window {
 				setOrthoCameraSettingsVisibility(false);
 				MapView.currentCamera = 1;
 			}
-			else {
+			else if(startupSelectedCamera.equals("Ortho")){
 				camGrp.check(1);
 				Utils.setpref("defcam", "Ortho");
 				setFreeCameraSettingsVisibility(false);
 				setOrthoCameraSettingsVisibility(true);
 				MapView.currentCamera = 2;
 			}
+			else {
+					camGrp.check(2);
+					Utils.setpref("defcam", "TopDown");
+					setFreeCameraSettingsVisibility(false);
+					setOrthoCameraSettingsVisibility(false);
+					MapView.currentCamera = 3;
+				}
 			}
 
 			Widget backButton;

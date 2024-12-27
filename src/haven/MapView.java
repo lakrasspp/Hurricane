@@ -97,7 +97,7 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
     public abstract class Camera implements Pipe.Op {
 	protected haven.render.Camera view = new haven.render.Camera(Matrix4f.identity());
 	protected Projection proj = new Projection(Matrix4f.identity());
-	
+
 	public Camera() {
 	    resized();
 	}
@@ -127,13 +127,13 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 	    proj.apply(p);
 	    view.apply(p);
 	}
-	
+
 	public abstract float angle();
 	public abstract void tick(double dt);
 
 	public String stats() {return("N/A");}
     }
-    
+
     public class FollowCam extends Camera {
 	private final float fr = 0.0f, h = 10.0f;
 	private float ca, cd;
@@ -142,23 +142,23 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 	private float angl, tangl;
 	private Coord dragorig = null;
 	private float anglorig;
-	
+
 	public FollowCam() {
 	    elev = telev = (float)Math.PI / 6.0f;
 	    angl = tangl = 0.0f;
 	}
-	
+
 	public void resized() {
 	    ca = (float)sz.y / (float)sz.x;
 	    cd = 400.0f * ca;
 	}
-	
+
 	public boolean click(Coord c) {
 	    anglorig = tangl;
 	    dragorig = c;
 	    return(true);
 	}
-	
+
 	public void drag(Coord c) {
 	    tangl = anglorig + ((float)(c.x - dragorig.x) / 100.0f);
 	    tangl = tangl % ((float)Math.PI * 2.0f);
@@ -182,14 +182,14 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 	    elev += (telev - elev) * (float)(1.0 - Math.pow(500, -dt));
 	    if(Math.abs(telev - elev) < 0.0001)
 		elev = telev;
-	    
+
 	    float dangl = tangl - angl;
 	    while(dangl >  Math.PI) dangl -= (float)(2 * Math.PI);
 	    while(dangl < -Math.PI) dangl += (float)(2 * Math.PI);
 	    angl += dangl * (float)(1.0 - Math.pow(500, -dt));
 	    if(Math.abs(tangl - angl) < 0.0001)
 		angl = tangl;
-	    
+
 	    Coord3f cc = getcc().invy();
 	    if(curc == null)
 		curc = cc;
@@ -209,7 +209,7 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 		    curc = tgtc;
 		tangl = curc.xyangle(cambase);
 	    }
-	    
+
 	    float field = field(elev);
 	    view = haven.render.Camera.pointed(curc.add(camoff).add(0.0f, 0.0f, h), dist(elev), elev, angl);
 	    proj = Projection.frustum(-field, field, -ca * field, ca * field, 1, 2000);
@@ -218,7 +218,7 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 	public float angle() {
 	    return(angl);
 	}
-	
+
 	private static final float maxang = (float)(Math.PI / 2 - 0.1);
 	private static final float mindist = 50.0f;
 	public boolean wheel(Coord c, int amount) {
@@ -248,18 +248,18 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 	    Coord3f cc = getcc().invy();
 	    view = haven.render.Camera.pointed(cc.add(camoff).add(0.0f, 0.0f, 15f), dist, elev, angl);
 	}
-	
+
 	public float angle() {
 	    return(angl);
 	}
-	
+
 	public boolean click(Coord c) {
 	    elevorig = elev;
 	    anglorig = angl;
 	    dragorig = c;
 	    return(true);
 	}
-	
+
 	public void drag(Coord c) {
 	    elev = elevorig - ((float)(c.y - dragorig.y) / 100.0f);
 	    if(elev < 0.0f) elev = 0.0f;
@@ -378,6 +378,89 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 		}
     }
     static {camtypes.put("Free", FreeCam.class);}
+
+
+	public class TopDownCam extends Camera {
+		private final float pi2 = (float) (Math.PI * 2);
+		private Coord3f cc;
+		private float dist = 500.0f;
+		private final float elev = (float) Math.toRadians(88);
+		protected float field = (float) (100 * Math.sqrt(2));
+		private float tfield = field;
+		private Coord dragorig = null;
+		private float angl = 0.0f;
+		private float tangl = angl;
+		private float anglorig;
+
+		public TopDownCam() {
+
+		}
+
+		public void tick2(double dt) {
+			Coord3f cc = getcc();
+			if (OptWnd.flatWorldCheckBox.a)
+				cc.z = 0;
+			cc.y = -cc.y;
+			this.cc = cc;
+		}
+
+		public void tick(double dt) {
+			tick2(dt);
+			float aspect = ((float) sz.y) / ((float) sz.x);
+
+			//Smooth transition for angle
+			angl = angl + ((tangl - angl) * (1f - (float) Math.pow(500, -dt)));
+			while (angl > pi2) {
+				angl -= pi2;
+				tangl -= pi2;
+				anglorig -= pi2;
+			}
+			while (angl < 0) {
+				angl += pi2;
+				tangl += pi2;
+				anglorig += pi2;
+			}
+			if (Math.abs(tangl - angl) < 0.001)
+				angl = tangl;
+
+			//Smooth transition for zoom in/out
+			field = field + ((tfield - field) * (1f - (float) Math.pow(500, -dt)));
+			if (Math.abs(tfield - field) < 0.1)
+				field = tfield;
+
+			view =  haven.render.Camera.pointed(cc.add(camoff).add(0.0f, 0.0f, 15f), dist, elev, angl);
+			proj = Projection.ortho(-field, field, -field * aspect, field * aspect, 1, 5000);
+		}
+
+		public float angle() {return (angl);}
+
+		public boolean click(Coord c) {
+			anglorig = angl;
+			dragorig = c;
+			return (true);
+		}
+
+		public void drag(Coord c) {
+			tangl = anglorig + ((float) (c.x - dragorig.x) / 100.0f);
+		}
+
+		public void release() {
+			tangl = (float) (Math.floor((tangl + Math.PI / 4) / (Math.PI / 2)) * Math.PI / 2);
+		}
+
+		private void chfield(float nf) {
+			tfield = nf;
+		}
+
+		public boolean wheel(Coord c, int amount) {
+			chfield(tfield + amount * (int)(OptWnd.freeCamZoomSpeedSlider.val * 0.25));
+			return (true);
+		}
+
+		public String stats() {return (String.format("%f", dist));}
+
+	}
+	static {camtypes.put("TopDown", TopDownCam.class);}
     
     public class OrthoCam extends Camera {
 	public boolean exact = true;
