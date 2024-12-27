@@ -1350,11 +1350,13 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	int x = (int)(ui.gui.sz.x / 2.0);
 	int y = (int)(ui.gui.sz.y - ((ui.gui.sz.y / 500.0) * OptWnd.combatUITopPanelHeightSlider.val));
 	int bottom = (int)(ui.gui.sz.y - ((ui.gui.sz.y / 500.0) * OptWnd.combatUIBottomPanelHeightSlider.val));
+	int bottomCombatUI = (int)(ui.gui.sz.y - ((ui.gui.sz.y / 500.0) * OptWnd.bottomCombatUIPanelHeighSlider.val));
+
 	if (OptWnd.alwaysShowCombatUIStaminaBarCheckBox.a && showUI) {
 		IMeter.Meter stam = ui.gui.getmeter("stam", 0);
 		if (stam != null) {
 			Coord msz = UI.scale(new Coord(234, 22));
-			Coord sc = OptWnd.stamBarLocationIsTop ? new Coord(x - msz.x/2,  y + UI.scale(70)) : new Coord(x - msz.x/2,  bottom - UI.scale(222));
+			Coord sc = OptWnd.stamBarLocationIsTop ? new Coord(x - msz.x/2,  y + UI.scale(70)) : new Coord(x - msz.x/2,  bottomCombatUI - UI.scale(222));
 			drawStamMeterBar(g, stam, sc, msz);
 		}
 	}
@@ -1362,7 +1364,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 		IMeter.Meter hp = ui.gui.getmeter("hp", 0);
 		if (hp != null) {
 			Coord msz = UI.scale(new Coord(234, 22));
-			Coord sc = OptWnd.healthBarLocationIsTop ? new Coord(x - msz.x/2,  y + UI.scale(44)) : new Coord(x - msz.x/2,  bottom - UI.scale(245));
+			Coord sc = OptWnd.healthBarLocationIsTop ? new Coord(x - msz.x/2,  y + UI.scale(44)) : new Coord(x - msz.x/2,  bottomCombatUI - UI.scale(245));
 			drawHealthMeterBar(g, hp, sc, msz);
 		}
 	}
@@ -1371,7 +1373,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 
 	if(OptWnd.drawPlayerSpeedBarCheckBox.a && showUI) {
 		Coord msz = UI.scale(new Coord(235,22));
-		Coord sc = new Coord(x - msz.x/2,  bottom - UI.scale(275));
+		Coord sc = new Coord(x - msz.x/2,  bottomCombatUI - UI.scale(275));
 		Gob player = ui.gui.map.player();
 		drawSpeedBar(g, player, sc, msz);
 	}

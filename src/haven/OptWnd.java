@@ -938,6 +938,7 @@ public class OptWnd extends Window {
 	public static TextEntry minimumOpeningTextEntry;
 	public static HSlider combatUITopPanelHeightSlider;
 	public static HSlider combatUIBottomPanelHeightSlider;
+	public static HSlider bottomCombatUIPanelHeighSlider;
 	public static CheckBox toggleGobDamageInfoCheckBox;
 	public static CheckBox toggleGobDamageWoundInfoCheckBox;
 	public static CheckBox toggleGobDamageArmorInfoCheckBox;
@@ -968,6 +969,16 @@ public class OptWnd extends Window {
 			}, prev.pos("bl").adds(0, 2));
 			add(new Button(UI.scale(70), "Reset", false).action(() -> {
 				combatUIBottomPanelHeightSlider.val = 100;
+				Utils.setprefi("combatBottomPanelHeight", 100);
+			}), prev.pos("bl").adds(210, -20));
+			prev = add(new Label("Bottom HP/Stam panel height:"), prev.pos("bl").adds(0, 10));
+			prev = add(bottomCombatUIPanelHeighSlider = new HSlider(UI.scale(200), 10, 480, Utils.getprefi("bottomCombatBottomPanelHeight", 100)) {
+				public void changed() {
+					Utils.setprefi("bottomCombatBottomPanelHeight", val);
+				}
+			}, prev.pos("bl").adds(0, 2));
+			add(new Button(UI.scale(70), "Reset", false).action(() -> {
+				bottomCombatUIPanelHeighSlider.val = 100;
 				Utils.setprefi("combatBottomPanelHeight", 100);
 			}), prev.pos("bl").adds(210, -20));
 			prev = add(showCombatHotkeysUICheckBox = new CheckBox("Show Combat Move Hotkeys (Bottom Panel)"){
