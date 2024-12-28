@@ -1829,6 +1829,8 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	public static KeyBinding kb_miniStudy = KeyBinding.get("miniStudyKB",  KeyMatch.forchar('S', KeyMatch.M));
 	public static KeyBinding kb_traverse = KeyBinding.get("kb_traverse", KeyMatch.forchar('A', KeyMatch.S));
 	public static KeyBinding kb_yap = KeyBinding.get("kb_yap", KeyMatch.nil);
+	public static KeyBinding kb_autoDistance = KeyBinding.get("kb_autoDistance", KeyMatch.nil);
+
     public boolean globtype(GlobKeyEvent ev) {
 	if(ev.c == ':') {
 	    entercmd();
@@ -1998,7 +2000,10 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
             throw new RuntimeException(e);
         }
 		return(true);
-    } else if((ev.c == 27) && (map != null) && !map.hasfocus) {
+    } else if(kb_autoDistance.key().match(ev)) {
+		this.runActionThread(new Thread(new AutoDistance(this), "AutoDistance"));
+		return (true);
+	} else if((ev.c == 27) && (map != null) && !map.hasfocus) {
 	    setfocus(map);
 	    return(true);
 	}

@@ -2425,6 +2425,7 @@ public class OptWnd extends Window {
 		y = addbtnImproved(cont, "Peace Current Target", "", new Color(0, 255, 34,255), GameUI.kb_peaceCurrentTarget, y);
 		y = addbtnImproved(cont, "Traverse", "Tries to traverse through nearest doors/caves", Color.WHITE, GameUI.kb_traverse, y);
 		y = addbtnImproved(cont, "Yap", "Shitpost in areachat for you!", Color.WHITE, GameUI.kb_yap, y);
+		y = addbtnImproved(cont, "AuoDistance", "Trying to place you in ideal spot", Color.WHITE, GameUI.kb_autoDistance, y);
 
 		y = cont.adda(new Label("Other Custom features"), cont.sz.x / 2, y + UI.scale(10), 0.5, 0.0).pos("bl").adds(0, 5).y;
 		y = addbtnImproved(cont, "Drink Button", "", new Color(0, 140, 255, 255), GameUI.kb_drinkButton, y+6);
