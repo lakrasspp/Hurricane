@@ -428,7 +428,6 @@ public class MiniMap extends Widget {
 		}
 	    } else if(m instanceof SMarker) {
 		SMarker sm = (SMarker)m;
-		// HERE
 		try {
 		    if(cc == null) {
 			Resource res = sm.res.get();
@@ -452,7 +451,34 @@ public class MiniMap extends Widget {
 		}
 	    }
 	}
-    }
+
+	public void drawcompact(GOut g, Coord c) {
+		if(m instanceof PMarker) {
+			Coord ul = c.sub(flagcc);
+			g.chcolor(((PMarker)m).color);
+			g.image(flagfg, ul);
+			g.chcolor();
+			g.image(flagbg, ul);
+		} else if(m instanceof SMarker) {
+			SMarker sm = (SMarker)m;
+			try {
+				if(cc == null) {
+					Resource res = sm.res.get();
+					img = res.flayer(Resource.imgc);
+					Resource.Neg neg = res.layer(Resource.negc);
+					cc = (neg != null) ? neg.cc : img.ssz.div(2);
+					if(hit == null)
+						hit = Area.sized(cc.inv(), img.ssz);
+					}
+			} catch(Loading l) {
+			} catch(Exception e) {
+				cc = Coord.z;
+			}
+			if(img != null)
+				g.image(img, c.sub(cc));
+		}
+	}
+	}
 
     public static class DisplayGrid {
 	public final MapFile file;
@@ -677,7 +703,10 @@ public class MiniMap extends Widget {
 	    for(DisplayMarker mark : dgrid.markers(true)) {
 		if(filter(mark))
 		    continue;
-		mark.draw(g, mark.m.tc.sub(dloc.tc).div(scalef()).add(hsz));
+		if(!compact)
+			mark.draw(g, mark.m.tc.sub(dloc.tc).div(scalef()).add(hsz));
+		if(compact)
+			mark.drawcompact(g, mark.m.tc.sub(dloc.tc).div(scalef()).add(hsz));
 //		if (!compact) {
 //			if (OptWnd.showMapMarkerNamesCheckBox.a) {
 //			g.image(DisplayMarker.titleTexMap.get(mark.tip.text), mark.m.tc.sub(dloc.tc).div(scalef()).add(hsz).add(-mark.tip.text.length()*3,-30));
