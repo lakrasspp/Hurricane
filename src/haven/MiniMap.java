@@ -707,11 +707,6 @@ public class MiniMap extends Widget {
 			mark.draw(g, mark.m.tc.sub(dloc.tc).div(scalef()).add(hsz));
 		if(compact)
 			mark.drawcompact(g, mark.m.tc.sub(dloc.tc).div(scalef()).add(hsz));
-//		if (!compact) {
-//			if (OptWnd.showMapMarkerNamesCheckBox.a) {
-//			g.image(DisplayMarker.titleTexMap.get(mark.tip.text), mark.m.tc.sub(dloc.tc).div(scalef()).add(hsz).add(-mark.tip.text.length()*3,-30));
-//			}
-//		}
 	    }
 	}
     }
