@@ -155,7 +155,7 @@ public class OptWnd extends Window {
 			    a = val;
 			}
 		    }, Coord.z);
-		prev = add(disableObjectsOutline = new CheckBox("Disable Objects Outlines"){
+		prev = add(disableObjectsOutline = new CheckBox("Disable Objects Outlines ( Requires Restart )"){
 			{a = (Utils.getprefb("disableOutlines", false));}
 			public void changed(boolean val) {
 				Utils.setprefb("disableOutlines", val);
