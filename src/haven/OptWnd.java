@@ -155,6 +155,12 @@ public class OptWnd extends Window {
 			    a = val;
 			}
 		    }, Coord.z);
+		prev = add(disableObjectsOutline = new CheckBox("Disable Objects Outlines"){
+			{a = (Utils.getprefb("disableOutlines", false));}
+			public void changed(boolean val) {
+				Utils.setprefb("disableOutlines", val);
+			}
+			}, prev.pos("bl").adds(0, 5));
 		prev = add(new Label("Render scale"), prev.pos("bl").adds(0, 5));
 		{
 		    Label dpy = new Label("");
@@ -603,6 +609,7 @@ public class OptWnd extends Window {
 	public static CheckBox drawTargetSpeedBarCheckbox;
 	public static HSlider mapZoomSpeedSlider;
 	public static CheckBox alwaysOpenMiniStudyOnLoginCheckBox;
+	public static CheckBox disableObjectsOutline;
 
     public class InterfaceSettingsPanel extends Panel {
 	public InterfaceSettingsPanel(Panel back) {
