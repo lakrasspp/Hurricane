@@ -67,6 +67,7 @@ public class MiniMap extends Widget {
 	public boolean compact;
 	private static final Color BIOME_BG = new Color(0, 0, 0, 110);
 	private String biome;
+	public static Map<String, Tex> cachedTextTex = new HashMap();
 	private Tex biometex;
 	public static boolean showMapViewRange = Utils.getprefb("showMapViewRange", true);
 	public static boolean showMapGridLines = Utils.getprefb("showMapGridLines", false);
@@ -90,6 +91,17 @@ public class MiniMap extends Widget {
 	}
 	super.attached();
     }
+
+	public static Tex getCachedTextTex(String text) {
+		Tex tex = (Tex)cachedTextTex.get(text);
+		if (tex == null) {
+			Text.Foundry fnd = (new Text.Foundry(Text.latin.deriveFont(1), UI.scale(12))).aa(true);
+			tex = Text.renderstroked(text, Color.white, Color.BLACK, fnd).tex();
+			cachedTextTex.put(text, tex);
+		}
+
+		return tex;
+	}
 
     public static class Location {
 	public Segment seg;
@@ -402,14 +414,21 @@ public class MiniMap extends Widget {
 	}
 
 	public void draw(GOut g, Coord c) {
+		Tex ttex;
 	    if(m instanceof PMarker) {
 		Coord ul = c.sub(flagcc);
 		g.chcolor(((PMarker)m).color);
 		g.image(flagfg, ul);
 		g.chcolor();
 		g.image(flagbg, ul);
+		if(OptWnd.showMapMarkerNamesCheckBox.a) {
+			ttex = MiniMap.getCachedTextTex(m.nm);
+			if(ttex != null)
+				g.aimage(ttex, ul.add(flagfg.sz.x / 2, -20), 0.5, 0.0);
+		}
 	    } else if(m instanceof SMarker) {
 		SMarker sm = (SMarker)m;
+		// HERE
 		try {
 		    if(cc == null) {
 			Resource res = sm.res.get();
@@ -425,6 +444,12 @@ public class MiniMap extends Widget {
 		}
 		if(img != null)
 		    g.image(img, c.sub(cc));
+
+		if(OptWnd.showMapMarkerNamesCheckBox.a && sm.res != null && (sm.res.name.startsWith("gfx/invobjs/small") || sm.res.name.contains("thingwall") || sm.res.name.contains("gfx/terobjs/mm/gianttoad"))) {
+			ttex =MiniMap.getCachedTextTex(sm.nm);
+			if(ttex != null)
+				g.aimage(ttex, c.add(0, -15), 0.5, 1.0);
+		}
 	    }
 	}
     }
@@ -653,10 +678,11 @@ public class MiniMap extends Widget {
 		if(filter(mark))
 		    continue;
 		mark.draw(g, mark.m.tc.sub(dloc.tc).div(scalef()).add(hsz));
-		if (!compact) {
-			if (OptWnd.showMapMarkerNamesCheckBox.a)
-			g.image(DisplayMarker.titleTexMap.get(mark.tip.text), mark.m.tc.sub(dloc.tc).div(scalef()).add(hsz).add(-mark.tip.text.length()*3,-30));
-		}
+//		if (!compact) {
+//			if (OptWnd.showMapMarkerNamesCheckBox.a) {
+//			g.image(DisplayMarker.titleTexMap.get(mark.tip.text), mark.m.tc.sub(dloc.tc).div(scalef()).add(hsz).add(-mark.tip.text.length()*3,-30));
+//			}
+//		}
 	    }
 	}
     }
