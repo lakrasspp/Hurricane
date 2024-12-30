@@ -2440,6 +2440,7 @@ public class OptWnd extends Window {
 		y = addbtn(cont, "Right Hand (Quick-Switch)", GameUI.kb_rightQuickSlotButton, y);
 		y = addbtnImproved(cont, "Night Vision / Brighter World", "This will simulate daytime lighting during the night. \n$col[185,185,185]{It slightly affects the light levels during the day too.}" +
 				"\n\n$col[218,163,0]{Note:} $col[185,185,185]{This keybind just switches the value of Night Vision / Brighter World between minimum and maximum. This can also be set more precisely using the slider in the World Graphics Settings.}", Color.WHITE, GameUI.kb_nightVision, y);
+		y = addbtn(cont, "Flat World", GameUI.kb_flatWorld, y);
 
 		y+=UI.scale(12);
 		y = addbtn(cont, "Inventory search", GameUI.kb_searchInventoriesButton, y);
