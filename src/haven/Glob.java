@@ -337,6 +337,22 @@ public class Glob {
 	synchronized(this) {
 	    ArrayList<Weather> ret = new ArrayList<>(wmap.size());
 	    for(Map.Entry<Indir<Resource>, Object> cur : wmap.entrySet()) {
+		try {
+			String resName = cur.getKey().get().name;
+			if ((OptWnd.disableSeasonalGroundColorsCheckBox.a && resName.equals("gfx/fx/seasonmap"))
+			|| (OptWnd.disableRainCheckBox.a && resName.equals("gfx/fx/rain"))
+			|| (OptWnd.disableCloudShadowsCheckBox.a && resName.equals("gfx/fx/clouds"))
+			|| (OptWnd.disableWetGroundOverlayCheckBox.a && resName.equals("gfx/fx/wet"))
+			|| (OptWnd.disableSnowingCheckBox.a && resName.equals("gfx/fx/snow"))
+			|| (OptWnd.disableValhallaFilterCheckBox.a && resName.equals("gfx/fx/desat"))
+			|| (OptWnd.disableScreenShakingCheckBox.a && resName.equals("gfx/fx/quake"))
+			|| (OptWnd.disableHempHighCheckBox.a && resName.equals("gfx/fx/lucy"))
+			|| (OptWnd.disableOpiumHighCheckBox.a && resName.equals("gfx/fx/dragon"))
+			|| (OptWnd.disableLibertyCapsHighCheckBox.a && resName.equals("gfx/fx/shroomed"))
+			|| (OptWnd.disableDrunkennessDistortionCheckBox.a && resName.equals("gfx/fx/bottle"))) {
+				continue;
+			}
+		} catch (Loading ignored){}
 		Object val = cur.getValue();
 		if(val instanceof Weather) {
 		    ret.add((Weather)val);

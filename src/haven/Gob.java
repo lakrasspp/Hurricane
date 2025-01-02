@@ -36,7 +36,6 @@ import java.util.concurrent.Future;
 import java.util.function.*;
 import java.util.stream.Collectors;
 
-import haven.Fuzzy;
 import haven.automated.mapper.MappingClient;
 import haven.render.*;
 import haven.render.gl.GLObject;
@@ -67,8 +66,6 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
     private final LinkedList<Runnable> deferred = new LinkedList<>();
     private Loader.Future<?> deferral = null;
 	public Boolean isComposite = false;
-	private final Set<String> animatedGobsToDisable = new HashSet<>(Arrays.asList("dreca", "pow", "kiln", "cauldron", "beehive", "stockpile-trash"));
-	private boolean thisGobAnimationsCanBeDisabled = false;
 	public Boolean isMe = null;
 	public Boolean isMannequin = null;
 	public Boolean isSkeleton = null;
@@ -534,16 +531,9 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
     }
 
     public void ctick(double dt) {
-	Map<Class<? extends GAttrib>, GAttrib> attr = cloneattrs();
 	for(GAttrib a : attr.values()){
-		if(a instanceof ResDrawable){
-			if(!(OptWnd.disableObjectAnimationsCheckBox.a && thisGobAnimationsCanBeDisabled)){
-				a.ctick(dt);
-			}
-		}
-		else
 	    a.ctick(dt);
-		}
+	}
 	for(Iterator<Overlay> i = ols.iterator(); i.hasNext();) {
 	    Overlay ol = i.next();
 	    if(ol.slots == null) {
@@ -709,7 +699,6 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
     }
 
     public void dispose() {
-	Map<Class<? extends GAttrib>, GAttrib> attr = cloneattrs();
 	for(GAttrib a : attr.values())
 	    a.dispose();
     }
@@ -959,7 +948,6 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	    if(ol.slots != null)
 		slot.add(ol);
 	}
-	Map<Class<? extends GAttrib>, GAttrib> attr = cloneattrs();
 	for(GAttrib a : attr.values()) {
 	    if(a instanceof RenderTree.Node && !a.skipRender)
 			try {
@@ -1202,13 +1190,6 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	public void init(boolean throwLoading) {
 		Resource res = getres();
 		if (res != null) {
-			String resBaseName = res.basename();
-			for (String substring : animatedGobsToDisable) {
-				if (resBaseName.contains(substring)) {
-					thisGobAnimationsCanBeDisabled = true;
-					break;
-				}
-			}
 			if (getattr(Drawable.class) instanceof Composite) {
 				try {
 					initComp((Composite)getattr(Drawable.class));
@@ -1239,6 +1220,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		updateBeastDangerRadii();
 		updateTroughsRadius();
 		updateBeeSkepRadius();
+		updateMoundBedsRadius();
 		updateMineLadderRadius();
 		updateSupportOverlays();
 		initPermanentHighlightOverlay();
@@ -1420,12 +1402,6 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 
 				}
 			}
-		}
-	}
-
-	private Map<Class<? extends GAttrib>, GAttrib> cloneattrs() { // ND: To prevent concurrent modification exceptions
-		synchronized (this.attr) {
-			return new HashMap<>(this.attr);
 		}
 	}
 
@@ -2024,6 +2000,14 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		}
 	}
 
+	public void updateMoundBedsRadius() {
+		if (getres() != null) {
+			String resourceName = getres().name;
+			if (resourceName.equals("gfx/terobjs/moundbed")){
+				setRadiusOverlay(OptWnd.showMoundBedsRadiiCheckBox.a, new Color(158, 0, 207, 128), 225f);
+			}
+		}
+	}
 
 	private void setPlayerGender(){
 		try {
