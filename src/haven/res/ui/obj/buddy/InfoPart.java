@@ -11,7 +11,7 @@ import static haven.PUtils.*;
 
 @haven.FromResource(name = "ui/obj/buddy", version = 4)
 public interface InfoPart {
-    public static final Text.Foundry fnd = new Text.Foundry(Text.dfont, 12);
+    public static final Text.Foundry fnd = Text.names;
 
     public void draw(CompImage cmp, RenderContext ctx);
     public default int order() {return(0);}
