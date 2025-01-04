@@ -59,9 +59,9 @@ public class Outlines implements RenderTree.Node {
 
 
 		Coord[] points = {
-		    new Coord(outlines,  0),
+		    new Coord(-outlines,  0),
 		    new Coord( outlines,  0),
-		    new Coord( 0, outlines),
+		    new Coord( 0, -outlines),
 		    new Coord( 0,  outlines),
 		};
 
