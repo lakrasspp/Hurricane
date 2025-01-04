@@ -2455,7 +2455,7 @@ public class OptWnd extends Window {
 
 		y+=UI.scale(20);
 		y = addbtnImproved(cont, "Click Nearest Object (Cursor)","When this button is pressed, you will instantly click the nearest object to your cursor, selected from below." +
-				"\n$col[218,163,0]{Range:} $col[185,185,185]{12 tiles (approximately)}", new Color(255, 191, 0,255), GameUI.kb_clickNearestCursorObject, y);
+				"\n$col[218,163,0]{Range:} $col[185,185,185]{25 tiles (approximately)}", new Color(255, 191, 0,255), GameUI.kb_clickNearestCursorObject, y);
 		y = addbtnImproved(cont, "Click Nearest Object (You)","When this button is pressed, you will instantly click the nearest object to you, selected from below." +
 				"\n$col[218,163,0]{Range:} $col[185,185,185]{12 tiles (approximately)}", new Color(255, 191, 0,255), GameUI.kb_clickNearestObject, y);
 		Widget objectsLeft, objectsRight;
@@ -3498,6 +3498,7 @@ public class OptWnd extends Window {
 	public static CheckBox hideCropsCheckbox;
 	public static CheckBox hideTrellisCheckbox;
 	public static CheckBox hideDryingFramesCheckbox;
+	public static CheckBox hideSquirrelCachesCheckbox;
 	public static CheckBox hideStockpilesCheckbox;
 	public static ColorOptionWidget hiddenObjectsColorOptionWidget;
 	public static String[] hiddenObjectsColorSetting = Utils.getprefsa("hidingBox" + "_colorSetting", new String[]{"0", "225", "255", "170"});
@@ -3686,6 +3687,17 @@ public class OptWnd extends Window {
 				}
 			}, prev.pos("bl").adds(0, 2));
 			prev.tooltip = RichText.render("Hides the drying frames models, not hides on them.", UI.scale(300));
+
+			prev = add(hideSquirrelCachesCheckbox = new CheckBox("Squirrel Cache"){
+				{a = Utils.getprefb("hideSCache", false);}
+				public void changed(boolean val) {
+					Utils.setprefb("hideSCache", val);
+					if (ui != null && ui.gui != null) {
+						ui.sess.glob.oc.gobAction(Gob::updateHidingBoxes);
+						ui.gui.map.updatePlobHidingBox();
+					}
+				}
+			}, prev.pos("bl").adds(0, 2));
 
 			Widget backButton;
 			add(backButton = new PButton(UI.scale(200), "Back", 27, back, "Advanced Settings"), prev.pos("bl").adds(0, 18).x(0));
