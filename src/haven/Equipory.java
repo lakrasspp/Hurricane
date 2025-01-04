@@ -241,6 +241,7 @@ public class Equipory extends Widget implements DTarget {
 				ui.sess.glob.oc.gobAction(Gob::updateBeastDangerRadii);
 			}
 		} catch (Exception ignored){}
+		Fightsess.loadoutChecked = false;
 	} else {
 	    super.addchild(child, args);
 	}
@@ -269,6 +270,7 @@ public class Equipory extends Widget implements DTarget {
 			}
 		} catch (Exception ignored){}
 	}
+	Fightsess.loadoutChecked = false;
     }
 
     public void uimsg(String msg, Object... args) {
@@ -429,6 +431,20 @@ public class Equipory extends Widget implements DTarget {
 				checkForTicks = false;
 			}
 		}
+		
 	}
+	public GItem getWeapon() {
+		GItem lweap = null;
+		GItem rweap = null;
+		if (slots[6] != null) lweap = slots[6].item;
+		if (slots[7] != null) rweap = slots[7].item;
+        if (lweap != null && ItemInfo.hasInfo(lweap.info,"Damage")) {
+            return lweap;
+        } else if (rweap != null && ItemInfo.hasInfo(rweap.info,"Damage")) {
+            return rweap;
+        } else {
+            return null;
+        }
+    }
 
 }

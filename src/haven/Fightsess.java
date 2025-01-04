@@ -35,7 +35,6 @@ import javax.sound.sampled.AudioSystem;
 import java.awt.*;
 import java.io.File;
 import java.util.*;
-import java.awt.Color;
 import java.awt.event.KeyEvent;
 import java.util.List;
 
@@ -62,6 +61,7 @@ public class Fightsess extends Widget {
 	public Map<Fightview.Relation, Coord> relations = new HashMap<>();
 	int combatMedColorShift = 0;
 	public static final Text.Foundry keybindsFoundry = new Text.Foundry(Text.sans.deriveFont(java.awt.Font.BOLD), 14);
+	public static final Text.Foundry damageFoundry = new Text.Foundry(Text.sans.deriveFont(java.awt.Font.BOLD), 11);
 	private static final Color coinsInfoBG = new Color(0, 0, 0, 120);
 	public static final Color ipInfoColorMe = new Color(0, 201, 4);
 	public static final Color ipInfoColorEnemy = new Color(245, 0, 0);
@@ -81,6 +81,13 @@ public class Fightsess extends Widget {
 	public static final Color hpBarRed = new Color(168, 0, 0, 255);
 	public static final Color hpBarYellow = new Color(182, 165, 0, 255);
 	private static final Color barFrame = new Color(255, 255, 255, 111);
+
+	public static boolean loadoutChecked = false;
+	private static int[] openingArr = new int[] {0,0,0,0};
+	private static int wepdmg = 0;
+	private static double ql = 1;
+	private static int basedmg = 0;
+	public static double myStrength = 1;
 
 	Map<String, Color> openingsColorMap = new HashMap<>() {{
 		put("paginae/atk/offbalance", new Color(0, 128, 3));
@@ -107,6 +114,7 @@ public class Fightsess extends Widget {
     @RName("fsess")
     public static class $_ implements Factory {
 	public Widget create(UI ui, Object[] args) {
+		loadoutChecked = false;
 	    int nact = Utils.iv(args[0]);
 		if(OptWnd.combatStartSoundEnabledCheckbox.a) {
 			try {
@@ -196,6 +204,19 @@ public class Fightsess extends Widget {
     }
 
     public void tick(double dt) {
+	if (!loadoutChecked) {
+		try {
+			myStrength = ui.sess.glob.getcattr("str").comp;
+			wepdmg = basedmg = 0;
+			Equipory equipory = ui.gui.getequipory();
+			GItem wep = equipory.getWeapon();
+			if (wep != null) {
+				setupWepDmg(ui.gui);
+				loadoutChecked = true;
+			}
+		} catch (Exception ignored) {
+		}
+	}
 	for(Iterator<Effect> i = curfx.iterator(); i.hasNext();) {
 	    Effect fx = i.next();
 	    if(!fx.used) {
@@ -362,6 +383,7 @@ public class Fightsess extends Widget {
 //	    for(Buff buff : fv.current.buffs.children(Buff.class))
 //		buff.draw(g.reclip(pcc.add(buff.c.x + UI.scale(20), buff.c.y + pho - Buff.cframe.sz().y), buff.sz));
 		ArrayList<Buff> enemyOpenings = new ArrayList<>(fv.current.buffs.children(Buff.class));
+		setupOpeningArr(enemyOpenings);
 		enemyOpenings.sort((o1, o2) -> Integer.compare(getOpeningValue(o2), getOpeningValue(o1)));
 		Buff maneuver = null;
 		for (Buff buff : enemyOpenings) {
@@ -606,9 +628,55 @@ public class Fightsess extends Widget {
 			g.prect(ca.add(hsz), hsz.inv(), hsz, (1.0 - a) * Math.PI * 2);
 			g.chcolor();
 		    }
+			int infoY = 0;
 			if (OptWnd.showCombatHotkeysUICheckBox.a) {
 				String keybindString = kb_acts[i].key().name();
-				g.aimage(new TexI(Utils.outline2(keybindsFoundry.render(keybindString).img, Color.BLACK, true)), ca.add((int)(img.sz().x/2), img.sz().y + UI.scale(8)), 0.5, 0.5);
+
+				infoY += 8;
+				g.aimage(new TexI(Utils.outline2(keybindsFoundry.render(keybindString).img, Color.BLACK, true)), ca.add((int)(img.sz().x/2), img.sz().y + UI.scale(infoY)), 0.5, 0.5);
+			}
+			if (OptWnd.showDamagePredictUICheckBox.a) {
+				String name = act.res.get().basename();
+				if(Config.MapAttInfo.containsKey(name)) {	//Exists?
+					Config.AttackInfo attack = Config.MapAttInfo.get(name);
+					double openingMul;
+					double opening;
+					if(attack.getColors().length>1) {
+						opening = 1;
+						for(Config.Color color : attack.getColors()) {
+							opening *= 1.0 - ((double)openingArr[color.getOrder()] / 100);
+						}
+						opening = 1.0 - opening;
+					}
+					else {
+						opening = ((double)openingArr[attack.getColors()[0].getOrder()] / 100);
+					}
+					openingMul = (opening*opening);
+
+					if(attack.isMC()) {
+						double weaponDamageCalc;
+						weaponDamageCalc = basedmg * Math.sqrt( Math.sqrt(ql* myStrength) / 10);
+						name = Integer.toString((int)Math.ceil( //I need to cast this into Integer so it doesnt print "0.0", printing "0" is prettier.
+						weaponDamageCalc //Full damage
+						*attack.getDmgMul()
+						*openingMul
+					));
+					}
+					else {
+						name = Integer.toString((int)Math.ceil( //I need to cast this into Integer so it doesnt print "0.0", printing "0" is prettier.
+							attack.getDmg()*Math.sqrt(myStrength/10) //Full damage
+							*openingMul
+						));
+
+					}
+				}
+				else{
+					name = "";
+				}
+				if(!name.isEmpty()) {
+					infoY += 12;
+					g.aimage(new TexI(Utils.outline2(damageFoundry.render(name,Color.RED).img, Color.BLACK, true)), ca.add((int)(img.sz().x/2), img.sz().y + UI.scale(infoY)), 0.5, 0.5);
+				}
 			}
 		    if(i == use) {
 			g.image(indframe, ca.sub(indframeo));
@@ -1210,5 +1278,34 @@ public class Fightsess extends Widget {
 		if (closestRel != null) {
 			fv.wdgmsg("bump", (int) closestRel.gobid);
 		}
+	}
+	private void setupOpeningArr(ArrayList<Buff> buffs)
+	{
+		for(Buff buff : buffs)
+		{
+			switch(buff.res.get().name)	{
+				case "paginae/atk/offbalance":
+					openingArr[0] = getOpeningValue(buff);
+					break;
+				case "paginae/atk/reeling":
+					openingArr[1] = getOpeningValue(buff);
+					break;
+				case "paginae/atk/cornered":
+					openingArr[2] = getOpeningValue(buff);
+					break;
+				case "paginae/atk/dizzy":
+					openingArr[3] = getOpeningValue(buff);
+					break;
+			}
+		}
+	}
+	private static void setupWepDmg(GameUI gui) {
+		GItem wep = gui.getequipory().getWeapon();
+		wepdmg = ItemInfo.getDamage(wep.info);
+		//ui.gui.msg("wepdmg: "+wepdmg,Color.white);
+		ql = wep.getQBuff().q;
+		//ui.gui.msg("ql: "+ql,Color.white);
+		basedmg = (int)(Math.ceil(wepdmg/Math.sqrt(ql/10)));
+		//ui.gui.msg("basedmg: "+basedmg,Color.white);
 	}
 }
