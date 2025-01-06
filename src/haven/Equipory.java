@@ -241,7 +241,9 @@ public class Equipory extends Widget implements DTarget {
 				ui.sess.glob.oc.gobAction(Gob::updateBeastDangerRadii);
 			}
 		} catch (Exception ignored){}
-		Fightsess.loadoutChecked = false;
+		if (myOwnEquipory) {
+			Fightsess.loadoutChecked = false;
+		}
 	} else {
 	    super.addchild(child, args);
 	}
@@ -270,7 +272,8 @@ public class Equipory extends Widget implements DTarget {
 			}
 		} catch (Exception ignored){}
 	}
-	Fightsess.loadoutChecked = false;
+	if (myOwnEquipory)
+		Fightsess.loadoutChecked = false;
     }
 
     public void uimsg(String msg, Object... args) {
