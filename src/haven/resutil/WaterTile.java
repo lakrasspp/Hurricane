@@ -575,7 +575,7 @@ public class WaterTile extends Tiler {
 	public static final BottomFog deepwaterfog = new BottomFog(new Color(1, 16, 67));
 	public static final BottomFog owaterfog = new BottomFog(new Color(0, 56, 85));
 	public static final BottomFog odeepwaterfog = new BottomFog(new Color(0, 22, 37));
-	public static final BottomFog odeeperwaterfog = new BottomFog(new Color(0, 16, 32));
+	public static final BottomFog odeeperwaterfog = new BottomFog(new Color(0, 8, 24));
     private Pipe.Op botmat;
 	private static final States.DepthBias boff = new States.DepthBias(4, 4);
 
