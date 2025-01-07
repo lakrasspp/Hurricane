@@ -97,7 +97,7 @@ public class Equipory extends Widget implements DTarget {
 	private boolean showEquipmentBonuses = Utils.getprefb("showEquipmentBonuses", false);
 	private Button expandButton = null;
 	public boolean myOwnEquipory = false;
-	public boolean isWardrobe = false;
+	public boolean ignoredEquipory;
 	public static CheckBox autoDropLeechesCheckBox;
 	public static CheckBox autoDropTicksCheckBox;
 	public static CheckBox autoEquipBunnySlippersPlateBootsCheckBox;
@@ -124,7 +124,7 @@ public class Equipory extends Widget implements DTarget {
 		ava.avagob = getparent(GameUI.class).plid;
 	}
 	if(parent instanceof Window) {
-		boolean ignoredEquipory = "Mannequin".equals(((Window) parent).caption()) || "Wardrobe".equals(((Window) parent).caption()) || "Equipment".equals(((Window) parent).caption());
+		ignoredEquipory = "Mannequin".equals(((Window) parent).caption()) || "Wardrobe".equals(((Window) parent).caption()) || "Equipment".equals(((Window) parent).caption());
 		if(!ignoredEquipory) {
 			Equipory enemyEquipory = this;
 			Button button = new Button(btnw, "Yoink") {
@@ -146,11 +146,6 @@ public class Equipory extends Widget implements DTarget {
 			add(button2);
 			}
 		}
-	if (parent != null && parent instanceof Window) {
-		if (((Window) parent).cap != null && ((Window) parent).cap.equals("Wardrobe")) {
-			isWardrobe = true;
-		}
-	}
 	super.added();
     }
 
@@ -253,7 +248,7 @@ public class Equipory extends Widget implements DTarget {
 		if (myOwnEquipory) {
 			Fightsess.loadoutChecked = false;
 		} else {
-			if (!isWardrobe){
+			if (!ignoredEquipory){
 				if ((OptWnd.autoLootRingsCheckBox.a && (slot == 8 || slot == 9))
 				|| (OptWnd.autoLootNecklaceCheckBox.a && slot == 1)
 				|| (OptWnd.autoLootHelmetCheckBox.a && slot == 0)
