@@ -100,7 +100,11 @@ public class Fightsess extends Widget {
 
 	private static Coord actc(int i) {
 		int rl = OptWnd.singleRowCombatMovesCheckBox.a ? 10 : 5;
-		return(new Coord((actpitch * (i % rl)) - (((rl - 1) * actpitch) / 2), UI.scale(125) + ((i / rl) * actpitch2)));
+		if(OptWnd.showDamagePredictUICheckBox.a) {
+			return(new Coord((actpitch * (i % rl)) - (((rl - 1) * actpitch) / 2), UI.scale(125) + ((i / rl) * actpitch2)));
+		}
+		else
+			return(new Coord((actpitch * (i % rl)) - (((rl - 1) * actpitch) / 2), UI.scale(125) + ((i / rl) * actpitch)));
 	}
 
     public static class Action {
