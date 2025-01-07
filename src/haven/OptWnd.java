@@ -435,6 +435,7 @@ public class OptWnd extends Window {
 	public static HSlider butcherSoundVolumeSlider;
 	public static HSlider whiteDuckCapSoundVolumeSlider;
 	private final int audioSliderWidth = 220;
+	public static HSlider themeSongVolumeSlider;
 
     public class AudioPanel extends Panel {
 	public AudioPanel(Panel back) {
@@ -444,6 +445,59 @@ public class OptWnd extends Window {
 			Audio.setvolume(val / 1000.0);
 		    }
 		}, prev.pos("bl").adds(0, 2));
+		prev = add(new Label("Background Music Volume"), prev.pos("bl").adds(0, 15));
+		prev = add(themeSongVolumeSlider = new HSlider(UI.scale(220), 0, 100, Utils.getprefi("themeSongVolume", 40)) {
+			protected void attach(UI ui) {
+				super.attach(ui);
+			}
+			public void changed() { // ND: I hate hardcoding stuff but OH WELL
+				if (LoginScreen.mainThemeClip != null) ((Audio.VolAdjust) LoginScreen.mainThemeClip).vol = val/100d;
+				if (LoginScreen.charSelectThemeClip != null) ((Audio.VolAdjust) LoginScreen.charSelectThemeClip).vol = val/100d;
+				if (GameUI.cabinThemeClip != null) ((Audio.VolAdjust) GameUI.cabinThemeClip).vol = val/100d;
+				if (GameUI.caveThemeClip != null) ((Audio.VolAdjust) GameUI.caveThemeClip).vol = val/100d;
+				if (GameUI.fishingThemeClip != null) ((Audio.VolAdjust) GameUI.fishingThemeClip).vol = val/100d;
+				if (GameUI.hookahThemeClip != null) ((Audio.VolAdjust) GameUI.hookahThemeClip).vol = val/100d;
+				if (GameUI.feastingThemeClip != null) ((Audio.VolAdjust) GameUI.feastingThemeClip).vol = val/100d;
+
+				if (LoginScreen.themeSongVolumeSlider != null) LoginScreen.themeSongVolumeSlider.val = val;
+				if (Charlist.themeSongVolumeSlider != null) Charlist.themeSongVolumeSlider.val = val;
+				Utils.setprefi("themeSongVolume", val);
+			}
+		}, prev.pos("bl").adds(0, 2));
+
+
+		prev = add(new Label("Background Music Theme:"), prev.pos("bl").adds(0, 6).x(0));
+		List<String> musicThemes = Arrays.asList("Hurricane  ", "Legacy");
+		add(new OldDropBox<String>(musicThemes.size(), musicThemes) {
+			{
+				super.change(musicThemes.get(Utils.getprefi("backgroundMusicTheme", 0)));
+			}
+			@Override
+			protected String listitem(int i) {
+				return musicThemes.get(i);
+			}
+			@Override
+			protected int listitems() {
+				return musicThemes.size();
+			}
+			@Override
+			protected void drawitem(GOut g, String item, int i) {
+				g.aimage(Text.renderstroked(item).tex(), Coord.of(UI.scale(3), g.sz().y / 2), 0.0, 0.5);
+			}
+			@Override
+			public void change(String item) {
+				super.change(item);
+				for (int i = 0; i < musicThemes.size(); i++){
+					if (item.equals(musicThemes.get(i))){
+						Utils.setprefi("backgroundMusicTheme", i);
+					}
+				}
+				GameUI.settingStopAllThemes();
+			}
+		}, prev.pos("ur").adds(0, 1));
+
+
+
 	    prev = add(new Label("Interface sound volume"), prev.pos("bl").adds(0, 15));
 	    prev = add(new HSlider(UI.scale(audioSliderWidth), 0, 1000, 0) {
 		    protected void attach(UI ui) {
@@ -4537,6 +4591,132 @@ public class OptWnd extends Window {
 
 	}
 
+	public static CheckBox autoLootRingsCheckBox;
+	public static CheckBox autoLootNecklaceCheckBox;
+	public static CheckBox autoLootWeaponCheckBox;
+	public static CheckBox autoLootHelmetCheckBox;
+	public static CheckBox autoLootChestArmorCheckBox;
+	public static CheckBox autoLootLegArmorCheckBox;
+	public static CheckBox autoLootCloakRobeCheckBox;
+	public static CheckBox autoLootShirtCheckBox;
+	public static CheckBox autoLootPantsCheckBox;
+	public static CheckBox autoLootGlovesCheckBox;
+	public static CheckBox autoLootBootsCheckBox;
+	public static CheckBox autoLootEyewearCheckBox;
+	public static CheckBox autoLootMouthCheckBox;
+	public static CheckBox autoLootCapeCheckBox;
+
+	public class AutoLootSettingsPanel extends Panel {
+
+		private int addbtn(Widget cont, String nm, KeyBinding cmd, int y) {
+			return (cont.addhl(new Coord(0, y), cont.sz.x,
+					new Label(nm), new SetButton(UI.scale(140), cmd))
+					+ UI.scale(2));
+		}
+
+		public AutoLootSettingsPanel(Panel back) {
+			Widget prev;
+
+			Scrollport scroll = add(new Scrollport(UI.scale(new Coord(350, 40))), 0, 0);
+			prev = scroll.cont;
+			addbtn(prev, "Loot Nearest Knocked Player hotkey:", GameUI.kb_lootNearestKnockedPlayer, 0);
+
+			prev = add(new Label("Auto-Loot the following gear from enemies (when stealing):"), prev.pos("bl").adds(0, 6));
+			prev = add(autoLootRingsCheckBox = new CheckBox("Rings"){
+				{a = Utils.getprefb("autoLootRings", false);}
+				public void changed(boolean val) {
+					Utils.setprefb("autoLootRings", val);
+				}
+			}, prev.pos("bl").adds(0, 4).x(12));
+			prev = add(autoLootNecklaceCheckBox = new CheckBox("Necklace"){
+				{a = Utils.getprefb("autoLootNecklace", false);}
+				public void changed(boolean val) {
+					Utils.setprefb("autoLootNecklace", val);
+				}
+			}, prev.pos("bl").adds(0, 2));
+			prev = add(autoLootWeaponCheckBox = new CheckBox("Weapon (Try to put in Belt first, then Inventory)"){
+				{a = Utils.getprefb("autoLootWeapon", false);}
+				public void changed(boolean val) {
+					Utils.setprefb("autoLootWeapon", val);
+				}
+			}, prev.pos("bl").adds(0, 2));
+			prev = add(autoLootHelmetCheckBox = new CheckBox("Helmet"){
+				{a = Utils.getprefb("autoLootHelmet", false);}
+				public void changed(boolean val) {
+					Utils.setprefb("autoLootHelmet", val);
+				}
+			}, prev.pos("bl").adds(0, 2));
+			prev = add(autoLootChestArmorCheckBox = new CheckBox("Chest Armor"){
+				{a = Utils.getprefb("autoLootChestArmor", false);}
+				public void changed(boolean val) {
+					Utils.setprefb("autoLootChestArmor", val);
+				}
+			}, prev.pos("bl").adds(0, 2));
+			prev = add(autoLootLegArmorCheckBox = new CheckBox("Leg Armor"){
+				{a = Utils.getprefb("autoLootLegArmor", false);}
+				public void changed(boolean val) {
+					Utils.setprefb("autoLootLegArmor", val);
+				}
+			}, prev.pos("bl").adds(0, 2));
+			prev = add(autoLootCloakRobeCheckBox = new CheckBox("Cloak/Robe"){
+				{a = Utils.getprefb("autoLootCloakRobe", false);}
+				public void changed(boolean val) {
+					Utils.setprefb("autoLootCloakRobe", val);
+				}
+			}, prev.pos("bl").adds(0, 2));
+			prev = add(autoLootShirtCheckBox = new CheckBox("Shirt"){
+				{a = Utils.getprefb("autoLootShirt", false);}
+				public void changed(boolean val) {
+					Utils.setprefb("autoLootShirt", val);
+				}
+			}, prev.pos("bl").adds(0, 2));
+			prev = add(autoLootPantsCheckBox = new CheckBox("Pants"){
+				{a = Utils.getprefb("autoLootPants", false);}
+				public void changed(boolean val) {
+					Utils.setprefb("autoLootPants", val);
+				}
+			}, prev.pos("bl").adds(0, 2));
+			prev = add(autoLootGlovesCheckBox = new CheckBox("Gloves"){
+				{a = Utils.getprefb("autoLootGloves", false);}
+				public void changed(boolean val) {
+					Utils.setprefb("autoLootGloves", val);
+				}
+			}, prev.pos("bl").adds(0, 2));
+			prev = add(autoLootBootsCheckBox = new CheckBox("Boots"){
+				{a = Utils.getprefb("autoLootBoots", false);}
+				public void changed(boolean val) {
+					Utils.setprefb("autoLootBoots", val);
+				}
+			}, prev.pos("bl").adds(0, 2));
+			prev = add(autoLootEyewearCheckBox = new CheckBox("Eyewear"){
+				{a = Utils.getprefb("autoLootEyewear", false);}
+				public void changed(boolean val) {
+					Utils.setprefb("autoLootEyewear", val);
+				}
+			}, prev.pos("bl").adds(0, 2));
+			prev = add(autoLootMouthCheckBox = new CheckBox("Mouth"){
+				{a = Utils.getprefb("autoLootMouth", false);}
+				public void changed(boolean val) {
+					Utils.setprefb("autoLootMouth", val);
+				}
+			}, prev.pos("bl").adds(0, 2));
+			prev = add(autoLootCapeCheckBox = new CheckBox("Cape"){
+				{a = Utils.getprefb("autoLootCape", false);}
+				public void changed(boolean val) {
+					Utils.setprefb("autoLootCape", val);
+				}
+			}, prev.pos("bl").adds(0, 2));
+
+
+
+			Widget backButton;
+			add(backButton = new PButton(UI.scale(200), "Back", 27, back, "Advanced Settings"), prev.pos("bl").adds(0, 18).x(0));
+			pack();
+			centerBackButton(backButton, this);
+		}
+
+	}
+
 
     public static class PointBind extends Button implements CursorQuery.Handler {
 	public static final String msg = "Bind other elements...";
@@ -4676,6 +4856,7 @@ public class OptWnd extends Window {
 		Panel combatuipanel = add(new CombatUIPanel(advancedSettings));
 		Panel combataggrosettings = add(new AggroExclusionSettingsPanel(advancedSettings));
 		Panel serverintegrationsettings = add(new ServerIntegrationSettingsPanel(advancedSettings));
+		Panel autolootsettings = add(new AutoLootSettingsPanel(advancedSettings));
 
 		int leftY = UI.scale(6);
 		leftY = advancedSettings.add(new PButton(UI.scale(200), "Interface Settings", -1, interfacesettings, "Interface Settings"), 0, leftY).pos("bl").adds(0, 5).y;
@@ -4685,9 +4866,8 @@ public class OptWnd extends Window {
 		leftY = advancedSettings.add(new PButton(UI.scale(200), "Chat Settings", -1, chatsettings, "Chat Settings"), 0, leftY).pos("bl").adds(0, 5).y;
 
 		leftY += UI.scale(20);
-
 		leftY = advancedSettings.add(new PButton(UI.scale(200), "Altered Gameplay Settings", -1, alteredgameplaysettings, "Altered Gameplay Settings"), 0, leftY).pos("bl").adds(0, 5).y;
-		leftY = advancedSettings.add(new PButton(UI.scale(200), "Alarms & Sounds Settings", -1, alarmsettings, "Alarms & Sounds Settings"), 0, leftY).pos("bl").adds(0, 5).y;
+		leftY = advancedSettings.add(new PButton(UI.scale(200), "Aggro Exclusion Settings", -1, combataggrosettings, "Aggro Exclusion Settings"), 0, leftY).pos("bl").adds(0, 5).y;
 
 		int rightX = UI.scale(220);
 		int rightY = UI.scale(6);
@@ -4695,10 +4875,12 @@ public class OptWnd extends Window {
 		rightY = advancedSettings.add(new PButton(UI.scale(200), "Camera Settings", -1, camsettings, "Camera Settings"), rightX, rightY).pos("bl").adds(0, 5).y;
 		rightY = advancedSettings.add(new PButton(UI.scale(200), "World Graphics Settings", -1, worldgraphicssettings, "World Graphics Settings"), rightX, rightY).pos("bl").adds(0, 5).y;
 		rightY = advancedSettings.add(new PButton(UI.scale(200), "Hiding Settings", -1, hidingsettings, "Hiding Settings"), rightX, rightY).pos("bl").adds(0, 5).y;
+		rightY = advancedSettings.add(new PButton(UI.scale(200), "Alarms & Sounds Settings", -1, alarmsettings, "Alarms & Sounds Settings"), rightX, rightY).pos("bl").adds(0, 5).y;
 
-		rightY += UI.scale(50);
+		rightY += UI.scale(20);
 		rightY = advancedSettings.add(new PButton(UI.scale(200), "Gameplay Automation Settings", -1, gameplayautomationsettings, "Gameplay Automation Settings"), rightX, rightY).pos("bl").adds(0, 5).y;
-		rightY = advancedSettings.add(new PButton(UI.scale(200), "Aggro Exclusion Settings", -1, combataggrosettings, "Aggro Exclusion Settings"), rightX, rightY).pos("bl").adds(0, 5).y;
+		rightY = advancedSettings.add(new PButton(UI.scale(200), "Auto-Loot Settings", -1, autolootsettings, "Auto-Loot Settings"), rightX, rightY).pos("bl").adds(0, 5).y;
+
 
 		int middleX = UI.scale(110);
 		int middleY = leftY + UI.scale(20);
