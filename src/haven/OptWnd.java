@@ -656,6 +656,7 @@ public class OptWnd extends Window {
 	private CheckBox showQuickSlotsCheckBox;
 	public static CheckBox showStudyReportHistoryCheckBox;
 	public static CheckBox lockStudyReportCheckBox;
+	public static CheckBox showInventoryNumbers;
 	public static CheckBox soundAlertForFinishedCuriositiesCheckBox;
 	public static CheckBox alwaysShowCombatUIStaminaBarCheckBox;
 	public static CheckBox alwaysShowCombatUIHealthBarCheckBox;
@@ -873,6 +874,14 @@ public class OptWnd extends Window {
 			mapZoomSpeedSlider.val = 15;
 			Utils.setprefi("mapZoomSpeed", 15);
 		}), rightColumn.pos("ur").adds(6, -4));
+
+		rightColumn = add(showInventoryNumbers = new CheckBox("Show Inventory Numbers"){
+			{a = (Utils.getprefb("showInvNumbers", false));}
+			public void set(boolean val) {
+				Utils.setprefb("showInvNumbers", val);
+				a = val;
+			}
+		}, rightColumn.pos("bl").adds(0, 4));
 
 		Widget backButton;
 		add(backButton = new PButton(UI.scale(200), "Back", 27, back, "Advanced Settings"), leftColumn.pos("bl").adds(0, 30).x(0));
