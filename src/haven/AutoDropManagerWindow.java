@@ -25,6 +25,8 @@ public class AutoDropManagerWindow extends Window {
     public static TextEntry autoDropBranchesQualityTextEntry;
     public static CheckBox autoDropBonesCheckBox;
     public static TextEntry autoDropBonesQualityTextEntry;
+    public static CheckBox autoDropHidesCheckBox;
+    public static TextEntry autoDropHIdesQualityTextEntry;
 
     public AutoDropManagerWindow() {
         super(UI.scale(300, 350), "Auto-Drop Manager", true);
@@ -147,6 +149,20 @@ public class AutoDropManagerWindow extends Window {
         add(autoDropBonesQualityTextEntry = new TextEntry(UI.scale(36), Utils.getpref("autoDropBonesQuality", "30")){
             protected void changed() {
                 Utils.setpref("autoDropBonesQuality", this.buf.line());
+                this.settext(this.text().replaceAll("[^\\d]", ""));
+                super.changed();
+            }
+        }, prev.pos("ur").adds(6, -2).x(UI.scale(156)));
+        prev = add(autoDropHidesCheckBox = new CheckBox("Hides"){
+            {a = Utils.getprefb("autoDropHides", false);}
+            public void changed(boolean val) {
+                Utils.setprefb("autoDropHides", val);
+            }
+        }, prev.pos("bl").adds(0, 6));
+        add(new Label("Q <"), prev.pos("ur").adds(0, 0).x(UI.scale(134)));
+        add(autoDropHIdesQualityTextEntry = new TextEntry(UI.scale(36), Utils.getpref("autoDropHidesQuality", "30")){
+            protected void changed() {
+                Utils.setpref("autoDropHidesQuality", this.buf.line());
                 this.settext(this.text().replaceAll("[^\\d]", ""));
                 super.changed();
             }
