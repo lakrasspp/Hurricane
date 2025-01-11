@@ -30,7 +30,6 @@ import static haven.MCache.tilesz;
 
 public class ItemDrag extends WItem {
     public Coord doff;
-	public boolean dropOnAlt = OptWnd.noCursorItemDroppingAltAnywhereCheckBox.a;
     
     public ItemDrag(Coord dc, GItem item) {
 	super(item);
