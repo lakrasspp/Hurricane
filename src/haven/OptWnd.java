@@ -2848,6 +2848,7 @@ public class OptWnd extends Window {
 
 
 	public static CheckBox overrideCursorItemWhenHoldingAltCheckBox;
+	public static CheckBox noCursorItemDroppingAltAnywhereCheckBox;
 	public static CheckBox noCursorItemDroppingAnywhereCheckBox;
 	public static CheckBox noCursorItemDroppingInWaterCheckBox;
 	public static CheckBox useOGControlsForBuildingAndPlacingCheckBox;
@@ -2869,6 +2870,10 @@ public class OptWnd extends Window {
 						if (noCursorItemDroppingAnywhereCheckBox.a) {// ND: Set it like this so it doesn't do the optionInfoMsg
 							noCursorItemDroppingAnywhereCheckBox.a = false;
 							Utils.setprefb("noCursorItemDroppingAnywhere", false);
+						}
+						if(noCursorItemDroppingAltAnywhereCheckBox.a) {
+							noCursorItemDroppingAltAnywhereCheckBox.a = false;
+							Utils.setprefb("noCursorItemDroppingAnywhereAlt", false);
 						}
 						if (noCursorItemDroppingInWaterCheckBox.a) { // ND: Set it like this so it doesn't do the optionInfoMsg
 							noCursorItemDroppingInWaterCheckBox.a = false;
@@ -2898,6 +2903,19 @@ public class OptWnd extends Window {
 				}
 			}, prev.pos("bl").adds(0, 12));
 			noCursorItemDroppingAnywhereCheckBox.tooltip = noCursorItemDroppingAnywhereTooltip;
+			prev = add(noCursorItemDroppingAltAnywhereCheckBox = new CheckBox("No cursor Item Dropping (Anywhere) (ALT)"){
+				{a = Utils.getprefb("noCursorItemDroppingAnywhereAlt", false);}
+				public void set(boolean val) {
+					Utils.setprefb("noCursorItemDroppingAnywhereAlt", val);
+					a = val;
+					if (val) {
+						if (noCursorItemDroppingAnywhereCheckBox.a) { // ND: Set it like this so it doesn't do the optionInfoMsg
+							overrideCursorItemWhenHoldingAltCheckBox.a = false;
+							Utils.setprefb("overrideCursorItemWhenHoldingAlt", false);
+						}
+					}
+				}
+			}, prev.pos("bl").adds(0,2));
 			prev = add(noCursorItemDroppingInWaterCheckBox = new CheckBox("No Cursor Item Dropping (Water Only)"){
 				{a = Utils.getprefb("noCursorItemDroppingInWater", false);}
 				public void set(boolean val) {
