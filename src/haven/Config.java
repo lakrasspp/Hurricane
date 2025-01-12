@@ -598,6 +598,23 @@ public class Config {
 			"strangecrystal"
 	));
 
+	public final static Set<String> bonesItemBaseNames = new HashSet<String>(Arrays.asList(
+			"bone",
+			"flipperbone",
+			"antlers-moose",
+			"lynxclaws",
+			"antlers-reddeer",
+			"borewormbeak",
+			"beartooth",
+			"walrustusk",
+			"whalebone",
+			"mammothtusk",
+			"wolfclaw",
+			"boartusk",
+			"orcatooth",
+			"spermwhaletooth"
+	));
+
 	public static final HashSet<String> maneuvers =  new HashSet<>(Arrays.asList(
 			"paginae/atk/toarms", "paginae/atk/shield", "paginae/atk/parry",
 			"paginae/atk/oakstance", "paginae/atk/dorg", "paginae/atk/chinup",
