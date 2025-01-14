@@ -139,6 +139,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	public Thread interactWithNearestObjectThread;
 	public Thread enterNearestVehicleThread;
 	public Thread wagonNearestLiftableThread;
+	public Thread steakMakerThread;
 	public Thread cloverScriptThread;
 	public Thread coracleScriptThread;
 	public Thread skisScriptThread;
@@ -1849,6 +1850,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	public static KeyBinding kb_clickNearestCursorObject  = KeyBinding.get("clickNearestCursorObjectKB",  KeyMatch.nil);
 	public static KeyBinding kb_enterNearestVehicle  = KeyBinding.get("enderNearestVehicle",  KeyMatch.forchar('Q', KeyMatch.C));
 	public static KeyBinding kb_wagonNearestLiftable  = KeyBinding.get("wagonNearestLiftable",  KeyMatch.nil);
+	public static KeyBinding kb_steakMaker = KeyBinding.get("steakMaker", KeyMatch.nil);
 	public static KeyBinding kb_toggleHidingBoxes  = KeyBinding.get("toggleHidingBoxesKB",  KeyMatch.forchar('H', KeyMatch.C));
 	public static KeyBinding kb_toggleCollisionBoxes  = KeyBinding.get("toggleCollisionBoxesKB",  KeyMatch.forchar('B', KeyMatch.S));
 	public static KeyBinding kb_toggleGrowthInfo  = KeyBinding.get("toggleGrowthInfoKB",  KeyMatch.forchar('I',  KeyMatch.C | KeyMatch.S));
@@ -1986,6 +1988,14 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 			wagonNearestLiftableThread.start();
 		}
 		return (true);
+	} else if(kb_steakMaker.key().match(ev)) {
+		if(steakMakerThread == null) {
+			steakMakerThread = new Thread(new steakMaker(this),"steakMaker");
+			steakMakerThread.start();
+		} else {
+			steakMakerThread.interrupt();
+			steakMakerThread = null;
+		}
 	} else if(kb_toggleHidingBoxes.key().match(ev)) {
 		OptWnd.toggleGobHidingCheckBox.set(!OptWnd.toggleGobHidingCheckBox.a);
 		return(true);
