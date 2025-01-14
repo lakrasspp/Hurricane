@@ -133,6 +133,8 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	static public final Resource feastingThemeLegacy = Resource.local().loadwait("customclient/sfx/feastingtheme_legacy");
 	static public Audio.CS feastingThemeClip = null;
 	public StatusWdg statusWdg = null;
+	private String yap_old;
+	private Random randYap = new Random();
 
 	// Script Threads
 	public Thread autoRepeatFlowerMenuScriptThread;
@@ -2052,11 +2054,11 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 		return (true);
 	} else if(kb_yap.key().match(ev)) {
 		Map<String, ChatUI.MultiChat> chats = ui.gui.chat.getMultiChannels();
-        try {
-            chats.get("Area Chat").send(yapper());
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+		String yap_new = yapper();
+		if (yap_old == null || !yap_new.equals(yap_old)) {
+			chats.get("Area Chat").send(yap_new);
+			yap_old = yap_new;
+		}
 		return(true);
     } else if(kb_autoDistance.key().match(ev)) {
 		this.runActionThread(new Thread(new AutoDistance(this), "AutoDistance"));
@@ -3084,15 +3086,17 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 		}
 	}
 
-	public String yapper() throws Exception {
-		File file = new File("yap/text.txt");
-		final RandomAccessFile f = new RandomAccessFile(file, "r");
-		final long randomLocation = (long) (Math.random() * f.length());
-		f.seek(randomLocation);
-		f.readLine();
-		String randomLine = f.readLine();
-		f.close();
-		return randomLine;
+	public String yapper() {
+		try {
+			Scanner sc = new Scanner(new File("yap/text.txt"));
+			ArrayList<String> lines = new ArrayList<>();
+
+			while(sc.hasNextLine()) {
+				lines.add(sc.nextLine());
+			}
+			return lines.get(randYap.nextInt(lines.size()));
+		} catch(Exception e) {}
+		return "bad";
 
 	}
 
