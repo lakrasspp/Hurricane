@@ -664,6 +664,7 @@ public class OptWnd extends Window {
 	public static CheckBox drawTargetSpeedBarCheckbox;
 	public static HSlider mapZoomSpeedSlider;
 	public static CheckBox showSimpleColors;
+	public static CheckBox drawMapOutlines;
 	public static CheckBox alwaysOpenMiniStudyOnLoginCheckBox;
 	public static CheckBox disableObjectsOutline;
 
@@ -715,7 +716,7 @@ public class OptWnd extends Window {
 			}
 		}, leftColumn.pos("bl").adds(0, 2));
 		dragWindowsInWhenResizingCheckBox.tooltip = dragWindowsInWhenResizingTooltip;
-		leftColumn = add(showHoverInventoriesWhenHoldingShiftCheckBox = new CheckBox("Show Hover-Inventories (Stacks, Belt, etc.) only when holding Shift"){
+		leftColumn = add(showHoverInventoriesWhenHoldingShiftCheckBox = new CheckBox("Show Hover-Inventories with Shift"){
 			{a = (Utils.getprefb("showHoverInventoriesWhenHoldingShift", true));}
 			public void changed(boolean val) {
 				Utils.setprefb("showHoverInventoriesWhenHoldingShift", val);
@@ -830,6 +831,20 @@ public class OptWnd extends Window {
 			}
 		}, rightColumn.pos("bl").adds(0, 2));
 		showMapMarkerNamesCheckBox.tooltip = showMapMarkerNamesTooltip;
+		rightColumn = add(showSimpleColors = new CheckBox("Simple Map Colors"){
+			{a = (Utils.getprefb("simpleMapColors", false));}
+			public void set(boolean val) {
+				Utils.setprefb("simpleMapColors", val);
+				a = val;
+			}
+		}, rightColumn.pos("bl").adds(0, 2));
+		rightColumn = add(drawMapOutlines = new CheckBox("Draw Outlines on Map"){
+			{a = (Utils.getprefb("drawMapOutlines", false));}
+			public void set(boolean val) {
+				Utils.setprefb("drawMapOutlines", val);
+				a = val;
+			}
+		}, rightColumn.pos("bl").adds(0, 2));
 		rightColumn = add(verticalContainerIndicatorsCheckBox = new CheckBox("Vertical Container Indicators"){
 			{a = (Utils.getprefb("verticalContainerIndicators", true));}
 			public void changed(boolean val) {
@@ -880,14 +895,6 @@ public class OptWnd extends Window {
 			{a = (Utils.getprefb("showInvNumbers", false));}
 			public void set(boolean val) {
 				Utils.setprefb("showInvNumbers", val);
-				a = val;
-			}
-		}, rightColumn.pos("bl").adds(0, 4));
-
-		rightColumn = add(showSimpleColors = new CheckBox("Simple Map Colors"){
-			{a = (Utils.getprefb("simpleMapColors", false));}
-			public void set(boolean val) {
-				Utils.setprefb("simpleMapColors", val);
 				a = val;
 			}
 		}, rightColumn.pos("bl").adds(0, 4));
