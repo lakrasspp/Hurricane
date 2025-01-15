@@ -28,8 +28,10 @@ package haven;
 
 import java.awt.Color;
 import java.awt.image.BufferedImage;
+import java.util.HashMap;
 
 public interface MapSource {
+	HashMap<BufferedImage, Color> simple_textures = new HashMap();
     public int gettile(Coord tc);
     public double getfz(Coord tc);
     public Tileset tileset(int t);
@@ -65,9 +67,16 @@ public interface MapSource {
 		}
 		BufferedImage tex = tileimg(m, texes, t);
 		int rgb = 0;
-		if(tex != null)
-		    rgb = tex.getRGB(Utils.floormod(c.x + a.ul.x, tex.getWidth()),
-				     Utils.floormod(c.y + a.ul.y, tex.getHeight()));
+		if(tex != null) {
+			if(OptWnd.showSimpleColors.a) {
+				Color simple_color =simple_tile_img(tex);
+				if(simple_color != null)
+					rgb = simple_color.getRGB();
+			}
+			else {
+				rgb = tex.getRGB(Utils.floormod(c.x + a.ul.x, tex.getWidth()), Utils.floormod(c.y + a.ul.y, tex.getHeight()));
+			}
+		}
 		buf.setRGB(c.x, c.y, rgb);
 	    }
 	}
@@ -107,4 +116,30 @@ public interface MapSource {
 //	}
 	return(buf);
     }
+
+	static Color simple_tile_img(BufferedImage img) {
+		synchronized(simple_textures) {
+			return (Color)simple_textures.computeIfAbsent(img, (i) -> {
+				int sumr = 0;
+				int sumg = 0;
+				int sumb = 0;
+
+				int x;
+				for(x = 0; x < img.getWidth(); ++x) {
+					for(int y = 0; y < img.getHeight(); ++y) {
+						int rgb = img.getRGB(x, y);
+						int red = rgb >> 16 & 255;
+						int green = rgb >> 8 & 255;
+						int blue = rgb & 255;
+						sumr += red;
+						sumg += green;
+						sumb += blue;
+					}
+				}
+
+				x = img.getWidth() * img.getHeight();
+				return new Color(sumr / x, sumg / x, sumb / x);
+			});
+		}
+	}
 }

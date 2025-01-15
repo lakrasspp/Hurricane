@@ -663,6 +663,7 @@ public class OptWnd extends Window {
 	public static CheckBox drawPlayerSpeedBarCheckBox;
 	public static CheckBox drawTargetSpeedBarCheckbox;
 	public static HSlider mapZoomSpeedSlider;
+	public static CheckBox showSimpleColors;
 	public static CheckBox alwaysOpenMiniStudyOnLoginCheckBox;
 	public static CheckBox disableObjectsOutline;
 
@@ -879,6 +880,14 @@ public class OptWnd extends Window {
 			{a = (Utils.getprefb("showInvNumbers", false));}
 			public void set(boolean val) {
 				Utils.setprefb("showInvNumbers", val);
+				a = val;
+			}
+		}, rightColumn.pos("bl").adds(0, 4));
+
+		rightColumn = add(showSimpleColors = new CheckBox("Simple Map Colors"){
+			{a = (Utils.getprefb("simpleMapColors", false));}
+			public void set(boolean val) {
+				Utils.setprefb("simpleMapColors", val);
 				a = val;
 			}
 		}, rightColumn.pos("bl").adds(0, 4));
