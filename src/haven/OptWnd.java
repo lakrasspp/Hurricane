@@ -646,6 +646,7 @@ public class OptWnd extends Window {
 	public static CheckBox extendedMouseoverInfoCheckBox;
 	public static CheckBox disableMenuGridHotkeysCheckBox;
 	public static CheckBox alwaysOpenBeltOnLoginCheckBox;
+	public static CheckBox alwaysOpenInventoryOnLoginCheckBox;
 	public static CheckBox showMapMarkerNamesCheckBox;
 	public static CheckBox verticalContainerIndicatorsCheckBox;
 	public static boolean expWindowLocationIsTop = Utils.getprefb("expWindowLocationIsTop", true);
@@ -824,6 +825,12 @@ public class OptWnd extends Window {
 			}
 		}, rightColumn.pos("bl").adds(0, 2));
 		alwaysOpenBeltOnLoginCheckBox.tooltip = alwaysOpenBeltOnLoginTooltip;
+		rightColumn = add(alwaysOpenInventoryOnLoginCheckBox = new CheckBox("Always Open Inventory on Login"){
+			{a = (Utils.getprefb("alwaysOpenInventoryOnLogin", true));}
+			public void changed(boolean val) {
+				Utils.setprefb("alwaysOpenInventoryOnLogin", val);
+			}
+		}, rightColumn.pos("bl").adds(0, 2));
 		rightColumn = add(showMapMarkerNamesCheckBox = new CheckBox("Show Map Marker Names"){
 			{a = (Utils.getprefb("showMapMarkerNames", true));}
 			public void changed(boolean val) {

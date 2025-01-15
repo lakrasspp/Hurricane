@@ -1096,7 +1096,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 		};
 	    invwnd.add(maininv = (Inventory)child, Coord.z);
 	    invwnd.pack();
-	    invwnd.hide();
+	    invwnd.show(OptWnd.alwaysOpenInventoryOnLoginCheckBox.a);
 	    add(invwnd, Utils.getprefc("wndc-inv", new Coord(100, 100)));
 	} else if(place == "equ") {
 	    equwnd = new Hidewnd(Coord.z, "Equipment");
