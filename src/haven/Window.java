@@ -27,6 +27,11 @@
 package haven;
 
 import haven.render.*;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 import java.util.function.*;
 import java.awt.Color;
 import java.awt.image.BufferedImage;
@@ -451,6 +456,8 @@ public class Window extends Widget {
     }
 
     public boolean mousedown(MouseDownEvent ev) {
+		if(ev.b == 3 && ui.modflags() == UI.MOD_META && showSpecialMenu())
+			return(true);
 	if(ev.propagate(this)) {
 	    parent.setfocus(this);
 	    raise();
@@ -737,4 +744,59 @@ public class Window extends Widget {
 			}
 		}
 	}
+
+	public boolean showSpecialMenu() {
+		List<Pair<String, Runnable>> list = new ArrayList<>();
+
+		Set<Inventory> invs = children(Inventory.class);
+		if (!invs.isEmpty()) {
+//			Runnable run = () -> {
+//				for (Inventory inv : invs) {
+//					ui.root.add(inv.sortingWindow(), inv.parentpos(ui.root));
+//				}
+//			};
+			//list.add(new Pair<>("Sort", run));
+			list.add(new Pair<>("Open Stacks", () -> invs.forEach(Inventory::openStacks)));
+			list.add(new Pair<>("Close Stacks", () -> invs.forEach(Inventory::closeStacks)));
+			list.add(new Pair<>("Toggle Inventory", () -> invs.forEach(Inventory::toggleAltInventory)));
+//            list.put("Stack", () -> {});
+//            list.put("Unstack", () -> {});
+		}
+		if (!list.isEmpty()) {
+			String[] options = new String[list.size()];
+			Iterator<Pair<String, Runnable>> it = list.iterator();
+			for (int i = 0; i < options.length; i++) {
+				options[i] = it.next().a;
+			}
+			Consumer<Integer> callback = selection -> {
+				if (selection == -1)
+					return;
+				Iterator<Pair<String, Runnable>> iterator = list.iterator();
+				Pair<String, Runnable> entry = iterator.next();
+				for (int i = 0; i < selection; i++) {
+					if (iterator.hasNext())
+						entry = iterator.next();
+					else
+						return;
+				}
+				try {
+					entry.b.run();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			};
+			final FlowerMenu modmenu = new FlowerMenu(callback, options);
+			ui.root.getchilds(FlowerMenu.class).forEach(wdg -> wdg.choose(null));
+			ui.root.add(modmenu, ui.mc);
+			return (true);
+		} else {
+			return (false);
+		}
+	}
+
+//	@Override
+//	public void cresize(Widget ch) {
+//		super.cresize(ch);
+//		pack();
+//	}
 }
