@@ -1872,6 +1872,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	public static KeyBinding kb_yap = KeyBinding.get("kb_yap", KeyMatch.nil);
 	public static KeyBinding kb_autoDistance = KeyBinding.get("kb_autoDistance", KeyMatch.nil);
 	public static KeyBinding kb_flatWorld = KeyBinding.get("kb_flatWorld", KeyMatch.forchar('F', KeyMatch.C));
+	public static KeyBinding kb_playerBox = KeyBinding.get("kb_playerBox", KeyMatch.nil);
 
     public boolean globtype(GlobKeyEvent ev) {
 	if(ev.c == ':') {
@@ -2066,6 +2067,8 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	} else if(kb_flatWorld.key().match(ev)) {
 		OptWnd.flatWorldCheckBox.set(!OptWnd.flatWorldCheckBox.a);
 		return(true);
+	} else if(kb_playerBox.key().match(ev)) {
+		OptWnd.drawPlayerBox.set(!OptWnd.drawPlayerBox.a);
 	} else if((ev.c == 27) && (map != null) && !map.hasfocus) {
 	    setfocus(map);
 	    return(true);

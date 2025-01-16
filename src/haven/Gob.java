@@ -557,9 +557,6 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	if (isMe != null) {
 		setCustomPlayerName();
 		playPlayerAlarm();
-		if(isMe){
-			updatePlayerOl();
-		}
 	}
 	if (getattr(Moving.class) instanceof Following){
 		Following following = (Following) getattr(Moving.class);
@@ -1230,7 +1227,6 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		updateMineLadderRadius();
 		updateSupportOverlays();
 		initPermanentHighlightOverlay();
-		//updatePlayerOl();
 	}
 
 	public void updPose(HashSet<String> poses) {
@@ -1957,6 +1953,13 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 			String resourceName = getres().name;
 			if (resourceName.equals("gfx/kritter/midgeswarm/midgeswarm"))
 				setAuraCircleOverlay(OptWnd.showMidgesCircleAurasCheckBox.a, new Color(192, 0, 0, 140), 6f);
+		}
+	}
+
+	public void updatePlayerOverlays() {
+		if(getres() != null) {
+			if(isMe)
+				setBoxOverlay(OptWnd.drawPlayerBox.a);
 		}
 	}
 

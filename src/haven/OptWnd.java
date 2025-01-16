@@ -663,6 +663,7 @@ public class OptWnd extends Window {
 	public static CheckBox alwaysShowCombatUIHealthBarCheckBox;
 	public static CheckBox drawPlayerSpeedBarCheckBox;
 	public static CheckBox drawTargetSpeedBarCheckbox;
+	public static CheckBox drawPlayerBox;
 	public static HSlider mapZoomSpeedSlider;
 	public static CheckBox showSimpleColors;
 	public static CheckBox drawMapOutlines;
@@ -2143,6 +2144,16 @@ public class OptWnd extends Window {
 					Utils.setprefb("drawTargetSpeedBar", val);
 				}
 			}, rightColumn.pos("bl").add(0, 2));
+			rightColumn = add(drawPlayerBox = new CheckBox("Draw Player Box"){
+				{a = Utils.getprefb("drawPlayerBox", false);}
+				public void changed(boolean val) {
+					Utils.setprefb("drawPlayerBox", val);
+					if (ui != null && ui.gui != null) {
+						ui.sess.glob.oc.gobAction(Gob::updatePlayerOverlays);
+					}
+				}
+
+			}, rightColumn.pos("bl").add(0, 2));
 
 			rightColumn = add(highlightPartyMembersCheckBox = new CheckBox("Highlight Party Members"){
 				{a = Utils.getprefb("highlightPartyMembers", false);}
@@ -2534,6 +2545,7 @@ public class OptWnd extends Window {
 		y = addbtnImproved(cont, "Night Vision / Brighter World", "This will simulate daytime lighting during the night. \n$col[185,185,185]{It slightly affects the light levels during the day too.}" +
 				"\n\n$col[218,163,0]{Note:} $col[185,185,185]{This keybind just switches the value of Night Vision / Brighter World between minimum and maximum. This can also be set more precisely using the slider in the World Graphics Settings.}", Color.WHITE, GameUI.kb_nightVision, y);
 		y = addbtn(cont, "Flat World", GameUI.kb_flatWorld, y);
+		y = addbtn(cont, "Display Player Box", GameUI.kb_playerBox, y);
 
 		y+=UI.scale(12);
 		y = addbtn(cont, "Inventory search", GameUI.kb_searchInventoriesButton, y);
