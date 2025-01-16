@@ -22,8 +22,8 @@ public class Shopbox extends Widget implements ItemInfo.SpriteOwner, GSprite.Own
 	pricec = UI.scale(200, 5),
 	qualc = UI.scale(220 + 40, 5).add(invsq.sz()),
 	cbtnc = UI.scale(220, 66),
-	spipec = UI.scale(85, 66),
-	bpipec = UI.scale(300, 66);
+	spipec = UI.scale(85, 43),
+	bpipec = UI.scale(299, 66);
     public ResData res;
     public ItemSpec price;
     public Text num;
@@ -262,7 +262,7 @@ public class Shopbox extends Widget implements ItemInfo.SpriteOwner, GSprite.Own
 		bbtn100 = add(new Button(75, "Buy x"), buyca);
 		bbtn100.tooltip = "Type the number in box press enter and press this button.";
 
-		tbuy = add(new TextEntry(40, "") {
+		tbuy = add(new TextEntry(UI.scale(73), "") {
 			String backup = text();
 
 			@Override
@@ -286,7 +286,7 @@ public class Shopbox extends Widget implements ItemInfo.SpriteOwner, GSprite.Own
 				}
 				return (b);
 			}
-		}, UI.scale(82, 66));
+		}, UI.scale(86, 68));
 	} else if(!canbuy && (bbtn != null)) {
 	    bbtn.reqdestroy();
 	    bbtn = null;
