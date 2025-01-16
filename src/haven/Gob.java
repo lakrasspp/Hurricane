@@ -84,6 +84,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	private Overlay customSearchOverlay;
 	public Boolean knocked = null;  // knocked will be null if pose update request hasn't been received yet
 	private Overlay customAuraOverlay;
+	private Overlay customBoxOverlay;
 	private Overlay customRadiusOverlay;
 	public static Boolean batWingCapeEquipped = false; // ND: Check for Bat Wing Cape
 	public static Boolean nightQueenDefeated = false; // ND: Check for Bat Dungeon Experience (Defeated Bat Queen)
@@ -557,6 +558,9 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	if (isMe != null) {
 		setCustomPlayerName();
 		playPlayerAlarm();
+		if(isMe){
+			updatePlayerOl();
+		}
 	}
 	if (getattr(Moving.class) instanceof Following){
 		Following following = (Following) getattr(Moving.class);
@@ -650,7 +654,9 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	}
 	ol.init();
 	ol.add0();
-	ols.add(ol);
+	synchronized(ols){
+		ols.add(ol);
+	}
 	try {
 		Sprite spr = ol.spr;
 		if(spr != null) {
@@ -785,7 +791,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		}
 	    }
 	    if(a instanceof SetupMod)
-		setupmods.add((SetupMod)a);
+			setupmods.add((SetupMod)a);
 	    attr.put(ac, a);
 	}
 	if (ac == Drawable.class) {
@@ -1224,6 +1230,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		updateMineLadderRadius();
 		updateSupportOverlays();
 		initPermanentHighlightOverlay();
+		//updatePlayerOl();
 	}
 
 	public void updPose(HashSet<String> poses) {
@@ -1966,6 +1973,17 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 
 
 
+	private void setBoxOverlay(boolean enabled) {
+		if (enabled) {
+			if (customBoxOverlay == null) {
+				customBoxOverlay  = new Overlay(this, new SquareSprite(this, new Coord2d(MCache.cmaps), null, new Coord2d(MCache.cmaps)));
+				addol(customBoxOverlay);
+			}
+		} else if (customBoxOverlay != null) {
+			removeOl(customBoxOverlay);
+			customBoxOverlay = null;
+		}
+	}
 	private void setRadiusOverlay(boolean enabled, Color col, float radius) {
 		if (enabled) {
 			if (customRadiusOverlay != null) {
@@ -2292,6 +2310,9 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		}
 	}
 
+	public void updatePlayerOl(){
+		setBoxOverlay(true);
+	}
 
 	public void setCombatFoeCircleOverlay() {
 		if (OptWnd.showCirclesUnderCombatFoesCheckBox.a && combatFoeCircleOverlay == null) {
