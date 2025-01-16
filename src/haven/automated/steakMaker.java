@@ -82,7 +82,7 @@ public class steakMaker implements Runnable {
                 }
 
                 //Place the object
-                gui.map.wdgmsg("click", Coord.z, target.rc.floor(posres), 3, 0, 0, target.rc.floor(posres), 0, -1);
+                gui.map.wdgmsg("click", Coord.z, player.rc.add(0, 5.5).floor(posres), 3, 0);
                 if (waitPose(player, "banzai", false, 1, 6000)) {
                     throw new InterruptedException("Storing in vehicle took to long");
                 }
