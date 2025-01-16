@@ -35,6 +35,7 @@ import java.sql.Connection;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.function.Consumer;
 
 import static java.lang.Math.PI;
 
@@ -55,6 +56,8 @@ public class FlowerMenu extends Widget {
 	public final String[] options;
 	private static final String DATABASE = "jdbc:sqlite:static_data.db";
 	public static Map<String, Boolean> autoSelectMap = new TreeMap<>();
+
+	private Consumer<Integer> callback = null;
 
     @RName("sm")
     public static class $_ implements Factory {
@@ -259,6 +262,18 @@ public class FlowerMenu extends Widget {
 	}
     }
 
+	public FlowerMenu(Consumer<Integer> callback, String... options) {
+		super(Coord.z);
+		this.callback = callback;
+		this.options = options;
+		addOptionsToDatabase(options);
+		opts = new Petal[options.length];
+		for(int i = 0; i < options.length; i++) {
+			add(opts[i] = new Petal(options[i], i));
+			opts[i].num = i;
+		}
+	}
+
     protected void added() {
 	if(c.equals(-1, -1))
 	    c = parent.ui.lcc;
@@ -313,7 +328,13 @@ public class FlowerMenu extends Widget {
     public void choose(Petal option) {
 	if(option == null) {
 	    wdgmsg("cl", -1);
-	} else {
+	} else	if(callback != null){
+		callback.accept(option != null ? option.num : -1);
+		ui.destroy(this);
+		return;
+	}
+	else {
+
 		if(AutoRepeatFlowerMenuScript.option != null){
 			AutoRepeatFlowerMenuScript.option = option.name;
 		}

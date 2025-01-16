@@ -3,12 +3,14 @@ package haven.res.ui.stackinv;
 
 import haven.*;
 import haven.res.ui.tt.q.quality.Quality;
+import hurricane.nords.InventoryListener;
+import hurricane.nords.InventoryObserver;
 
 import java.util.*;
 
 /* >wdg: ItemStack */
 @haven.FromResource(name = "ui/stackinv", version = 1)
-public class ItemStack extends Widget implements DTarget {
+public class ItemStack extends Widget implements DTarget, InventoryListener, InventoryObserver {
     public final List<GItem> order = new ArrayList<>();
     public final Map<GItem, WItem> wmap = new HashMap<>();
     private boolean dirty;
@@ -44,6 +46,8 @@ public class ItemStack extends Widget implements DTarget {
 	    dirty = true;
 		stackQualityNeedsUpdate = true;
 		delayedUpdateTime = System.currentTimeMillis();
+		i.addListeners(listeners());
+		observers().forEach(InventoryListener::dirty);
 	}
     }
 
@@ -56,6 +60,8 @@ public class ItemStack extends Widget implements DTarget {
 	    dirty = true;
 		stackQualityNeedsUpdate = true;
 		delayedUpdateTime = System.currentTimeMillis();
+		i.removeListeners(listeners());
+		observers().forEach(InventoryListener::dirty);
 	}
     }
 
@@ -121,5 +127,37 @@ public class ItemStack extends Widget implements DTarget {
 				}
 			}
 		}
+	}
+
+	@Override
+	public void dirty() {}
+
+	private final List<InventoryListener> listeners = Collections.synchronizedList(new ArrayList<>());
+
+	@Override
+	public void initListeners(final List<InventoryListener> listeners) {
+		this.listeners.addAll(listeners);
+	}
+
+	@Override
+	public List<InventoryListener> listeners() {
+		return (listeners);
+	}
+
+	private final List<InventoryListener> listeners2 = Collections.synchronizedList(new ArrayList<>());
+
+	@Override
+	public List<InventoryListener> observers() {
+		return (listeners2);
+	}
+
+	@Override
+	public void addListeners(final List<InventoryListener> listeners) {
+		listeners2.addAll(listeners);
+	}
+
+	@Override
+	public void removeListeners(final List<InventoryListener> listeners) {
+		listeners2.removeAll(listeners);
 	}
 }

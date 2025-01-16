@@ -26,15 +26,19 @@
 
 package haven;
 
+import java.lang.reflect.Field;
 import java.util.*;
 import haven.render.*;
 import haven.res.ui.tt.q.qbuff.QBuff;
 import haven.res.ui.tt.q.quality.Quality;
+import hurricane.nords.InventoryListener;
+import hurricane.nords.InventoryObserver;
 
 import java.awt.Color;
 import java.awt.image.BufferedImage;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owner, RandomSource {
+public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owner, RandomSource, InventoryListener, InventoryObserver {
     public Indir<Resource> res;
     public MessageBuf sdt;
     public int meter = 0;
@@ -200,6 +204,7 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 	if(spr != null) {
 		spr.tick(dt);
 	}
+	updateQuality();
 	updcontinfo();
 	if(!hoverset)
 	    hovering = null;
@@ -267,6 +272,14 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 	 * on that. */
 	if(true || ((String)args[0]).equals("contents")) {
 	    contents = child;
+		if (child instanceof InventoryListener) {
+			InventoryListener inv = (InventoryListener) child;
+			inv.initListeners(observers());
+		}
+		if (child instanceof InventoryObserver) {
+			InventoryObserver inv = (InventoryObserver) child;
+			inv.addListeners(listeners2);
+		}
 	    contentsnm = (String)args[1];
 	    contentsid = null;
 	    if(args.length > 2)
@@ -363,6 +376,19 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 	super.destroy();
     }
 
+	@Override
+	public void cdestroy(Widget w) {
+		super.cdestroy(w);
+		if (w == contents) {
+			contents = null;
+			contentsid = null;
+			if (w instanceof InventoryObserver) {
+				InventoryObserver inv = (InventoryObserver) w;
+				inv.removeListeners(listeners2);
+			}
+		}
+	}
+
     public void hovering(Widget hovering) {
 	this.hovering = hovering;
 	this.hoverset = true;
@@ -435,6 +461,35 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 	}
     }
 
+	public void showcontwnd(boolean show) {
+		if (show && (contentswnd == null)) {
+			Widget contents = this.contents;
+			Object contentsid = this.contentsid;
+			Widget cont = contparent();
+			Coord wc = null;
+//            if (this.contentsid != null)
+//                wc = Utils.getprefc(String.format("cont-wndc/%s", this.contentsid), null);
+			if (wc == null)
+				wc = cont.rootxlate(ui.mc).add(UI.scale(5, 5));
+			contents.unlink();
+
+			Window anotherWnd = ui.gui.getwnd(contentsnm);
+			ContentsWindow wnd = new ContentsWindow(this, contents);
+
+			GameUI gui = getparent(GameUI.class);
+			if (anotherWnd != null && gui != null) wc = gui.optplacement(wnd, wc);
+
+			contentswnd = cont.add(wnd, wc);
+			if (contentsid != null) {
+				Utils.setprefb(String.format("cont-wndvis/%s", contentsid), true);
+//                Utils.setprefc(String.format("cont-wndc/%s", this.contentsid), wc);
+			}
+		} else if (!show && (contentswnd != null)) {
+			contentswnd.reqdestroy();
+			contentswnd = null;
+		}
+	}
+
     public static class ContentsWindow extends Window {
 	public static final Coord overlap = UI.scale(2, 2);
 	public final GItem cont;
@@ -498,9 +553,9 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 		    if((prev instanceof ContentsWindow) && (((ContentsWindow)prev).st == "hover")) {
 			for(Widget p = hover; p != null; p = p.parent) {
 			    if(p == prev)
-				break ckparent;
+					break ckparent;
 			    if(p instanceof ContentsWindow)
-				break;
+					break;
 			}
 			return;
 		    }
@@ -699,5 +754,94 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 		} catch (Exception ignored) {
 		}
 		return null;
+	}
+
+	private final AtomicBoolean needUpdateQuality = new AtomicBoolean();
+	private final Object infoSync = new Object();
+
+	private void updateQuality() {
+		if (needUpdateQuality.get()) {
+			needUpdateQuality.set(false);
+
+			try {
+				List<ItemInfo> info = this.info;
+				if (info != null && !info.isEmpty()) {
+					synchronized (infoSync) {
+						info = this.info;
+						if (info != null && !info.isEmpty()) {
+							Widget stack = contents;
+							if (stack != null) {
+								List<WItem> ret = new ArrayList<>();
+								if (stack.getClass().toString().contains("ItemStack")) {
+									try {
+										Field fwmap = stack.getClass().getField("wmap");
+										Map<GItem, WItem> wmap = (Map<GItem, WItem>) fwmap.get(stack);
+										ret.addAll(wmap.values());
+									} catch (IllegalAccessException | NoSuchFieldException e) {
+										throw (new RuntimeException(e));
+									}
+								}
+								if (!ret.isEmpty()) {
+									int amount = 0;
+									double sum = 0;
+									for (WItem w : ret) {
+										QBuff q = w.item.getQBuff();
+										if (q != null) {
+											amount++;
+											sum += q.q;
+										}
+									}
+									if (amount > 0) {
+										Quality q = ItemInfo.find(Quality.class, info);
+										if (q == null) {
+											info.add(new Quality(this, sum / amount));
+										} else {
+											q.q = sum / amount;
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+				//filtered = 0;
+			} catch (Throwable e) {
+				needUpdateQuality.set(true);
+			}
+		}
+	}
+
+	private final List<InventoryListener> listeners = Collections.synchronizedList(new ArrayList<>());
+	private final List<InventoryListener> listeners2 = Collections.synchronizedList(new ArrayList<>());
+
+	@Override
+	public void dirty() {
+		needUpdateQuality.set(true);
+	}
+
+	@Override
+	public void initListeners(final List<InventoryListener> listeners) {
+		listeners2.addAll(listeners);
+	}
+
+	@Override
+	public List<InventoryListener> listeners() {
+		return (listeners2);
+	}
+
+	@Override
+	public List<InventoryListener> observers() {
+		return (listeners);
+	}
+	@Override
+	public void addListeners(final List<InventoryListener> listeners) {
+		this.listeners.addAll(listeners);
+		this.listeners.forEach(InventoryListener::dirty);
+	}
+
+	@Override
+	public void removeListeners(final List<InventoryListener> listeners) {
+		this.listeners.forEach(InventoryListener::dirty);
+		this.listeners.removeAll(listeners);
 	}
 }

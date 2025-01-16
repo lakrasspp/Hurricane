@@ -2408,7 +2408,7 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 												if (ol.spr.res != null) {
 													return ol.spr.res.name;
 												} else {
-													return null;
+													return (RichText.Parser.quote(ol.toString()));
 												}
 											})
 											.filter(Objects::nonNull)
