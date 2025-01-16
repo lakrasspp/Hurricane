@@ -67,6 +67,7 @@ public class MiniMap extends Widget {
 	public boolean compact;
 	private static final Color BIOME_BG = new Color(0, 0, 0, 110);
 	private String biome;
+	public static Map<String, Tex> cachedTextTex = new HashMap();
 	private Tex biometex;
 	public static boolean showMapViewRange = Utils.getprefb("showMapViewRange", true);
 	public static boolean showMapGridLines = Utils.getprefb("showMapGridLines", false);
@@ -90,6 +91,17 @@ public class MiniMap extends Widget {
 	}
 	super.attached();
     }
+
+	public static Tex getCachedTextTex(String text) {
+		Tex tex = (Tex)cachedTextTex.get(text);
+		if (tex == null) {
+			Text.Foundry fnd = (new Text.Foundry(Text.latin.deriveFont(1), UI.scale(12))).aa(true);
+			tex = Text.renderstroked(text, Color.white, Color.BLACK, fnd).tex();
+			cachedTextTex.put(text, tex);
+		}
+
+		return tex;
+	}
 
     public static class Location {
 	public Segment seg;
@@ -402,12 +414,18 @@ public class MiniMap extends Widget {
 	}
 
 	public void draw(GOut g, Coord c) {
+		Tex ttex;
 	    if(m instanceof PMarker) {
 		Coord ul = c.sub(flagcc);
 		g.chcolor(((PMarker)m).color);
 		g.image(flagfg, ul);
 		g.chcolor();
 		g.image(flagbg, ul);
+		if(OptWnd.showMapMarkerNamesCheckBox.a) {
+			ttex = MiniMap.getCachedTextTex(m.nm);
+			if(ttex != null)
+				g.aimage(ttex, ul.add(flagfg.sz.x / 2, -20), 0.5, 0.0);
+		}
 	    } else if(m instanceof SMarker) {
 		SMarker sm = (SMarker)m;
 		try {
@@ -425,9 +443,42 @@ public class MiniMap extends Widget {
 		}
 		if(img != null)
 		    g.image(img, c.sub(cc));
+
+		if(OptWnd.showMapMarkerNamesCheckBox.a && sm.res != null && (sm.res.name.startsWith("gfx/invobjs/small") || sm.res.name.contains("thingwall") || sm.res.name.contains("gfx/terobjs/mm/gianttoad"))) {
+			ttex =MiniMap.getCachedTextTex(sm.nm);
+			if(ttex != null)
+				g.aimage(ttex, c.add(0, -15), 0.5, 1.0);
+		}
 	    }
 	}
-    }
+
+	public void drawcompact(GOut g, Coord c) {
+		if(m instanceof PMarker) {
+			Coord ul = c.sub(flagcc);
+			g.chcolor(((PMarker)m).color);
+			g.image(flagfg, ul);
+			g.chcolor();
+			g.image(flagbg, ul);
+		} else if(m instanceof SMarker) {
+			SMarker sm = (SMarker)m;
+			try {
+				if(cc == null) {
+					Resource res = sm.res.get();
+					img = res.flayer(Resource.imgc);
+					Resource.Neg neg = res.layer(Resource.negc);
+					cc = (neg != null) ? neg.cc : img.ssz.div(2);
+					if(hit == null)
+						hit = Area.sized(cc.inv(), img.ssz);
+					}
+			} catch(Loading l) {
+			} catch(Exception e) {
+				cc = Coord.z;
+			}
+			if(img != null)
+				g.image(img, c.sub(cc));
+		}
+	}
+	}
 
     public static class DisplayGrid {
 	public final MapFile file;
@@ -652,11 +703,10 @@ public class MiniMap extends Widget {
 	    for(DisplayMarker mark : dgrid.markers(true)) {
 		if(filter(mark))
 		    continue;
-		mark.draw(g, mark.m.tc.sub(dloc.tc).div(scalef()).add(hsz));
-		if (!compact) {
-			if (OptWnd.showMapMarkerNamesCheckBox.a)
-			g.image(DisplayMarker.titleTexMap.get(mark.tip.text), mark.m.tc.sub(dloc.tc).div(scalef()).add(hsz).add(-mark.tip.text.length()*3,-30));
-		}
+		if(!compact)
+			mark.draw(g, mark.m.tc.sub(dloc.tc).div(scalef()).add(hsz));
+		if(compact)
+			mark.drawcompact(g, mark.m.tc.sub(dloc.tc).div(scalef()).add(hsz));
 	    }
 	}
     }
@@ -1140,30 +1190,30 @@ public class MiniMap extends Widget {
 		}
 	}
 
-	private static final Color gridColor = new Color(180, 0, 0);
+	private static final Color gridColor = new Color(180, 0, 0, 150);
 	void drawgridlines(GOut g) {
 		Coord2d zmaps = new Coord2d(cmaps).div(scalef());
 		Coord2d offset = new Coord2d(sz.div(2)).sub(new Coord2d(dloc.tc).div(scalef())).mod(zmaps);
 		double width = UI.scale(2f/zoomlevel);
-		double width2 = UI.scale((2f/zoomlevel) + 2f);
+	//	double width2 = UI.scale(2f/zoomlevel);
 		Color col = g.getcolor();
 		Coord gridlines = sz.div(zmaps);
 		Coord2d ulgrid = dgext.ul.mul(zmaps).mod(zmaps);
-		g.chcolor(Color.BLACK);
-		for (int x = -1; x < gridlines.x+1; x++) {
-			Coord up = new Coord2d((zmaps.x*x+ulgrid.x+offset.x), 0).floor();
-			Coord dn = new Coord2d((zmaps.x*x+ulgrid.x+offset.x), sz.y).floor();
-			if(up.x >= 0 && up.x <= sz.x) {
-				g.line(up, dn, width2);
-			}
-		}
-		for (int y = -1; y < gridlines.y+1; y++) {
-			Coord le = new Coord2d(0, (zmaps.y*y+ulgrid.y+offset.y)).floor();
-			Coord ri = new Coord2d(sz.x, (zmaps.y*y+ulgrid.y+offset.y)).floor();
-			if(le.y >= 0 && le.y <= sz.y) {
-				g.line(le, ri, width2);
-			}
-		}
+//		g.chcolor(Color.BLACK);
+//		for (int x = -1; x < gridlines.x+1; x++) {
+//			Coord up = new Coord2d((zmaps.x*x+ulgrid.x+offset.x), 0).floor();
+//			Coord dn = new Coord2d((zmaps.x*x+ulgrid.x+offset.x), sz.y).floor();
+//			if(up.x >= 0 && up.x <= sz.x) {
+//				g.line(up, dn, width2);
+//			}
+//		}
+//		for (int y = -1; y < gridlines.y+1; y++) {
+//			Coord le = new Coord2d(0, (zmaps.y*y+ulgrid.y+offset.y)).floor();
+//			Coord ri = new Coord2d(sz.x, (zmaps.y*y+ulgrid.y+offset.y)).floor();
+//			if(le.y >= 0 && le.y <= sz.y) {
+//				g.line(le, ri, width2);
+//			}
+//		}
 		g.chcolor(gridColor);
 		for (int x = -1; x < gridlines.x+1; x++) {
 			Coord up = new Coord2d((zmaps.x*x+ulgrid.x+offset.x), 0).floor();

@@ -419,6 +419,7 @@ public class MapFile {
 	public final float[] zmap;
 	public final Collection<Overlay> ols = new ArrayList<>();
 	public final long mtime;
+	public static final HashMap<BufferedImage, Color> simple_textures = new HashMap();
 
 	public DataGrid(TileInfo[] tilesets, int[] tiles, float[] zmap, long mtime) {
 	    this.tilesets = tilesets;
@@ -457,40 +458,76 @@ public class MapFile {
 	}
 
 	public BufferedImage render(Coord off) {
-	    BufferedImage[] texes = new BufferedImage[tilesets.length];
-	    boolean[] cached = new boolean[tilesets.length];
-	    WritableRaster buf = PUtils.imgraster(cmaps);
-	    Coord c = new Coord();
-	    for(c.y = 0; c.y < cmaps.y; c.y++) {
-		for(c.x = 0; c.x < cmaps.x; c.x++) {
-		    int t = gettile(c);
-		    BufferedImage tex = tiletex(t, texes, cached);
-		    int rgb = 0;
-		    if(tex != null)
-			rgb = tex.getRGB(Utils.floormod(c.x + off.x, tex.getWidth()),
-					 Utils.floormod(c.y + off.y, tex.getHeight()));
-		    buf.setSample(c.x, c.y, 0, (rgb & 0x00ff0000) >>> 16);
-		    buf.setSample(c.x, c.y, 1, (rgb & 0x0000ff00) >>>  8);
-		    buf.setSample(c.x, c.y, 2, (rgb & 0x000000ff) >>>  0);
-		    buf.setSample(c.x, c.y, 3, (rgb & 0xff000000) >>> 24);
+		BufferedImage[] texes = new BufferedImage[tilesets.length];
+		boolean[] cached = new boolean[tilesets.length];
+		WritableRaster buf = PUtils.imgraster(cmaps);
+		Coord c = new Coord();
+		for (c.y = 0; c.y < cmaps.y; c.y++) {
+			for (c.x = 0; c.x < cmaps.x; c.x++) {
+				int t = gettile(c);
+				BufferedImage tex = tiletex(t, texes, cached);
+				int rgb = 0;
+				if (tex != null) {
+					if (OptWnd.showSimpleColors.a) {
+						Color simple_color = simple_tile_img(tex);
+						if (simple_color != null)
+							rgb = simple_color.getRGB();
+					} else {
+						rgb = tex.getRGB(Utils.floormod(c.x + off.x, tex.getWidth()),
+								Utils.floormod(c.y + off.y, tex.getHeight()));
+					}
+				}
+
+
+				buf.setSample(c.x, c.y, 0, (rgb & 0x00ff0000) >>> 16);
+				buf.setSample(c.x, c.y, 1, (rgb & 0x0000ff00) >>> 8);
+				buf.setSample(c.x, c.y, 2, (rgb & 0x000000ff) >>> 0);
+				buf.setSample(c.x, c.y, 3, (rgb & 0xff000000) >>> 24);
+			}
 		}
-	    }
-	    for(c.y = 1; c.y < cmaps.y - 1; c.y++) {
-		for(c.x = 1; c.x < cmaps.x - 1; c.x++) {
-		    int p = tilesets[gettile(c)].prio;
-		    if((tilesets[gettile(c.add(-1, 0))].prio > p) ||
-		       (tilesets[gettile(c.add( 1, 0))].prio > p) ||
-		       (tilesets[gettile(c.add(0, -1))].prio > p) ||
-		       (tilesets[gettile(c.add(0,  1))].prio > p))
-		    {
-			buf.setSample(c.x, c.y, 0, 0);
-			buf.setSample(c.x, c.y, 1, 0);
-			buf.setSample(c.x, c.y, 2, 0);
-			buf.setSample(c.x, c.y, 3, 255);
-		    }
-		}
-	    }
+		if (OptWnd.drawMapOutlines.a) {
+			for (c.y = 1; c.y < cmaps.y - 1; c.y++) {
+				for (c.x = 1; c.x < cmaps.x - 1; c.x++) {
+					int p = tilesets[gettile(c)].prio;
+					if ((tilesets[gettile(c.add(-1, 0))].prio > p) ||
+							(tilesets[gettile(c.add(1, 0))].prio > p) ||
+							(tilesets[gettile(c.add(0, -1))].prio > p) ||
+							(tilesets[gettile(c.add(0, 1))].prio > p)) {
+						buf.setSample(c.x, c.y, 0, 0);
+						buf.setSample(c.x, c.y, 1, 0);
+						buf.setSample(c.x, c.y, 2, 0);
+						buf.setSample(c.x, c.y, 3, 255);
+					}
+				}
+			}
+	}
 	    return(PUtils.rasterimg(buf));
+	}
+
+	private static Color simple_tile_img(BufferedImage img) {
+		synchronized(simple_textures) {
+			return (Color)simple_textures.computeIfAbsent(img, (i) -> {
+				int sumr = 0;
+				int sumg = 0;
+				int sumb = 0;
+
+				int x;
+				for(x = 0; x < img.getWidth(); ++x) {
+					for(int y = 0; y < img.getHeight(); ++y) {
+						int rgb = img.getRGB(x, y);
+						int red = rgb >> 16 & 255;
+						int green = rgb >> 8 & 255;
+						int blue = rgb & 255;
+						sumr += red;
+						sumg += green;
+						sumb += blue;
+					}
+				}
+
+				x = img.getWidth() * img.getHeight();
+				return new Color(sumr / x, sumg / x, sumb / x);
+			});
+		}
 	}
 
 	private static Color olcol(MCache.OverlayInfo olid) {

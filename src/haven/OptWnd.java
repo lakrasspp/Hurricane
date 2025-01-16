@@ -155,6 +155,12 @@ public class OptWnd extends Window {
 			    a = val;
 			}
 		    }, Coord.z);
+		prev = add(disableObjectsOutline = new CheckBox("Disable Objects Outlines ( Requires Restart )"){
+			{a = (Utils.getprefb("disableOutlines", false));}
+			public void changed(boolean val) {
+				Utils.setprefb("disableOutlines", val);
+			}
+			}, prev.pos("bl").adds(0, 5));
 		prev = add(new Label("Render scale"), prev.pos("bl").adds(0, 5));
 		{
 		    Label dpy = new Label("");
@@ -421,12 +427,15 @@ public class OptWnd extends Window {
 
 	public static HSlider instrumentsSoundVolumeSlider;
 	public static HSlider clapSoundVolumeSlider;
+	public static HSlider bellSoundVolumeSlider;
+	public static HSlider armorSoundVolumeSlider;
 	public static HSlider quernSoundVolumeSlider;
 	public static HSlider cauldronSoundVolumeSlider;
 	public static HSlider squeakSoundVolumeSlider;
 	public static HSlider butcherSoundVolumeSlider;
 	public static HSlider whiteDuckCapSoundVolumeSlider;
 	private final int audioSliderWidth = 220;
+	public static HSlider themeSongVolumeSlider;
 
     public class AudioPanel extends Panel {
 	public AudioPanel(Panel back) {
@@ -436,6 +445,59 @@ public class OptWnd extends Window {
 			Audio.setvolume(val / 1000.0);
 		    }
 		}, prev.pos("bl").adds(0, 2));
+		prev = add(new Label("Background Music Volume"), prev.pos("bl").adds(0, 15));
+		prev = add(themeSongVolumeSlider = new HSlider(UI.scale(220), 0, 100, Utils.getprefi("themeSongVolume", 40)) {
+			protected void attach(UI ui) {
+				super.attach(ui);
+			}
+			public void changed() { // ND: I hate hardcoding stuff but OH WELL
+				if (LoginScreen.mainThemeClip != null) ((Audio.VolAdjust) LoginScreen.mainThemeClip).vol = val/100d;
+				if (LoginScreen.charSelectThemeClip != null) ((Audio.VolAdjust) LoginScreen.charSelectThemeClip).vol = val/100d;
+				if (GameUI.cabinThemeClip != null) ((Audio.VolAdjust) GameUI.cabinThemeClip).vol = val/100d;
+				if (GameUI.caveThemeClip != null) ((Audio.VolAdjust) GameUI.caveThemeClip).vol = val/100d;
+				if (GameUI.fishingThemeClip != null) ((Audio.VolAdjust) GameUI.fishingThemeClip).vol = val/100d;
+				if (GameUI.hookahThemeClip != null) ((Audio.VolAdjust) GameUI.hookahThemeClip).vol = val/100d;
+				if (GameUI.feastingThemeClip != null) ((Audio.VolAdjust) GameUI.feastingThemeClip).vol = val/100d;
+
+				if (LoginScreen.themeSongVolumeSlider != null) LoginScreen.themeSongVolumeSlider.val = val;
+				if (Charlist.themeSongVolumeSlider != null) Charlist.themeSongVolumeSlider.val = val;
+				Utils.setprefi("themeSongVolume", val);
+			}
+		}, prev.pos("bl").adds(0, 2));
+
+
+		prev = add(new Label("Background Music Theme:"), prev.pos("bl").adds(0, 6).x(0));
+		List<String> musicThemes = Arrays.asList("Hurricane  ", "Legacy");
+		add(new OldDropBox<String>(musicThemes.size(), musicThemes) {
+			{
+				super.change(musicThemes.get(Utils.getprefi("backgroundMusicTheme", 0)));
+			}
+			@Override
+			protected String listitem(int i) {
+				return musicThemes.get(i);
+			}
+			@Override
+			protected int listitems() {
+				return musicThemes.size();
+			}
+			@Override
+			protected void drawitem(GOut g, String item, int i) {
+				g.aimage(Text.renderstroked(item).tex(), Coord.of(UI.scale(3), g.sz().y / 2), 0.0, 0.5);
+			}
+			@Override
+			public void change(String item) {
+				super.change(item);
+				for (int i = 0; i < musicThemes.size(); i++){
+					if (item.equals(musicThemes.get(i))){
+						Utils.setprefi("backgroundMusicTheme", i);
+					}
+				}
+				GameUI.settingStopAllThemes();
+			}
+		}, prev.pos("ur").adds(0, 1));
+
+
+
 	    prev = add(new Label("Interface sound volume"), prev.pos("bl").adds(0, 15));
 	    prev = add(new HSlider(UI.scale(audioSliderWidth), 0, 1000, 0) {
 		    protected void attach(UI ui) {
@@ -486,7 +548,7 @@ public class OptWnd extends Window {
 		prev.tooltip = audioLatencyTooltip;
 	    }
 
-		prev = add(new Label("Other Sound Settings"), prev.pos("bl").adds(52, 20));
+		prev = add(new Label("Other Sound Settings"), prev.pos("bl").adds(52, 10));
 		prev = add(new Label("Music Instruments Volume"), prev.pos("bl").adds(0, 5).x(0));
 		prev = add(instrumentsSoundVolumeSlider = new HSlider(UI.scale(audioSliderWidth), 0, 100, Utils.getprefi("instrumentsSoundVolume", 70)) {
 			protected void attach(UI ui) {
@@ -503,6 +565,26 @@ public class OptWnd extends Window {
 			}
 			public void changed() {
 				Utils.setprefi("clapSoundVolume", val);
+			}
+		}, prev.pos("bl").adds(0, 2));
+
+		prev = add(new Label("Bell Sound Effect Volume"), prev.pos("bl").adds(0, 5).x(0));
+		prev = add(bellSoundVolumeSlider = new HSlider(UI.scale(audioSliderWidth), 0, 100, Utils.getprefi("bellSoundVolume", 10)) {
+			protected void attach(UI ui) {
+				super.attach(ui);
+			}
+			public void changed() {
+				Utils.setprefi("bellSoundVolume", val);
+			}
+		}, prev.pos("bl").adds(0, 2));
+
+		prev = add(new Label("Armor Sound Effect Volume"), prev.pos("bl").adds(0, 5).x(0));
+		prev = add(armorSoundVolumeSlider = new HSlider(UI.scale(audioSliderWidth), 0, 100, Utils.getprefi("armorSoundVolume", 20)) {
+			protected void attach(UI ui) {
+				super.attach(ui);
+			}
+			public void changed() {
+				Utils.setprefi("armorSoundVolume", val);
 			}
 		}, prev.pos("bl").adds(0, 2));
 
@@ -564,6 +646,7 @@ public class OptWnd extends Window {
 	public static CheckBox extendedMouseoverInfoCheckBox;
 	public static CheckBox disableMenuGridHotkeysCheckBox;
 	public static CheckBox alwaysOpenBeltOnLoginCheckBox;
+	public static CheckBox alwaysOpenInventoryOnLoginCheckBox;
 	public static CheckBox showMapMarkerNamesCheckBox;
 	public static CheckBox verticalContainerIndicatorsCheckBox;
 	public static boolean expWindowLocationIsTop = Utils.getprefb("expWindowLocationIsTop", true);
@@ -574,11 +657,17 @@ public class OptWnd extends Window {
 	private CheckBox showQuickSlotsCheckBox;
 	public static CheckBox showStudyReportHistoryCheckBox;
 	public static CheckBox lockStudyReportCheckBox;
+	public static CheckBox showInventoryNumbers;
 	public static CheckBox soundAlertForFinishedCuriositiesCheckBox;
 	public static CheckBox alwaysShowCombatUIStaminaBarCheckBox;
 	public static CheckBox alwaysShowCombatUIHealthBarCheckBox;
+	public static CheckBox drawPlayerSpeedBarCheckBox;
+	public static CheckBox drawTargetSpeedBarCheckbox;
 	public static HSlider mapZoomSpeedSlider;
+	public static CheckBox showSimpleColors;
+	public static CheckBox drawMapOutlines;
 	public static CheckBox alwaysOpenMiniStudyOnLoginCheckBox;
+	public static CheckBox disableObjectsOutline;
 
     public class InterfaceSettingsPanel extends Panel {
 	public InterfaceSettingsPanel(Panel back) {
@@ -628,7 +717,7 @@ public class OptWnd extends Window {
 			}
 		}, leftColumn.pos("bl").adds(0, 2));
 		dragWindowsInWhenResizingCheckBox.tooltip = dragWindowsInWhenResizingTooltip;
-		leftColumn = add(showHoverInventoriesWhenHoldingShiftCheckBox = new CheckBox("Show Hover-Inventories (Stacks, Belt, etc.) only when holding Shift"){
+		leftColumn = add(showHoverInventoriesWhenHoldingShiftCheckBox = new CheckBox("Show Hover-Inventories with Shift"){
 			{a = (Utils.getprefb("showHoverInventoriesWhenHoldingShift", true));}
 			public void changed(boolean val) {
 				Utils.setprefb("showHoverInventoriesWhenHoldingShift", val);
@@ -736,6 +825,12 @@ public class OptWnd extends Window {
 			}
 		}, rightColumn.pos("bl").adds(0, 2));
 		alwaysOpenBeltOnLoginCheckBox.tooltip = alwaysOpenBeltOnLoginTooltip;
+		rightColumn = add(alwaysOpenInventoryOnLoginCheckBox = new CheckBox("Always Open Inventory on Login"){
+			{a = (Utils.getprefb("alwaysOpenInventoryOnLogin", true));}
+			public void changed(boolean val) {
+				Utils.setprefb("alwaysOpenInventoryOnLogin", val);
+			}
+		}, rightColumn.pos("bl").adds(0, 2));
 		rightColumn = add(showMapMarkerNamesCheckBox = new CheckBox("Show Map Marker Names"){
 			{a = (Utils.getprefb("showMapMarkerNames", true));}
 			public void changed(boolean val) {
@@ -743,6 +838,20 @@ public class OptWnd extends Window {
 			}
 		}, rightColumn.pos("bl").adds(0, 2));
 		showMapMarkerNamesCheckBox.tooltip = showMapMarkerNamesTooltip;
+		rightColumn = add(showSimpleColors = new CheckBox("Simple Map Colors"){
+			{a = (Utils.getprefb("simpleMapColors", false));}
+			public void set(boolean val) {
+				Utils.setprefb("simpleMapColors", val);
+				a = val;
+			}
+		}, rightColumn.pos("bl").adds(0, 2));
+		rightColumn = add(drawMapOutlines = new CheckBox("Draw Outlines on Map"){
+			{a = (Utils.getprefb("drawMapOutlines", false));}
+			public void set(boolean val) {
+				Utils.setprefb("drawMapOutlines", val);
+				a = val;
+			}
+		}, rightColumn.pos("bl").adds(0, 2));
 		rightColumn = add(verticalContainerIndicatorsCheckBox = new CheckBox("Vertical Container Indicators"){
 			{a = (Utils.getprefb("verticalContainerIndicators", true));}
 			public void changed(boolean val) {
@@ -788,6 +897,14 @@ public class OptWnd extends Window {
 			mapZoomSpeedSlider.val = 15;
 			Utils.setprefi("mapZoomSpeed", 15);
 		}), rightColumn.pos("ur").adds(6, -4));
+
+		rightColumn = add(showInventoryNumbers = new CheckBox("Show Inventory Numbers"){
+			{a = (Utils.getprefb("showInvNumbers", false));}
+			public void set(boolean val) {
+				Utils.setprefb("showInvNumbers", val);
+				a = val;
+			}
+		}, rightColumn.pos("bl").adds(0, 4));
 
 		Widget backButton;
 		add(backButton = new PButton(UI.scale(200), "Back", 27, back, "Advanced Settings"), leftColumn.pos("bl").adds(0, 30).x(0));
@@ -901,6 +1018,7 @@ public class OptWnd extends Window {
 	}
 
 	public static CheckBox showCombatHotkeysUICheckBox;
+	public static CheckBox showDamagePredictUICheckBox;
 	public static CheckBox singleRowCombatMovesCheckBox;
 	public static CheckBox includeHHPTextHealthBarCheckBox;
 	public static CheckBox showEstimatedAgilityTextCheckBox;
@@ -914,6 +1032,7 @@ public class OptWnd extends Window {
 	public static TextEntry minimumOpeningTextEntry;
 	public static HSlider combatUITopPanelHeightSlider;
 	public static HSlider combatUIBottomPanelHeightSlider;
+	public static HSlider bottomCombatUIPanelHeighSlider;
 	public static CheckBox toggleGobDamageInfoCheckBox;
 	public static CheckBox toggleGobDamageWoundInfoCheckBox;
 	public static CheckBox toggleGobDamageArmorInfoCheckBox;
@@ -921,6 +1040,7 @@ public class OptWnd extends Window {
 	public static CheckBox yourselfDamageInfoCheckBox;
 	public static CheckBox partyMembersDamageInfoCheckBox;
 	public static boolean stamBarLocationIsTop = Utils.getprefb("stamBarLocationIsTop", true);
+	public static boolean healthBarLocationIsTop = Utils.getprefb("healthBarLocationIsTop", true);
 	public class CombatUIPanel extends Panel {
 		public CombatUIPanel(Panel back) {
 			Widget prev;
@@ -945,6 +1065,16 @@ public class OptWnd extends Window {
 				combatUIBottomPanelHeightSlider.val = 100;
 				Utils.setprefi("combatBottomPanelHeight", 100);
 			}), prev.pos("bl").adds(210, -20));
+			prev = add(new Label("Bottom HP/Stam panel height:"), prev.pos("bl").adds(0, 10));
+			prev = add(bottomCombatUIPanelHeighSlider = new HSlider(UI.scale(200), 10, 480, Utils.getprefi("bottomCombatBottomPanelHeight", 100)) {
+				public void changed() {
+					Utils.setprefi("bottomCombatBottomPanelHeight", val);
+				}
+			}, prev.pos("bl").adds(0, 2));
+			add(new Button(UI.scale(70), "Reset", false).action(() -> {
+				bottomCombatUIPanelHeighSlider.val = 100;
+				Utils.setprefi("combatBottomPanelHeight", 100);
+			}), prev.pos("bl").adds(210, -20));
 			prev = add(showCombatHotkeysUICheckBox = new CheckBox("Show Combat Move Hotkeys (Bottom Panel)"){
 				{a = Utils.getprefb("showCombatHotkeysUI", true);}
 				public void changed(boolean val) {
@@ -958,6 +1088,12 @@ public class OptWnd extends Window {
 					a = val;
 				}
 			}, prev.pos("bl").adds(0, 2));
+			prev = add(showDamagePredictUICheckBox = new CheckBox("Show Combat Move Damage Prediction (Bottom Panel)"){
+				{a = Utils.getprefb("showDamagePredictUI", true);}
+				public void changed(boolean val) {
+					Utils.setprefb("showDamagePredictUI", val);
+				}
+			}, prev.pos("bl").adds(0, 10));
 
 			prev = add(includeHHPTextHealthBarCheckBox = new CheckBox("Include HHP% text in Health Bar"){
 				{a = Utils.getprefb("includeHHPTextHealthBar", false);}
@@ -986,6 +1122,32 @@ public class OptWnd extends Window {
 				prev = expWindowGrp.add("Top Panel", prev.pos("bl").adds(0, 3));
 				prev = expWindowGrp.add("Bottom Panel", prev.pos("ur").adds(30, 0));
 				if (Utils.getprefb("stamBarLocationIsTop", true)){
+					expWindowGrp.check(0);
+				} else {
+					expWindowGrp.check(1);
+				}
+			}
+
+			prev = add(new Label("Health Bar Location:"), prev.pos("bl").adds(-103, 8));{
+				RadioGroup expWindowGrp = new RadioGroup(this) {
+					public void changed(int btn, String lbl) {
+						try {
+							if(btn==0) {
+								Utils.setprefb("healthBarLocationIsTop", true);
+								healthBarLocationIsTop = true;
+							}
+							if(btn==1) {
+								Utils.setprefb("healthBarLocationIsTop", false);
+								healthBarLocationIsTop = false;
+							}
+						} catch (Exception e) {
+							throw new RuntimeException(e);
+						}
+					}
+				};
+				prev = expWindowGrp.add("Top Panel", prev.pos("bl").adds(0, 3));
+				prev = expWindowGrp.add("Bottom Panel", prev.pos("ur").adds(30, 0));
+				if (Utils.getprefb("healthBarLocationIsTop", true)){
 					expWindowGrp.check(0);
 				} else {
 					expWindowGrp.check(1);
@@ -1309,6 +1471,7 @@ public class OptWnd extends Window {
 	public static ColorOptionWidget speedBuffAuraColorOptionWidget;
 	public static String[] speedBuffAuraColorSetting = Utils.getprefsa("speedBuffAura" + "_colorSetting", new String[]{"255", "255", "255", "140"});
 	public static CheckBox showMidgesCircleAurasCheckBox;
+	public static CheckBox showRowboatCircleAurasCheckBox;
 	public static CheckBox showBeastDangerRadiiCheckBox;
 	public static CheckBox showBeeSkepsRadiiCheckBox;
 	public static CheckBox showFoodTroughsRadiiCheckBox;
@@ -1317,6 +1480,8 @@ public class OptWnd extends Window {
 	public static CheckBox showIconSignTextCheckBox;
 	public static CheckBox drawChaseVectorsCheckBox;
 	public static CheckBox drawYourCurrentPathCheckBox;
+	public static ColorOptionWidget drawYourCurrentPathColorOptionWidget;
+	public static String[] drawYourCurrentPathColorSetting = Utils.getprefsa("currentPath" + "_colorSetting", new String[]{"255", "255", "255", "120"});
 	public static CheckBox highlightCliffsCheckBox;
 	public static ColorOptionWidget highlightCliffsColorOptionWidget;
 	public static String[] highlightCliffsColorSetting = Utils.getprefsa("highlightCliffs" + "_colorSetting", new String[]{"255", "0", "0", "200"});
@@ -1827,6 +1992,16 @@ public class OptWnd extends Window {
 				}
 			}), speedBuffAuraColorOptionWidget.pos("ur").adds(10, 0));
 
+			middleColumn = add(showRowboatCircleAurasCheckBox = new CheckBox("Show Rowboat / Dugout Circle Auras"){
+				{a = (Utils.getprefb("showRowboatCircleAuras", true));}
+				public void changed(boolean val) {
+					Utils.setprefb("showRowboatCircleAuras", val);
+					if (ui != null && ui.gui != null) {
+						ui.sess.glob.oc.gobAction(Gob::updateRowboatAuras);
+					}
+				}
+			}, middleColumn.pos("bl").adds(0, 18).x(UI.scale(240)));
+
 			middleColumn = add(showMidgesCircleAurasCheckBox = new CheckBox("Show Midges Circle Auras"){
 				{a = (Utils.getprefb("showMidgesCircleAuras", true));}
 				public void changed(boolean val) {
@@ -1835,7 +2010,7 @@ public class OptWnd extends Window {
 						ui.sess.glob.oc.gobAction(Gob::updateMidgesAuras);
 					}
 				}
-			}, middleColumn.pos("bl").adds(0, 18).x(UI.scale(240)));
+			}, middleColumn.pos("bl").adds(0, 2));
 
 			middleColumn = add(showBeastDangerRadiiCheckBox = new CheckBox("Show Beast Danger Radii"){
 				{a = (Utils.getprefb("showBeastDangerRadii", true));}
@@ -1936,13 +2111,39 @@ public class OptWnd extends Window {
 					Utils.setprefb("drawChaseVectors", val);
 				}
 			}, UI.scale(480, 0));
+			drawChaseVectorsCheckBox.tooltip = drawChaseVectorsTooltip;
 			rightColumn = add(drawYourCurrentPathCheckBox = new CheckBox("Draw Your Current Path"){
 				{a = Utils.getprefb("drawYourCurrentPath", false);}
 				public void changed(boolean val) {
 					Utils.setprefb("drawYourCurrentPath", val);
 				}
 			}, rightColumn.pos("bl").adds(0, 2));
-			drawChaseVectorsCheckBox.tooltip = drawChaseVectorsTooltip;
+			rightColumn = add(drawYourCurrentPathColorOptionWidget = new ColorOptionWidget("Your path color:", "yourCurrentPath", 115, Integer.parseInt(drawYourCurrentPathColorSetting[0]), Integer.parseInt(drawYourCurrentPathColorSetting[1]), Integer.parseInt(drawYourCurrentPathColorSetting[2]), Integer.parseInt(drawYourCurrentPathColorSetting[3]), (Color col) -> {
+				if (ui != null && ui.gui != null) {
+					ui.sess.glob.oc.gobAction(Gob::updateSpeedBuffAuras);
+				}
+			}){}, rightColumn.pos("bl").adds(0, 2));
+			add(new Button(UI.scale(70), "Reset", false).action(() -> {
+				Utils.setprefsa("drawYourCurrentPath" + "_colorSetting", new String[]{"255", "255", "255", "120"});
+				drawYourCurrentPathColorOptionWidget.cb.colorChooser.setColor(drawYourCurrentPathColorOptionWidget.currentColor = new Color(255, 255, 255, 120));
+				if (ui != null && ui.gui != null) {
+					ui.sess.glob.oc.gobAction(Gob::updateSpeedBuffAuras);
+				}
+			}), drawYourCurrentPathColorOptionWidget.pos("ur").adds(10, 0));
+
+			rightColumn = add(drawPlayerSpeedBarCheckBox = new CheckBox("Draw Player Speed Bar"){
+				{a = Utils.getprefb("drawSpeedBar", false);}
+				public void changed(boolean val) {
+					Utils.setprefb("drawSpeedBar", val);
+				}
+			}, rightColumn.pos("bl").adds(0, 2));
+			rightColumn = add(drawTargetSpeedBarCheckbox = new CheckBox("Draw Current Targeted Player Speed Bar"){
+				{a = Utils.getprefb("drawTargetSpeedBar", false);}
+				public void changed(boolean val) {
+					Utils.setprefb("drawTargetSpeedBar", val);
+				}
+			}, rightColumn.pos("bl").add(0, 2));
+
 			rightColumn = add(highlightPartyMembersCheckBox = new CheckBox("Highlight Party Members"){
 				{a = Utils.getprefb("highlightPartyMembers", false);}
 				public void changed(boolean val) {
@@ -2306,6 +2507,8 @@ public class OptWnd extends Window {
 		y = addbtn(cont, String.format("Combat action %d", i + 1), Fightsess.kb_acts[i], y);
 		y = addbtnImproved(cont, "Cycle through targets", "This only cycles through the targets you are currently engaged in combat with.", Color.WHITE, Fightsess.kb_relcycle, y);
 		y = addbtnImproved(cont, "Switch to nearest target", "This only switches to the nearest target you are currently engaged in combat with.", Color.WHITE, Fightsess.kb_nearestTarget, y);
+		y = addbtnImproved(cont, "Push nearest target", "This only tries to push nearest attackable target close to you.", Color.WHITE, GameUI.kb_pushNearestPlayer, y);
+		y = addbtnImproved(cont, "Push current target", "This tries to push your current targeted player.", Color.WHITE, GameUI.kb_pushCurrentPlayer, y);
 		y = addbtnImproved(cont, "Aggro Nearest Player/Animal", "Selects the nearest non-friendly Player or Animal to attack, based on your situation:" +
 				"\n\n$col[218,163,0]{Case 1:} $col[185,185,185]{If you are in combat with Players, it will only attack other not-already-aggroed non-friendly players.}" +
 				"\n$col[218,163,0]{Case 2:} $col[185,185,185]{If you are in combat with Animals, it will try to attack the closest not-already-aggroed player. If none is found, try to attack the closest animal. Once this happens, you're back to Case 1.}" +
@@ -2320,6 +2523,9 @@ public class OptWnd extends Window {
 		y = addbtnImproved(cont, "Re-Aggro Animal (Cheese)", "Use this to cheese animals and re-aggro them quickly when they flee." +
 				"\n$col[185,185,185]{This is useful when you use animal auto-peace. Also, it only works when you're fighting one single animal.}", new Color(255, 68, 0,255), GameUI.kb_aggroLastTarget, y);
 		y = addbtnImproved(cont, "Peace Current Target", "", new Color(0, 255, 34,255), GameUI.kb_peaceCurrentTarget, y);
+		y = addbtnImproved(cont, "Traverse", "Tries to traverse through nearest doors/caves", Color.WHITE, GameUI.kb_traverse, y);
+		y = addbtnImproved(cont, "Yap", "Shitpost in areachat for you!", Color.WHITE, GameUI.kb_yap, y);
+		y = addbtnImproved(cont, "AuoDistance", "Trying to place you in ideal spot", Color.WHITE, GameUI.kb_autoDistance, y);
 
 		y = cont.adda(new Label("Other Custom features"), cont.sz.x / 2, y + UI.scale(10), 0.5, 0.0).pos("bl").adds(0, 5).y;
 		y = addbtnImproved(cont, "Drink Button", "", new Color(0, 140, 255, 255), GameUI.kb_drinkButton, y+6);
@@ -2327,6 +2533,7 @@ public class OptWnd extends Window {
 		y = addbtn(cont, "Right Hand (Quick-Switch)", GameUI.kb_rightQuickSlotButton, y);
 		y = addbtnImproved(cont, "Night Vision / Brighter World", "This will simulate daytime lighting during the night. \n$col[185,185,185]{It slightly affects the light levels during the day too.}" +
 				"\n\n$col[218,163,0]{Note:} $col[185,185,185]{This keybind just switches the value of Night Vision / Brighter World between minimum and maximum. This can also be set more precisely using the slider in the World Graphics Settings.}", Color.WHITE, GameUI.kb_nightVision, y);
+		y = addbtn(cont, "Flat World", GameUI.kb_flatWorld, y);
 
 		y+=UI.scale(12);
 		y = addbtn(cont, "Inventory search", GameUI.kb_searchInventoriesButton, y);
@@ -2334,7 +2541,7 @@ public class OptWnd extends Window {
 
 		y+=UI.scale(20);
 		y = addbtnImproved(cont, "Click Nearest Object (Cursor)","When this button is pressed, you will instantly click the nearest object to your cursor, selected from below." +
-				"\n$col[218,163,0]{Range:} $col[185,185,185]{12 tiles (approximately)}", new Color(255, 191, 0,255), GameUI.kb_clickNearestCursorObject, y);
+				"\n$col[218,163,0]{Range:} $col[185,185,185]{25 tiles (approximately)}", new Color(255, 191, 0,255), GameUI.kb_clickNearestCursorObject, y);
 		y = addbtnImproved(cont, "Click Nearest Object (You)","When this button is pressed, you will instantly click the nearest object to you, selected from below." +
 				"\n$col[218,163,0]{Range:} $col[185,185,185]{12 tiles (approximately)}", new Color(255, 191, 0,255), GameUI.kb_clickNearestObject, y);
 		Widget objectsLeft, objectsRight;
@@ -2355,6 +2562,8 @@ public class OptWnd extends Window {
 				"\n\n$col[218,163,0]{Works with:} Knarr, Snekkja, Rowboat, Dugout, Kicksled, Coracle, Wagon, Wilderness Skis, Tamed Horse" +
 				"\n\n$col[218,163,0]{Range:} $col[185,185,185]{36 tiles (approximately)}", new Color(255, 191, 0,255), GameUI.kb_enterNearestVehicle, y);
 		y+=UI.scale(20);
+		y = addbtn(cont, "Steak maker", GameUI.kb_steakMaker, y);
+		y+=UI.scale(20);
 		y = addbtnImproved(cont, "Lift Nearest into Wagon/Cart", "When pressed the nearest supported liftable object will be stored in the nearest Wagon/Cart" +
 				"\n\n$col[185,185,185]{If you are riding a Wagon it will try to exit the wagon, store the object and enter the wagon again.}", new Color(255, 191, 0,255), GameUI.kb_wagonNearestLiftable, y);
 		Widget objectsLiftActionLeft, objectsLiftActionRight;
@@ -2371,6 +2580,8 @@ public class OptWnd extends Window {
 		y = addbtn(cont, "Toggle Object Hiding", GameUI.kb_toggleHidingBoxes, y);
 		y = addbtn(cont, "Display Growth Info on Plants", GameUI.kb_toggleGrowthInfo, y);
 		y = addbtn(cont, "Hide/Show Cursor Item", GameUI.kb_toggleCursorItem, y);
+		y+=UI.scale(20);
+		y = addbtn(cont, "Loot Nearest Knocked Player", GameUI.kb_lootNearestKnockedPlayer, y);
 		y+=UI.scale(20);
 		y = addbtn(cont, "Instant Log Out", GameUI.kb_instantLogout, y);
 
@@ -2662,6 +2873,7 @@ public class OptWnd extends Window {
 
 
 	public static CheckBox overrideCursorItemWhenHoldingAltCheckBox;
+	public static CheckBox noCursorItemDroppingAltAnywhereCheckBox;
 	public static CheckBox noCursorItemDroppingAnywhereCheckBox;
 	public static CheckBox noCursorItemDroppingInWaterCheckBox;
 	public static CheckBox useOGControlsForBuildingAndPlacingCheckBox;
@@ -2683,6 +2895,10 @@ public class OptWnd extends Window {
 						if (noCursorItemDroppingAnywhereCheckBox.a) {// ND: Set it like this so it doesn't do the optionInfoMsg
 							noCursorItemDroppingAnywhereCheckBox.a = false;
 							Utils.setprefb("noCursorItemDroppingAnywhere", false);
+						}
+						if(noCursorItemDroppingAltAnywhereCheckBox.a) {
+							noCursorItemDroppingAltAnywhereCheckBox.a = false;
+							Utils.setprefb("noCursorItemDroppingAnywhereAlt", false);
 						}
 						if (noCursorItemDroppingInWaterCheckBox.a) { // ND: Set it like this so it doesn't do the optionInfoMsg
 							noCursorItemDroppingInWaterCheckBox.a = false;
@@ -2712,6 +2928,19 @@ public class OptWnd extends Window {
 				}
 			}, prev.pos("bl").adds(0, 12));
 			noCursorItemDroppingAnywhereCheckBox.tooltip = noCursorItemDroppingAnywhereTooltip;
+			prev = add(noCursorItemDroppingAltAnywhereCheckBox = new CheckBox("No cursor Item Dropping (Anywhere) (ALT)"){
+				{a = Utils.getprefb("noCursorItemDroppingAnywhereAlt", false);}
+				public void set(boolean val) {
+					Utils.setprefb("noCursorItemDroppingAnywhereAlt", val);
+					a = val;
+					if (val) {
+						if (noCursorItemDroppingAnywhereCheckBox.a) { // ND: Set it like this so it doesn't do the optionInfoMsg
+							overrideCursorItemWhenHoldingAltCheckBox.a = false;
+							Utils.setprefb("overrideCursorItemWhenHoldingAlt", false);
+						}
+					}
+				}
+			}, prev.pos("bl").adds(0,2));
 			prev = add(noCursorItemDroppingInWaterCheckBox = new CheckBox("No Cursor Item Dropping (Water Only)"){
 				{a = Utils.getprefb("noCursorItemDroppingInWater", false);}
 				public void set(boolean val) {
@@ -2825,6 +3054,15 @@ public class OptWnd extends Window {
 									ui.gui.map.setcam("Ortho");
 								}
 							}
+							if(btn==2) {
+								Utils.setpref("defcam", "TopDown");
+								setFreeCameraSettingsVisibility(false);
+								setOrthoCameraSettingsVisibility(false);
+								MapView.currentCamera = 3;
+								if (ui != null && ui.gui != null && ui.gui.map != null) {
+									ui.gui.map.setcam("TopDown");
+								}
+							}
 						} catch (Exception e) {
 							throw new RuntimeException(e);
 						}
@@ -2832,6 +3070,7 @@ public class OptWnd extends Window {
 				};
 			TopPrev = camGrp.add("Free Camera", TopPrev.pos("bl").adds(16, 2));
 			TopPrev = camGrp.add("Ortho Camera", TopPrev.pos("bl").adds(0, 1));
+			TopPrev = camGrp.add("Top Down Camera", TopPrev.pos("bl").adds(0, 1));
 			TopPrev = add(new Label("Selected Camera Settings:"), TopPrev.pos("bl").adds(0, 6).x(0));
 			// ND: The Ortho Camera Settings
 			OrthoPrev = add(reverseOrthoCameraAxesCheckBox = new CheckBox("Reverse Ortho Look Axis"){
@@ -2946,13 +3185,20 @@ public class OptWnd extends Window {
 				setOrthoCameraSettingsVisibility(false);
 				MapView.currentCamera = 1;
 			}
-			else {
+			else if(startupSelectedCamera.equals("Ortho")){
 				camGrp.check(1);
 				Utils.setpref("defcam", "Ortho");
 				setFreeCameraSettingsVisibility(false);
 				setOrthoCameraSettingsVisibility(true);
 				MapView.currentCamera = 2;
 			}
+			else {
+					camGrp.check(2);
+					Utils.setpref("defcam", "TopDown");
+					setFreeCameraSettingsVisibility(false);
+					setOrthoCameraSettingsVisibility(false);
+					MapView.currentCamera = 3;
+				}
 			}
 
 			Widget backButton;
@@ -3020,6 +3266,7 @@ public class OptWnd extends Window {
 	public static CheckBox disableOpiumHighCheckBox;
 	public static CheckBox disableLibertyCapsHighCheckBox;
 	public static CheckBox disableDrunkennessDistortionCheckBox;
+	public static CheckBox CoolerHatsCheckBox;
 
 	public class WorldGraphicsSettingsPanel extends Panel {
 
@@ -3329,6 +3576,16 @@ public class OptWnd extends Window {
 					Utils.setprefb("disableDrunkennessDistortion", val);
 				}
 			}, rightColumn.pos("bl").adds(0, 2));
+			rightColumn = add(CoolerHatsCheckBox = new CheckBox ("Cooler Hats (Requies Restart)") {
+						{
+							a = (Utils.getprefb("CoolerHats", false));
+						}
+
+						public void changed(boolean val) {
+							Utils.setprefb("CoolerHats", val);
+						}
+					}, rightColumn.pos("bl").add(0,2));
+
 
 			Widget backButton;
 			add(backButton = new PButton(UI.scale(200), "Back", 27, back, "Advanced Settings"), rightColumn.pos("bl").adds(0, 38));
@@ -3348,6 +3605,8 @@ public class OptWnd extends Window {
 	public static CheckBox hideHousesCheckbox;
 	public static CheckBox hideCropsCheckbox;
 	public static CheckBox hideTrellisCheckbox;
+	public static CheckBox hideDryingFramesCheckbox;
+	public static CheckBox hideSquirrelCachesCheckbox;
 	public static CheckBox hideStockpilesCheckbox;
 	public static ColorOptionWidget hiddenObjectsColorOptionWidget;
 	public static String[] hiddenObjectsColorSetting = Utils.getprefsa("hidingBox" + "_colorSetting", new String[]{"0", "225", "255", "170"});
@@ -3524,6 +3783,29 @@ public class OptWnd extends Window {
 				}
 			}, prev.pos("bl").adds(0, 2));
 			prev.tooltip = RichText.render("This only hides the trellises, and not the crops growing on them.", UI.scale(300));
+
+			prev = add(hideDryingFramesCheckbox = new CheckBox("Drying Frames"){
+				{a = Utils.getprefb("hideDFrames", false);}
+				public void changed(boolean val) {
+					Utils.setprefb("hideDFrames", val);
+					if (ui != null && ui.gui != null) {
+						ui.sess.glob.oc.gobAction(Gob::updateHidingBoxes);
+						ui.gui.map.updatePlobHidingBox();
+					}
+				}
+			}, prev.pos("bl").adds(0, 2));
+			prev.tooltip = RichText.render("Hides the drying frames models, not hides on them.", UI.scale(300));
+
+			prev = add(hideSquirrelCachesCheckbox = new CheckBox("Squirrel Cache"){
+				{a = Utils.getprefb("hideSCache", false);}
+				public void changed(boolean val) {
+					Utils.setprefb("hideSCache", val);
+					if (ui != null && ui.gui != null) {
+						ui.sess.glob.oc.gobAction(Gob::updateHidingBoxes);
+						ui.gui.map.updatePlobHidingBox();
+					}
+				}
+			}, prev.pos("bl").adds(0, 2));
 
 			Widget backButton;
 			add(backButton = new PButton(UI.scale(200), "Back", 27, back, "Advanced Settings"), prev.pos("bl").adds(0, 18).x(0));
@@ -4361,6 +4643,132 @@ public class OptWnd extends Window {
 
 	}
 
+	public static CheckBox autoLootRingsCheckBox;
+	public static CheckBox autoLootNecklaceCheckBox;
+	public static CheckBox autoLootWeaponCheckBox;
+	public static CheckBox autoLootHelmetCheckBox;
+	public static CheckBox autoLootChestArmorCheckBox;
+	public static CheckBox autoLootLegArmorCheckBox;
+	public static CheckBox autoLootCloakRobeCheckBox;
+	public static CheckBox autoLootShirtCheckBox;
+	public static CheckBox autoLootPantsCheckBox;
+	public static CheckBox autoLootGlovesCheckBox;
+	public static CheckBox autoLootBootsCheckBox;
+	public static CheckBox autoLootEyewearCheckBox;
+	public static CheckBox autoLootMouthCheckBox;
+	public static CheckBox autoLootCapeCheckBox;
+
+	public class AutoLootSettingsPanel extends Panel {
+
+		private int addbtn(Widget cont, String nm, KeyBinding cmd, int y) {
+			return (cont.addhl(new Coord(0, y), cont.sz.x,
+					new Label(nm), new SetButton(UI.scale(140), cmd))
+					+ UI.scale(2));
+		}
+
+		public AutoLootSettingsPanel(Panel back) {
+			Widget prev;
+
+			Scrollport scroll = add(new Scrollport(UI.scale(new Coord(350, 40))), 0, 0);
+			prev = scroll.cont;
+			addbtn(prev, "Loot Nearest Knocked Player hotkey:", GameUI.kb_lootNearestKnockedPlayer, 0);
+
+			prev = add(new Label("Auto-Loot the following gear from enemies (when stealing):"), prev.pos("bl").adds(0, 6));
+			prev = add(autoLootRingsCheckBox = new CheckBox("Rings"){
+				{a = Utils.getprefb("autoLootRings", false);}
+				public void changed(boolean val) {
+					Utils.setprefb("autoLootRings", val);
+				}
+			}, prev.pos("bl").adds(0, 4).x(12));
+			prev = add(autoLootNecklaceCheckBox = new CheckBox("Necklace"){
+				{a = Utils.getprefb("autoLootNecklace", false);}
+				public void changed(boolean val) {
+					Utils.setprefb("autoLootNecklace", val);
+				}
+			}, prev.pos("bl").adds(0, 2));
+			prev = add(autoLootWeaponCheckBox = new CheckBox("Weapon (Try to put in Belt first, then Inventory)"){
+				{a = Utils.getprefb("autoLootWeapon", false);}
+				public void changed(boolean val) {
+					Utils.setprefb("autoLootWeapon", val);
+				}
+			}, prev.pos("bl").adds(0, 2));
+			prev = add(autoLootHelmetCheckBox = new CheckBox("Helmet"){
+				{a = Utils.getprefb("autoLootHelmet", false);}
+				public void changed(boolean val) {
+					Utils.setprefb("autoLootHelmet", val);
+				}
+			}, prev.pos("bl").adds(0, 2));
+			prev = add(autoLootChestArmorCheckBox = new CheckBox("Chest Armor"){
+				{a = Utils.getprefb("autoLootChestArmor", false);}
+				public void changed(boolean val) {
+					Utils.setprefb("autoLootChestArmor", val);
+				}
+			}, prev.pos("bl").adds(0, 2));
+			prev = add(autoLootLegArmorCheckBox = new CheckBox("Leg Armor"){
+				{a = Utils.getprefb("autoLootLegArmor", false);}
+				public void changed(boolean val) {
+					Utils.setprefb("autoLootLegArmor", val);
+				}
+			}, prev.pos("bl").adds(0, 2));
+			prev = add(autoLootCloakRobeCheckBox = new CheckBox("Cloak/Robe"){
+				{a = Utils.getprefb("autoLootCloakRobe", false);}
+				public void changed(boolean val) {
+					Utils.setprefb("autoLootCloakRobe", val);
+				}
+			}, prev.pos("bl").adds(0, 2));
+			prev = add(autoLootShirtCheckBox = new CheckBox("Shirt"){
+				{a = Utils.getprefb("autoLootShirt", false);}
+				public void changed(boolean val) {
+					Utils.setprefb("autoLootShirt", val);
+				}
+			}, prev.pos("bl").adds(0, 2));
+			prev = add(autoLootPantsCheckBox = new CheckBox("Pants"){
+				{a = Utils.getprefb("autoLootPants", false);}
+				public void changed(boolean val) {
+					Utils.setprefb("autoLootPants", val);
+				}
+			}, prev.pos("bl").adds(0, 2));
+			prev = add(autoLootGlovesCheckBox = new CheckBox("Gloves"){
+				{a = Utils.getprefb("autoLootGloves", false);}
+				public void changed(boolean val) {
+					Utils.setprefb("autoLootGloves", val);
+				}
+			}, prev.pos("bl").adds(0, 2));
+			prev = add(autoLootBootsCheckBox = new CheckBox("Boots"){
+				{a = Utils.getprefb("autoLootBoots", false);}
+				public void changed(boolean val) {
+					Utils.setprefb("autoLootBoots", val);
+				}
+			}, prev.pos("bl").adds(0, 2));
+			prev = add(autoLootEyewearCheckBox = new CheckBox("Eyewear"){
+				{a = Utils.getprefb("autoLootEyewear", false);}
+				public void changed(boolean val) {
+					Utils.setprefb("autoLootEyewear", val);
+				}
+			}, prev.pos("bl").adds(0, 2));
+			prev = add(autoLootMouthCheckBox = new CheckBox("Mouth"){
+				{a = Utils.getprefb("autoLootMouth", false);}
+				public void changed(boolean val) {
+					Utils.setprefb("autoLootMouth", val);
+				}
+			}, prev.pos("bl").adds(0, 2));
+			prev = add(autoLootCapeCheckBox = new CheckBox("Cape"){
+				{a = Utils.getprefb("autoLootCape", false);}
+				public void changed(boolean val) {
+					Utils.setprefb("autoLootCape", val);
+				}
+			}, prev.pos("bl").adds(0, 2));
+
+
+
+			Widget backButton;
+			add(backButton = new PButton(UI.scale(200), "Back", 27, back, "Advanced Settings"), prev.pos("bl").adds(0, 18).x(0));
+			pack();
+			centerBackButton(backButton, this);
+		}
+
+	}
+
 
     public static class PointBind extends Button implements CursorQuery.Handler {
 	public static final String msg = "Bind other elements...";
@@ -4500,6 +4908,7 @@ public class OptWnd extends Window {
 		Panel combatuipanel = add(new CombatUIPanel(advancedSettings));
 		Panel combataggrosettings = add(new AggroExclusionSettingsPanel(advancedSettings));
 		Panel serverintegrationsettings = add(new ServerIntegrationSettingsPanel(advancedSettings));
+		Panel autolootsettings = add(new AutoLootSettingsPanel(advancedSettings));
 
 		int leftY = UI.scale(6);
 		leftY = advancedSettings.add(new PButton(UI.scale(200), "Interface Settings", -1, interfacesettings, "Interface Settings"), 0, leftY).pos("bl").adds(0, 5).y;
@@ -4509,9 +4918,8 @@ public class OptWnd extends Window {
 		leftY = advancedSettings.add(new PButton(UI.scale(200), "Chat Settings", -1, chatsettings, "Chat Settings"), 0, leftY).pos("bl").adds(0, 5).y;
 
 		leftY += UI.scale(20);
-
 		leftY = advancedSettings.add(new PButton(UI.scale(200), "Altered Gameplay Settings", -1, alteredgameplaysettings, "Altered Gameplay Settings"), 0, leftY).pos("bl").adds(0, 5).y;
-		leftY = advancedSettings.add(new PButton(UI.scale(200), "Alarms & Sounds Settings", -1, alarmsettings, "Alarms & Sounds Settings"), 0, leftY).pos("bl").adds(0, 5).y;
+		leftY = advancedSettings.add(new PButton(UI.scale(200), "Aggro Exclusion Settings", -1, combataggrosettings, "Aggro Exclusion Settings"), 0, leftY).pos("bl").adds(0, 5).y;
 
 		int rightX = UI.scale(220);
 		int rightY = UI.scale(6);
@@ -4519,10 +4927,12 @@ public class OptWnd extends Window {
 		rightY = advancedSettings.add(new PButton(UI.scale(200), "Camera Settings", -1, camsettings, "Camera Settings"), rightX, rightY).pos("bl").adds(0, 5).y;
 		rightY = advancedSettings.add(new PButton(UI.scale(200), "World Graphics Settings", -1, worldgraphicssettings, "World Graphics Settings"), rightX, rightY).pos("bl").adds(0, 5).y;
 		rightY = advancedSettings.add(new PButton(UI.scale(200), "Hiding Settings", -1, hidingsettings, "Hiding Settings"), rightX, rightY).pos("bl").adds(0, 5).y;
+		rightY = advancedSettings.add(new PButton(UI.scale(200), "Alarms & Sounds Settings", -1, alarmsettings, "Alarms & Sounds Settings"), rightX, rightY).pos("bl").adds(0, 5).y;
 
-		rightY += UI.scale(50);
+		rightY += UI.scale(20);
 		rightY = advancedSettings.add(new PButton(UI.scale(200), "Gameplay Automation Settings", -1, gameplayautomationsettings, "Gameplay Automation Settings"), rightX, rightY).pos("bl").adds(0, 5).y;
-		rightY = advancedSettings.add(new PButton(UI.scale(200), "Aggro Exclusion Settings", -1, combataggrosettings, "Aggro Exclusion Settings"), rightX, rightY).pos("bl").adds(0, 5).y;
+		rightY = advancedSettings.add(new PButton(UI.scale(200), "Auto-Loot Settings", -1, autolootsettings, "Auto-Loot Settings"), rightX, rightY).pos("bl").adds(0, 5).y;
+
 
 		int middleX = UI.scale(110);
 		int middleY = leftY + UI.scale(20);

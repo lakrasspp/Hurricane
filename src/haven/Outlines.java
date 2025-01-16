@@ -55,11 +55,14 @@ public class Outlines implements RenderTree.Node {
     private static ShaderMacro shader(final boolean symmetric, final boolean ms) {
 	return(new ShaderMacro() {
 		Color color = Color.BLACK;
+		int outlines = Utils.getprefb("disableOutlines", false) ? 0 : 1;
+
+
 		Coord[] points = {
-		    new Coord(-1,  0),
-		    new Coord( 1,  0),
-		    new Coord( 0, -1),
-		    new Coord( 0,  1),
+		    new Coord(-outlines,  0),
+		    new Coord( outlines,  0),
+		    new Coord( 0, -outlines),
+		    new Coord( 0,  outlines),
 		};
 
 		Expression sample(boolean nrm, Expression c, Expression s, Coord o) {

@@ -41,11 +41,8 @@ public class GobHealth extends GAttrib implements Gob.SetupMod {
 	int level = 3 - Math.round(hp * 4);
 	if(level >= 0) {
 	    Random rnd = g.mkrandoom();
-	    this.fx = Pipe.Op.compose(new CrackTex(CrackTex.imgs[Math.min(level, 2)],
-						   new Color(0, 0, 0, 255),
-						   Coord3f.of((rnd.nextFloat() * 2) - 1, (rnd.nextFloat() * 2) - 1, (rnd.nextFloat() * 2) - 1).norm(),
-						   rnd.nextFloat() * (float)Math.PI * 2),
-				      new ColorMask(new Color(255, 0, 0, 64 - (Math.round(hp * 64)))));
+	    this.fx = Pipe.Op.compose(
+				      new ColorMask(new Color(255, 0, 0, 128 - (Math.round(hp * 128)))));
 	} else {
 	    this.fx = null;
 	}

@@ -35,7 +35,6 @@ import javax.sound.sampled.AudioSystem;
 import java.awt.*;
 import java.io.File;
 import java.util.*;
-import java.awt.Color;
 import java.awt.event.KeyEvent;
 import java.util.List;
 
@@ -50,7 +49,8 @@ public class Fightsess extends Widget {
     public static final Coord indbframeo = (indframe.sz().sub(off)).div(2);
     public static final Tex useframe = Resource.loadtex("gfx/hud/combat/lastframe");
     public static final Coord useframeo = (useframe.sz().sub(off)).div(2);
-    public static final int actpitch = UI.scale(50);
+    public static final int actpitch = UI.scale(45);
+	public static final int actpitch2 = UI.scale(62);
     public final Action[] actions;
     public int use = -1, useb = -1;
     public Coord pcc;
@@ -62,6 +62,7 @@ public class Fightsess extends Widget {
 	public Map<Fightview.Relation, Coord> relations = new HashMap<>();
 	int combatMedColorShift = 0;
 	public static final Text.Foundry keybindsFoundry = new Text.Foundry(Text.sans.deriveFont(java.awt.Font.BOLD), 14);
+	public static final Text.Foundry damageFoundry = new Text.Foundry(Text.sans.deriveFont(java.awt.Font.BOLD), 11);
 	private static final Color coinsInfoBG = new Color(0, 0, 0, 120);
 	public static final Color ipInfoColorMe = new Color(0, 201, 4);
 	public static final Color ipInfoColorEnemy = new Color(245, 0, 0);
@@ -82,6 +83,13 @@ public class Fightsess extends Widget {
 	public static final Color hpBarYellow = new Color(182, 165, 0, 255);
 	private static final Color barFrame = new Color(255, 255, 255, 111);
 
+	public static boolean loadoutChecked = false;
+	private static int[] openingArr = new int[] {0,0,0,0};
+	private static int wepdmg = 0;
+	private static double ql = 1;
+	private static int basedmg = 0;
+	public static double myStrength = 1;
+
 	Map<String, Color> openingsColorMap = new HashMap<>() {{
 		put("paginae/atk/offbalance", new Color(0, 128, 3));
 		put("paginae/atk/dizzy", new Color(39, 82, 191));
@@ -92,7 +100,11 @@ public class Fightsess extends Widget {
 
 	private static Coord actc(int i) {
 		int rl = OptWnd.singleRowCombatMovesCheckBox.a ? 10 : 5;
-		return(new Coord((actpitch * (i % rl)) - (((rl - 1) * actpitch) / 2), UI.scale(125) + ((i / rl) * actpitch)));
+		if(OptWnd.showDamagePredictUICheckBox.a) {
+			return(new Coord((actpitch * (i % rl)) - (((rl - 1) * actpitch) / 2), UI.scale(125) + ((i / rl) * actpitch2)));
+		}
+		else
+			return(new Coord((actpitch * (i % rl)) - (((rl - 1) * actpitch) / 2), UI.scale(125) + ((i / rl) * actpitch)));
 	}
 
     public static class Action {
@@ -107,6 +119,7 @@ public class Fightsess extends Widget {
     @RName("fsess")
     public static class $_ implements Factory {
 	public Widget create(UI ui, Object[] args) {
+		loadoutChecked = false;
 	    int nact = Utils.iv(args[0]);
 		if(OptWnd.combatStartSoundEnabledCheckbox.a) {
 			try {
@@ -196,6 +209,19 @@ public class Fightsess extends Widget {
     }
 
     public void tick(double dt) {
+	if (!loadoutChecked) {
+		try {
+			myStrength = ui.sess.glob.getcattr("str").comp;
+			wepdmg = basedmg = 0;
+			Equipory equipory = ui.gui.getequipory();
+			GItem wep = equipory.getWeapon();
+			if (wep != null) {
+				setupWepDmg(ui.gui);
+				loadoutChecked = true;
+			}
+		} catch (Exception ignored) {
+		}
+	}
 	for(Iterator<Effect> i = curfx.iterator(); i.hasNext();) {
 	    Effect fx = i.next();
 	    if(!fx.used) {
@@ -298,6 +324,7 @@ public class Fightsess extends Widget {
 	int x = (int)(ui.gui.sz.x / 2.0);
 	int y = (int)(ui.gui.sz.y - ((ui.gui.sz.y / 500.0) * OptWnd.combatUITopPanelHeightSlider.val));
 	int bottom = (int)(ui.gui.sz.y - ((ui.gui.sz.y / 500.0) * OptWnd.combatUIBottomPanelHeightSlider.val));
+	int bottomCombatUI = (int)(ui.gui.sz.y - ((ui.gui.sz.y / 500.0) * OptWnd.bottomCombatUIPanelHeighSlider.val));
 
 	double now = Utils.rtime();
 
@@ -361,6 +388,7 @@ public class Fightsess extends Widget {
 //	    for(Buff buff : fv.current.buffs.children(Buff.class))
 //		buff.draw(g.reclip(pcc.add(buff.c.x + UI.scale(20), buff.c.y + pho - Buff.cframe.sz().y), buff.sz));
 		ArrayList<Buff> enemyOpenings = new ArrayList<>(fv.current.buffs.children(Buff.class));
+		setupOpeningArr(enemyOpenings);
 		enemyOpenings.sort((o1, o2) -> Integer.compare(getOpeningValue(o2), getOpeningValue(o1)));
 		Buff maneuver = null;
 		for (Buff buff : enemyOpenings) {
@@ -605,9 +633,55 @@ public class Fightsess extends Widget {
 			g.prect(ca.add(hsz), hsz.inv(), hsz, (1.0 - a) * Math.PI * 2);
 			g.chcolor();
 		    }
+			int infoY = 0;
 			if (OptWnd.showCombatHotkeysUICheckBox.a) {
 				String keybindString = kb_acts[i].key().name();
-				g.aimage(new TexI(Utils.outline2(keybindsFoundry.render(keybindString).img, Color.BLACK, true)), ca.add((int)(img.sz().x/2), img.sz().y + UI.scale(8)), 0.5, 0.5);
+
+				infoY += 8;
+				g.aimage(new TexI(Utils.outline2(keybindsFoundry.render(keybindString).img, Color.BLACK, true)), ca.add((int)(img.sz().x/2), img.sz().y + UI.scale(infoY)), 0.5, 0.5);
+			}
+			if (OptWnd.showDamagePredictUICheckBox.a) {
+				String name = act.res.get().basename();
+				if(Config.MapAttInfo.containsKey(name)) {	//Exists?
+					Config.AttackInfo attack = Config.MapAttInfo.get(name);
+					double openingMul;
+					double opening;
+					if(attack.getColors().length>1) {
+						opening = 1;
+						for(Config.Color color : attack.getColors()) {
+							opening *= 1.0 - ((double)openingArr[color.getOrder()] / 100);
+						}
+						opening = 1.0 - opening;
+					}
+					else {
+						opening = ((double)openingArr[attack.getColors()[0].getOrder()] / 100);
+					}
+					openingMul = (opening*opening);
+
+					if(attack.isMC()) {
+						double weaponDamageCalc;
+						weaponDamageCalc = basedmg * Math.sqrt( Math.sqrt(ql* myStrength) / 10);
+						name = Integer.toString((int)Math.ceil( //I need to cast this into Integer so it doesnt print "0.0", printing "0" is prettier.
+						weaponDamageCalc //Full damage
+						*attack.getDmgMul()
+						*openingMul
+					));
+					}
+					else {
+						name = Integer.toString((int)Math.ceil( //I need to cast this into Integer so it doesnt print "0.0", printing "0" is prettier.
+							attack.getDmg()*Math.sqrt(myStrength/10) //Full damage
+							*openingMul
+						));
+
+					}
+				}
+				else{
+					name = "";
+				}
+				if(!name.isEmpty()) {
+					infoY += 12;
+					g.aimage(new TexI(Utils.outline2(damageFoundry.render(name,Color.RED).img, Color.BLACK, true)), ca.add((int)(img.sz().x/2), img.sz().y + UI.scale(infoY)), 0.5, 0.5);
+				}
 			}
 		    if(i == use) {
 			g.image(indframe, ca.sub(indframeo));
@@ -623,7 +697,7 @@ public class Fightsess extends Widget {
 		IMeter.Meter stam = ui.gui.getmeter("stam", 0);
 		if (stam != null) {
 			Coord msz = UI.scale(new Coord(234, 22));
-			Coord sc = OptWnd.stamBarLocationIsTop ? new Coord(x - msz.x/2,  y + UI.scale(70)) : new Coord(x - msz.x/2,  bottom - UI.scale(68));
+			Coord sc = OptWnd.stamBarLocationIsTop ? new Coord(x - msz.x/2,  y + UI.scale(70)) : new Coord(x - msz.x/2,  bottomCombatUI - UI.scale(222));
 			drawStamMeterBar(g, stam, sc, msz);
 		}
 	}
@@ -632,7 +706,8 @@ public class Fightsess extends Widget {
 		IMeter.Meter hp = ui.gui.getmeter("hp", 0);
 		if (hp != null) {
 			Coord msz = UI.scale(new Coord(234, 22));
-			Coord sc = new Coord(x - msz.x / 2, y + UI.scale(44));
+			Coord sc = OptWnd.healthBarLocationIsTop ? new Coord (x - msz.x / 2, y + UI.scale(44)) : new Coord(x - msz.x / 2, bottomCombatUI - UI.scale(245));
+			//Coord sc = new Coord(x - msz.x / 2, y + UI.scale(44));
 			drawHealthMeterBar(g, hp, sc, msz);
 		}
 	}
@@ -645,6 +720,7 @@ public class Fightsess extends Widget {
 	int x = (int)(ui.gui.sz.x / 2.0);
 	int y = (int)(ui.gui.sz.y - ((ui.gui.sz.y / 500.0) * OptWnd.combatUITopPanelHeightSlider.val));
 	int bottom = (int)(ui.gui.sz.y - ((ui.gui.sz.y / 500.0) * OptWnd.combatUIBottomPanelHeightSlider.val));
+	int bottomCombatUI = (int)(ui.gui.sz.y - ((ui.gui.sz.y / 500.0) * OptWnd.bottomCombatUIPanelHeighSlider.val));
 
 	for(Buff buff : fv.buffs.children(Buff.class)) {
 	    Coord dc = new Coord(x - buff.c.x - Buff.cframe.sz().x - UI.scale(80), y - UI.scale(20));
@@ -1207,5 +1283,34 @@ public class Fightsess extends Widget {
 		if (closestRel != null) {
 			fv.wdgmsg("bump", (int) closestRel.gobid);
 		}
+	}
+	private void setupOpeningArr(ArrayList<Buff> buffs){
+		try {
+			for(Buff buff : buffs) {
+				switch(buff.res.get().name)	{
+					case "paginae/atk/offbalance":
+						openingArr[0] = getOpeningValue(buff);
+						break;
+					case "paginae/atk/reeling":
+						openingArr[1] = getOpeningValue(buff);
+						break;
+					case "paginae/atk/cornered":
+						openingArr[2] = getOpeningValue(buff);
+						break;
+					case "paginae/atk/dizzy":
+						openingArr[3] = getOpeningValue(buff);
+						break;
+				}
+			}
+		} catch (Exception ignored){} // ND: Maybe it should be Loading rather than Exception, idk, idc.
+	}
+	private static void setupWepDmg(GameUI gui) {
+		GItem wep = gui.getequipory().getWeapon();
+		wepdmg = ItemInfo.getDamage(wep.info);
+		//ui.gui.msg("wepdmg: "+wepdmg,Color.white);
+		ql = wep.getQBuff().q;
+		//ui.gui.msg("ql: "+ql,Color.white);
+		basedmg = (int)(Math.ceil(wepdmg/Math.sqrt(ql/10)));
+		//ui.gui.msg("basedmg: "+basedmg,Color.white);
 	}
 }

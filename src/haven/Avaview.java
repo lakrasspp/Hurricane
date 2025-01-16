@@ -275,11 +275,11 @@ public class Avaview extends PView {
 		g.image(missing, Coord.z, sz);
 	    }
 	}
-	if (gob != null) {
-		if (drawv && gob.gobSpeed > 0)
-			//g.text(String.format("%.2f u/s", gob.gobSpeed), speedCoord);
-			g.aimage(PUtils.strokeTex(Text.renderstroked(String.format("%.2f u/s", gob.gobSpeed))), speedCoord, 0, 0); // ND: stroked text. Previous (unstroked) line was killing my framerate, idk why.
-	}
+//	if (gob != null) {
+//		if (drawv && gob.gobSpeed > 0)
+//			//g.text(String.format("%.2f u/s", gob.gobSpeed), speedCoord);
+//			g.aimage(PUtils.strokeTex(Text.renderstroked(String.format("%.2f u/s", gob.gobSpeed))), speedCoord, 0, 0); // ND: stroked text. Previous (unstroked) line was killing my framerate, idk why.
+//	}
     }
 
     public boolean mousedown(MouseDownEvent ev) {

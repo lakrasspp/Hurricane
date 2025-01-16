@@ -6,13 +6,36 @@ import haven.resutil.WaterTile;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Consumer;
+
+import static haven.OCache.posres;
+
 
 public class RefillWaterContainers implements Runnable {
     private static final Coord2d posres = Coord2d.of(0x1.0p-10, 0x1.0p-10).mul(11, 11);
-    private GameUI gui;
+    private final GameUI gui;
 
     public RefillWaterContainers(GameUI gui) {
         this.gui = gui;
+    }
+
+    private Gob findGobWithName(String name) {
+        Gob result = null;
+        synchronized (gui.map.glob.oc) {
+            for (Gob gob : gui.map.glob.oc) {
+                Resource res = gob.getres();
+                if (res != null && res.name.contains(name)) {
+                    if (result == null)
+                        result = gob;
+                    else if (gob.rc.dist(gui.map.player().rc) < result.rc.dist(gui.map.player().rc))
+                        result = gob;
+                }
+            }
+        }
+        if (result == null) {
+            gui.error("No gob found: " + name);
+        }
+        return result;
     }
 
     @Override
@@ -26,46 +49,10 @@ public class RefillWaterContainers implements Runnable {
                     Resource res = mcache.tilesetr(t);
                     if (res != null) {
                         if (res.name.equals("gfx/tiles/water") || res.name.equals("gfx/tiles/deep")) {
-                            Inventory belt = returnBelt();
-                            Equipory equipory = gui.getequipory();
-                            Map<WItem, Coord> inventoryItems = getInventoryContainers();
-                            for (Map.Entry<WItem, Coord> item : inventoryItems.entrySet()) {
-                                try {
-                                    item.getKey().item.wdgmsg("take", Coord.z);
-                                    Thread.sleep(5);
-                                    gui.map.wdgmsg("itemact", Coord.z, gui.map.player().rc.floor(posres), 0);
-                                    Thread.sleep(30);
-                                    gui.maininv.wdgmsg("drop", item.getValue());
-                                    Thread.sleep(5);
-                                } catch (InterruptedException ignored) {
-                                    return;
-                                }
-                            }
-                            Map<WItem, Coord> beltItems = getBeltContainers();
-                            for (Map.Entry<WItem, Coord> item : beltItems.entrySet()) {
-                                try {
-                                    item.getKey().item.wdgmsg("take", Coord.z);
-                                    Thread.sleep(5);
-                                    gui.map.wdgmsg("itemact", Coord.z, gui.map.player().rc.floor(posres), 0);
-                                    Thread.sleep(40);
-                                    belt.wdgmsg("drop", item.getValue());
-                                    Thread.sleep(5);
-                                } catch (InterruptedException ignored) {
-                                    return;
-                                }
-                            }
-                            Map<WItem, Integer> equiporyPouchItems = getEquiporyPouchContainers();
-                            for (Map.Entry<WItem, Integer> item : equiporyPouchItems.entrySet()) {
-                                try {
-                                    item.getKey().item.wdgmsg("take", Coord.z);
-                                    Thread.sleep(5);
-                                    gui.map.wdgmsg("itemact", Coord.z, gui.map.player().rc.floor(posres), 0);
-                                    Thread.sleep(40);
-                                    equipory.wdgmsg("drop", item.getValue());
-                                    Thread.sleep(5);
-                                } catch (InterruptedException ignored) {
-                                    return;
-                                }
+                            if (tryRefillAllContainersWithWater(gui.map.player().rc.floor(posres), (pos) -> {
+                                gui.map.wdgmsg("itemact", Coord.z, pos, 0);
+                            })) {
+                                return;
                             }
                         } else if (res.name.equals("gfx/tiles/owater") || res.name.equals("gfx/tiles/odeep") || res.name.equals("gfx/tiles/odeeper")){
                             gui.ui.error("Refill Water Script: This is salt water, you can't drink this!");
@@ -76,16 +63,71 @@ public class RefillWaterContainers implements Runnable {
                         return;
                     }
                 } else {
-                    gui.ui.error("Refill Water Script: You must be on a water tile, in order to refill your containers!");
-                    return;
+                    Gob barrel = findGobWithName("barrel");
+                    if(barrel == null) {
+                        gui.ui.error("Refill Water Script: You must be on a water tile, in order to refill your containers!");
+                        return;
+                    }
+                    else {
+                        if (tryRefillAllContainersWithWater(barrel.rc.floor(posres), (pos) -> {
+                            gui.map.wdgmsg("itemact", Coord.z, pos, 0, 0, (int) barrel.id, pos, 0, -1);
+                        })) {
+                            return;
+                        }
+                    }
+
                 }
-            } while (getInventoryContainers().size() != 0 || getBeltContainers().size() != 0 || getEquiporyPouchContainers().size() != 0);
+            } while (!getInventoryContainers().isEmpty() || !getBeltContainers().isEmpty() || !getEquiporyPouchContainers().isEmpty());
             gui.ui.msg("Water Refilled!");
         } catch (Exception e) {
-//            gui.ui.error("Refill Water Containers Script: An Unknown Error has occured.");
+            gui.ui.error("Refill Water Containers Script: An Unknown Error has occured.");
         }
     }
 
+    private boolean tryRefillAllContainersWithWater(Coord pos, Consumer<Coord> action) {
+        Inventory belt = returnBelt();
+        Equipory equipory = gui.getequipory();
+        Map<WItem, Coord> inventoryItems = getInventoryContainers();
+        for (Map.Entry<WItem, Coord> item : inventoryItems.entrySet()) {
+            try {
+                item.getKey().item.wdgmsg("take", Coord.z);
+                Thread.sleep(5);
+                action.accept(pos);
+                Thread.sleep(30);
+                gui.maininv.wdgmsg("drop", item.getValue());
+                Thread.sleep(5);
+            } catch (InterruptedException ignored) {
+                return true;
+            }
+        }
+        Map<WItem, Coord> beltItems = getBeltContainers();
+        for (Map.Entry<WItem, Coord> item : beltItems.entrySet()) {
+            try {
+                item.getKey().item.wdgmsg("take", Coord.z);
+                Thread.sleep(5);
+                action.accept(pos);
+                Thread.sleep(40);
+                belt.wdgmsg("drop", item.getValue());
+                Thread.sleep(5);
+            } catch (InterruptedException ignored) {
+                return true;
+            }
+        }
+        Map<WItem, Integer> equiporyPouchItems = getEquiporyPouchContainers();
+        for (Map.Entry<WItem, Integer> item : equiporyPouchItems.entrySet()) {
+            try {
+                item.getKey().item.wdgmsg("take", Coord.z);
+                Thread.sleep(5);
+                action.accept(pos);
+                Thread.sleep(40);
+                equipory.wdgmsg("drop", item.getValue());
+                Thread.sleep(5);
+            } catch (InterruptedException ignored) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     public Map<WItem, Coord> getBeltContainers() {
         Map<WItem, Coord> containers = new HashMap<>();

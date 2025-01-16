@@ -571,11 +571,11 @@ public class WaterTile extends Tiler {
 	public ShaderMacro shader() {return(shader);}
     }
 	public static final BottomFog allwaterfog = new BottomFog(new Color(0, 16, 48));
-	public static final BottomFog waterfog = new BottomFog(new Color(0, 20, 60));
-	public static final BottomFog deepwaterfog = new BottomFog(new Color(0, 10, 50));
-	public static final BottomFog owaterfog = new BottomFog(new Color(0, 40, 60));
-	public static final BottomFog odeepwaterfog = new BottomFog(new Color(0, 30, 50));
-	public static final BottomFog odeeperwaterfog = new BottomFog(new Color(0, 20, 40));
+	public static final BottomFog waterfog = new BottomFog(new Color(0, 50, 124));
+	public static final BottomFog deepwaterfog = new BottomFog(new Color(1, 16, 67));
+	public static final BottomFog owaterfog = new BottomFog(new Color(0, 56, 85));
+	public static final BottomFog odeepwaterfog = new BottomFog(new Color(0, 22, 37));
+	public static final BottomFog odeeperwaterfog = new BottomFog(new Color(0, 8, 24));
     private Pipe.Op botmat;
 	private static final States.DepthBias boff = new States.DepthBias(4, 4);
 
@@ -635,7 +635,7 @@ public class WaterTile extends Tiler {
 		Object[] desc = (Object[])set.ta[a++];
 		String p = (String)desc[0];
 		if(p.equals("bottom") /* Backwards compatibility */ || p.equals("gnd") || p.equals("trn")) {
-		    Resource bres = set.getres().pool.load((String)desc[1], Utils.iv(desc[2])).get();
+		    Resource bres = ((desc[1] instanceof Indir) ? Utils.irv(desc[1]) : set.getres().pool.load((String)desc[1], Utils.iv(desc[2]))).get();
 		    Tileset ts = bres.flayer(Tileset.class);
 		    Tiler b = ts.tfac().create(id, ts);
 		    bottom = (Tiler.MCons)b;

@@ -40,6 +40,8 @@ public class Text implements Disposable {
 	public static final Font fraktur = serif;
     public static final Font dfont = sans;
     public static final Foundry std;
+	public static final Foundry nonstd;
+	public static final Foundry names;
     public final BufferedImage img;
     public final String text;
     private Tex tex;
@@ -47,12 +49,16 @@ public class Text implements Disposable {
     public static final Color white = Color.WHITE;
 	public static final Font latin;
 	public static final Foundry num12boldFnd;
+	public static final Foundry num16boldFnd;
 	public static final Foundry num20boldFnd;
 	
     static {
 	std = new Foundry(sans, 10);
+	nonstd = new Foundry(new Font("Arial", Font.PLAIN, 12));
+	names = new Foundry(new Font("Dialog", Font.BOLD, 14));
 	latin = new Font("Dialog", Font.PLAIN, 10);
 	num12boldFnd = new Text.Foundry(latin.deriveFont(Font.BOLD), 12).aa(true);
+	num16boldFnd = new Text.Foundry(latin.deriveFont(Font.BOLD), 16).aa(true);
 	num20boldFnd = new Text.Foundry(latin.deriveFont(Font.BOLD), 20).aa(true);
     }
 	
@@ -365,11 +371,11 @@ public class Text implements Disposable {
     }
 	
     public static Line render(String text, Color c) {
-	return(std.render(text, c));
+	return(nonstd.render(text, c));
     }
 	
     public static Line renderf(Color c, String text, Object... args) {
-	return(std.render(String.format(text, args), c));
+	return(nonstd.render(String.format(text, args), c));
     }
 
 	public static Line renderstroked(String text, Color c, Color s, Text.Foundry fnd) {

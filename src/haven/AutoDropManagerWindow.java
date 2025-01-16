@@ -21,6 +21,14 @@ public class AutoDropManagerWindow extends Window {
     public static TextEntry autoDropMinedCuriosQualityTextEntry;
     public static CheckBox autoDropQuarryartzCheckbox;
     public static TextEntry autoDropQuarryartzQualityTextEntry;
+    public static CheckBox autoDropBranchesCheckbox;
+    public static TextEntry autoDropBranchesQualityTextEntry;
+    public static CheckBox autoDropBonesCheckBox;
+    public static TextEntry autoDropBonesQualityTextEntry;
+    public static CheckBox autoDropMeatCheckBox;
+    public static TextEntry autoDropMeatQualityTextEntry;
+    public static CheckBox autoDropHidesCheckBox;
+    public static TextEntry autoDropHIdesQualityTextEntry;
 
     public AutoDropManagerWindow() {
         super(UI.scale(300, 350), "Auto-Drop Manager", true);
@@ -115,6 +123,62 @@ public class AutoDropManagerWindow extends Window {
         add(autoDropMinedCuriosQualityTextEntry = new TextEntry(UI.scale(36), Utils.getpref("autoDropMinedCuriosQuality", "30")){
             protected void changed() {
                 Utils.setpref("autoDropMinedCuriosQuality", this.buf.line());
+                this.settext(this.text().replaceAll("[^\\d]", ""));
+                super.changed();
+            }
+        }, prev.pos("ur").adds(6, -2).x(UI.scale(156)));
+        prev = add(autoDropBranchesCheckbox = new CheckBox("Branches"){
+            {a = Utils.getprefb("autoDropBranches", false);}
+            public void changed(boolean val) {
+                Utils.setprefb("autoDropBranches", val);
+            }
+        }, prev.pos("bl").adds(0, 6));
+        add(new Label("Q <"), prev.pos("ur").adds(0, 0).x(UI.scale(134)));
+        add(autoDropBranchesQualityTextEntry = new TextEntry(UI.scale(36), Utils.getpref("autoDropBranchesQuality", "30")){
+            protected void changed() {
+                Utils.setpref("autoDropBranchesQuality", this.buf.line());
+                this.settext(this.text().replaceAll("[^\\d]", ""));
+                super.changed();
+            }
+        }, prev.pos("ur").adds(6, -2).x(UI.scale(156)));
+        prev = add(autoDropBonesCheckBox = new CheckBox("Bones"){
+            {a = Utils.getprefb("autoDropBones", false);}
+            public void changed(boolean val) {
+                Utils.setprefb("autoDropBones", val);
+            }
+        }, prev.pos("bl").adds(0, 6));
+        add(new Label("Q <"), prev.pos("ur").adds(0, 0).x(UI.scale(134)));
+        add(autoDropBonesQualityTextEntry = new TextEntry(UI.scale(36), Utils.getpref("autoDropBonesQuality", "30")){
+            protected void changed() {
+                Utils.setpref("autoDropBonesQuality", this.buf.line());
+                this.settext(this.text().replaceAll("[^\\d]", ""));
+                super.changed();
+            }
+        }, prev.pos("ur").adds(6, -2).x(UI.scale(156)));
+        prev = add(autoDropMeatCheckBox = new CheckBox("Meat & Intestines etc."){
+            {a = Utils.getprefb("autoDropMeat", false);}
+            public void changed(boolean val) {
+                Utils.setprefb("autoDropMeat", val);
+            }
+        }, prev.pos("bl").adds(0, 6));
+        add(new Label("Q <"), prev.pos("ur").adds(0, 0).x(UI.scale(134)));
+        add(autoDropMeatQualityTextEntry = new TextEntry(UI.scale(36), Utils.getpref("autoDropMeatQuality", "30")){
+            protected void changed() {
+                Utils.setpref("autoDropMeatQuality", this.buf.line());
+                this.settext(this.text().replaceAll("[^\\d]", ""));
+                super.changed();
+            }
+        }, prev.pos("ur").adds(6, -2).x(UI.scale(156)));
+        prev = add(autoDropHidesCheckBox = new CheckBox("Hides"){
+            {a = Utils.getprefb("autoDropHides", false);}
+            public void changed(boolean val) {
+                Utils.setprefb("autoDropHides", val);
+            }
+        }, prev.pos("bl").adds(0, 6));
+        add(new Label("Q <"), prev.pos("ur").adds(0, 0).x(UI.scale(134)));
+        add(autoDropHIdesQualityTextEntry = new TextEntry(UI.scale(36), Utils.getpref("autoDropHidesQuality", "30")){
+            protected void changed() {
+                Utils.setpref("autoDropHidesQuality", this.buf.line());
                 this.settext(this.text().replaceAll("[^\\d]", ""));
                 super.changed();
             }

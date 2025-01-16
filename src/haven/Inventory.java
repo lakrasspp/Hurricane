@@ -35,6 +35,7 @@ import java.awt.*;
 import java.util.*;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.awt.image.WritableRaster;
 
 public class Inventory extends Widget implements DTarget, InventoryListener, InventoryObserver {
     public static final Coord sqsz = UI.scale(new Coord(32, 32)).add(1, 1);
@@ -44,6 +45,7 @@ public class Inventory extends Widget implements DTarget, InventoryListener, Inv
     public Coord isz;
     public boolean[] sqmask = null;
     public Map<GItem, WItem> wmap = new HashMap<GItem, WItem>();
+	public final Map<String, Tex> cached = new HashMap<>();
 
 	public static final Comparator<WItem> ITEM_COMPARATOR_ASC = new Comparator<WItem>() {
 		@Override
@@ -102,6 +104,11 @@ public class Inventory extends Widget implements DTarget, InventoryListener, Inv
 		} else {
 		    g.image(invsq, c.mul(sqsz));
 		}
+			if(OptWnd.showInventoryNumbers.a) {
+				g.aimage((Tex) this.cached.computeIfAbsent("" + (c.y * this.isz.x + c.x + 1), (s) -> {
+					return Text.render(s, new Color(255, 255, 255, 100)).tex();
+				}), c.mul(sqsz).add(invsq.sz().div(2)), 0.5, 0.5);
+			}
 	    }
 	}
 	super.draw(g);

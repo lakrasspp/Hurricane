@@ -59,13 +59,20 @@ public class ItemDrag extends WItem {
 			if(ui.dispatchq(parent, new Interact(ev.c.add(this.c), this)).handled)
 				return(ev.derive(ui.gui.map.rootxlate(ev.c.add(rootpos()))).dispatch(ui.gui.map));
 		}
-	} else if (OptWnd.noCursorItemDroppingAnywhereCheckBox.a && !ui.modmeta){
-		if(ev.b == 1) {
-			if (dropOnWidget(parent, ev.c.add(this.c))) {
-				return(true);
-			} else
-				return(ev.derive(ui.gui.map.rootxlate(ev.c.add(rootpos()))).dispatch(ui.gui.map));
-		}
+	} else if (OptWnd.noCursorItemDroppingAnywhereCheckBox.a && !ui.modctrl) {
+			if (ev.b == 1) {
+				if (dropOnWidget(parent, ev.c.add(this.c))) {
+					return (true);
+				} else
+					return (ev.derive(ui.gui.map.rootxlate(ev.c.add(rootpos()))).dispatch(ui.gui.map));
+			}
+	} else if(OptWnd.noCursorItemDroppingAltAnywhereCheckBox.a && !ui.modmeta) {
+			if (ev.b == 1) {
+				if (dropOnWidget(parent, ev.c.add(this.c))) {
+					return (true);
+				} else
+					return (ev.derive(ui.gui.map.rootxlate(ev.c.add(rootpos()))).dispatch(ui.gui.map));
+			}
 	} else if (OptWnd.noCursorItemDroppingInWaterCheckBox.a && !ui.modmeta){
 		if(ev.b == 1) {
 			if (dropOnWidget(parent, ev.c.add(this.c))) {

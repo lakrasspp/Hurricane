@@ -17,7 +17,7 @@ public class InteractWithCursorNearest implements Runnable {
     }
 
 
-    double maxDistance = 12 * 11;
+    double maxDistance = 25 * 11;
     @Override
     public void run() {
         gui.map.new Hittest(gui.map.currentCursorLocation) {

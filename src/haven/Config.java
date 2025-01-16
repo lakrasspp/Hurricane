@@ -41,7 +41,7 @@ public class Config {
     public static final String confid = "Hurricane";
     public static final Variable<Boolean> par = Variable.def(() -> true);
     public final Properties localprops = getlocalprops();
-	public static final String clientVersion = "v1.19a";
+	public static final String clientVersion = "v1.20d";
 	public static String githubLatestVersion = "Loading...";
 
     private static Config global = null;
@@ -87,11 +87,13 @@ public class Config {
 
     public String getprop(String name, String def) {
 	String ret;
-	if((ret = jarprops.getProperty(name)) != null)
+	if((ret = Utils.getprop(name, null)) != null)
 	    return(ret);
 	if((ret = localprops.getProperty(name)) != null)
 	    return(ret);
-	return(Utils.getprop(name, def));
+	if((ret = jarprops.getProperty(name)) != null)
+	    return(ret);
+	return(def);
     }
 
     public static final Path parsepath(String p) {
@@ -596,6 +598,23 @@ public class Config {
 			"strangecrystal"
 	));
 
+	public final static Set<String> bonesItemBaseNames = new HashSet<String>(Arrays.asList(
+			"bone",
+			"flipperbone",
+			"antlers-moose",
+			"lynxclaws",
+			"antlers-reddeer",
+			"borewormbeak",
+			"beartooth",
+			"walrustusk",
+			"whalebone",
+			"mammothtusk",
+			"wolfclaw",
+			"boartusk",
+			"orcatooth",
+			"spermwhaletooth"
+	));
+
 	public static final HashSet<String> maneuvers =  new HashSet<>(Arrays.asList(
 			"paginae/atk/toarms", "paginae/atk/shield", "paginae/atk/parry",
 			"paginae/atk/oakstance", "paginae/atk/dorg", "paginae/atk/chinup",
@@ -1035,6 +1054,79 @@ public class Config {
 		cures.put("paginae/wound/deepworm", new String[]{
 				"gfx/invobjs/jar-tansyextract"
 		});
+	}
+	enum Color{
+		GREEN(0),
+		YELLOW(1),
+		RED(2),
+		BLUE(3);
+
+		private int order;
+
+		private Color(int order) {
+			this.order = order;
+		}
+		public int getOrder() {
+			return order;
+		}
+	}
+	public static class AttackInfo{
+		private boolean isMC;
+		private Color[] colors;
+		private int damage;
+		private double dmgMul;
+
+		public AttackInfo(Color[] colors, int damage)	// UA attacks dont have dmg multiplier, but have fixed dmg.
+		{
+			this.colors = colors;
+			this.damage = damage;
+			this.isMC = false;
+		}
+		public AttackInfo(Color[] colors, double dmgMul) // Vice-versa for MC attacks. (careful to use int and double values :) )
+		{
+			this.colors = colors;
+			this.dmgMul = dmgMul;
+			this.isMC = true;
+		}
+		public int getDmg()
+		{
+			return this.damage;
+		}
+		public double getDmgMul()
+		{
+			return this.dmgMul;
+		}
+		public Color[] getColors()
+		{
+			return this.colors;
+		}
+		public boolean isMC()
+		{
+			return this.isMC;
+		}
+	}
+	public static final Map<String,AttackInfo> MapAttInfo = new HashMap<>();
+	static{
+		MapAttInfo.put("fullcircle", new AttackInfo(new Color[]{Color.RED, Color.YELLOW},1.0d));
+		MapAttInfo.put("knockteeth", new AttackInfo(new Color[]{Color.RED},30));
+		MapAttInfo.put("cleave", new AttackInfo(new Color[]{Color.RED, Color.BLUE},1.5d));
+		MapAttInfo.put("gojug", new AttackInfo(new Color[]{Color.RED,Color.GREEN},40));
+		MapAttInfo.put("chop", new AttackInfo(new Color[]{Color.GREEN},1.0d));
+		MapAttInfo.put("haymaker", new AttackInfo(new Color[]{Color.YELLOW},20));
+		MapAttInfo.put("kick", new AttackInfo(new Color[]{Color.YELLOW},25));
+		MapAttInfo.put("lefthook", new AttackInfo(new Color[]{Color.BLUE},15));
+		MapAttInfo.put("lowblow", new AttackInfo(new Color[]{Color.BLUE},20));
+		MapAttInfo.put("pow", new AttackInfo(new Color[]{Color.GREEN},10));
+		MapAttInfo.put("punchboth", new AttackInfo(new Color[]{Color.GREEN,Color.YELLOW},10));
+		MapAttInfo.put("barrage", new AttackInfo(new Color[]{Color.RED},0.25d));
+		MapAttInfo.put("ravenbite", new AttackInfo(new Color[]{Color.GREEN,Color.YELLOW},1.1d));
+		MapAttInfo.put("lefthook", new AttackInfo(new Color[]{Color.BLUE},15));
+		MapAttInfo.put("ripapart", new AttackInfo(new Color[]{Color.GREEN,Color.YELLOW,Color.RED,Color.BLUE},50));
+		MapAttInfo.put("sideswipe", new AttackInfo(new Color[]{Color.YELLOW},0.75d));
+		MapAttInfo.put("sting", new AttackInfo(new Color[]{Color.GREEN,Color.BLUE},1.25d));
+		MapAttInfo.put("sos", new AttackInfo(new Color[]{Color.YELLOW,Color.BLUE},1.0d));
+		MapAttInfo.put("takedown", new AttackInfo(new Color[]{Color.YELLOW,Color.RED},40));
+		MapAttInfo.put("uppercut", new AttackInfo(new Color[]{Color.GREEN,Color.BLUE},30));
 	}
 
 	private static String playername;

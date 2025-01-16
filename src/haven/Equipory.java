@@ -26,6 +26,8 @@
 
 package haven;
 
+import haven.automated.DropItemsFromKnockedEnemy;
+import haven.automated.YoinkGoodStuffFromKnockedEnemy;
 import haven.res.ui.tt.wear.Wear;
 import haven.res.ui.tt.armor.Armor;
 
@@ -88,6 +90,7 @@ public class Equipory extends Widget implements DTarget {
 	private static final Text.Foundry acf = new Text.Foundry(Text.sans, 12);
 	public boolean updateBottomText = false;
 	long delayedUpdateTime;
+	long autoLootDelayTime;
 	private Tex Detection = null;
 	private Tex Subtlety = null;
 	private Tex ArmorClass = null;
@@ -95,13 +98,15 @@ public class Equipory extends Widget implements DTarget {
 	private boolean showEquipmentBonuses = Utils.getprefb("showEquipmentBonuses", false);
 	private Button expandButton = null;
 	public boolean myOwnEquipory = false;
+	public boolean ignoredEquipory;
 	public static CheckBox autoDropLeechesCheckBox;
 	public static CheckBox autoDropTicksCheckBox;
 	public static CheckBox autoEquipBunnySlippersPlateBootsCheckBox;
+	private static final int btnw = UI.scale(80);
 	boolean checkForLeeches = false;
 	boolean checkForTicks = false;
 
-    @RName("epry")
+	@RName("epry")
     public static class $_ implements Factory {
 	public Widget create(UI ui, Object[] args) {
 	    long gobid;
@@ -116,8 +121,32 @@ public class Equipory extends Widget implements DTarget {
     }
 
     protected void added() {
-	if(ava.avagob == -2)
-	    ava.avagob = getparent(GameUI.class).plid;
+	if(ava.avagob == -2) {
+		ava.avagob = getparent(GameUI.class).plid;
+	}
+	if(parent instanceof Window) {
+		ignoredEquipory = "Mannequin".equals(((Window) parent).caption()) || "Wardrobe".equals(((Window) parent).caption()) || "Equipment".equals(((Window) parent).caption());
+		if(!ignoredEquipory) {
+			Equipory enemyEquipory = this;
+			Button button = new Button(btnw, "Yoink") {
+				@Override
+				public void click() {
+					new Thread(new YoinkGoodStuffFromKnockedEnemy(enemyEquipory, ui.gui), "DropItemsFromEnemy").start();
+					}
+				};
+			button.c = UI.scale(74, 0);
+			add(button);
+			Button button2 = new Button(btnw, "Drop") {
+				@Override
+				public void click() {
+					new Thread(new DropItemsFromKnockedEnemy(enemyEquipory, ui.gui), "DropItemsFromEnemy").start();
+					}
+				};
+
+			button2.c = UI.scale(170, 0);
+			add(button2);
+			}
+		}
 	super.added();
     }
 
@@ -198,22 +227,28 @@ public class Equipory extends Widget implements DTarget {
 	    ArrayList<WItem> v = new ArrayList<>();
 	    for(int i = 0; i < args.length; i++) {
 		int ep = Utils.iv(args[i]);
-		if(ep < ecoords.length)
-			 v.add(slots[ep] = add(new WItem(g), ecoords[ep].add(1, 1)));
+		if(ep < ecoords.length) {
+			v.add(slots[ep] = add(new WItem(g), ecoords[ep].add(1, 1)));
+		}
 	    }
 		g.sendttupdate = true;
 	    v.trimToSize();
 	    wmap.put(g, v);
 		updateBottomText = true;
-		delayedUpdateTime = System.currentTimeMillis();
+		autoLootDelayTime = delayedUpdateTime = System.currentTimeMillis();
 		checkForLeeches = true;
 		checkForTicks = true;
+		if (myOwnEquipory) {
 		try {
 			if (g.resource() != null && g.resource().name.equals("gfx/invobjs/batcape")) {
 				Gob.batWingCapeEquipped = true;
 				ui.sess.glob.oc.gobAction(Gob::updateBeastDangerRadii);
 			}
 		} catch (Exception ignored){}
+		}
+		if (myOwnEquipory) {
+			Fightsess.loadoutChecked = false;
+		}
 	} else {
 	    super.addchild(child, args);
 	}
@@ -235,6 +270,7 @@ public class Equipory extends Widget implements DTarget {
 	delayedUpdateTime = System.currentTimeMillis();
 	checkForLeeches = true;
 	checkForTicks = true;
+	if (myOwnEquipory) {
 		try {
 			if (i.resource() != null && i.resource().name.equals("gfx/invobjs/batcape")) {
 				Gob.batWingCapeEquipped = false;
@@ -242,6 +278,9 @@ public class Equipory extends Widget implements DTarget {
 			}
 		} catch (Exception ignored){}
 	}
+	}
+	if (myOwnEquipory)
+		Fightsess.loadoutChecked = false;
     }
 
     public void uimsg(String msg, Object... args) {
@@ -380,8 +419,8 @@ public class Equipory extends Widget implements DTarget {
 
 	public void tick(double dt) {
 		super.tick(dt);
+		long now = System.currentTimeMillis();
 		if (OptWnd.autoDropLeechesCheckBox.a && myOwnEquipory && checkForLeeches) {
-			long now = System.currentTimeMillis();
 			if ((now - delayedUpdateTime) > 300){
 				for (WItem equippedItem : slots) {
 					if (equippedItem != null && equippedItem.item != null && equippedItem.item.getname() != null && equippedItem.item.getname().contains("Leech")){
@@ -392,7 +431,6 @@ public class Equipory extends Widget implements DTarget {
 			}
 		}
 		if (OptWnd.autoDropTicksCheckBox.a && myOwnEquipory && checkForTicks) {
-			long now = System.currentTimeMillis();
 			if ((now - delayedUpdateTime) > 300){
 				for (WItem equippedItem : slots) {
 					if (equippedItem != null && equippedItem.item != null && equippedItem.item.getname() != null && equippedItem.item.getname().contains("Tick")){
@@ -402,6 +440,71 @@ public class Equipory extends Widget implements DTarget {
 				checkForTicks = false;
 			}
 		}
+		if (!myOwnEquipory && !ignoredEquipory){
+			if ((now - autoLootDelayTime) > 300){
+				for (int slot = 0; slot < slots.length; slot++) {
+					if (slots[slot] != null) {
+						GItem child = slots[slot].item;
+						if (child != null) {
+							if ((OptWnd.autoLootRingsCheckBox.a && (slot == 8 || slot == 9))
+									|| (OptWnd.autoLootNecklaceCheckBox.a && slot == 1)
+									|| (OptWnd.autoLootHelmetCheckBox.a && slot == 0)
+									|| (OptWnd.autoLootChestArmorCheckBox.a && slot == 3)
+									|| (OptWnd.autoLootLegArmorCheckBox.a && slot == 13)
+									|| (OptWnd.autoLootCloakRobeCheckBox.a && slot == 10)
+									|| (OptWnd.autoLootShirtCheckBox.a && slot == 2)
+									|| (OptWnd.autoLootPantsCheckBox.a && slot == 12)
+									|| (OptWnd.autoLootGlovesCheckBox.a && slot == 4)
+									|| (OptWnd.autoLootBootsCheckBox.a && slot == 15)
+									|| (OptWnd.autoLootEyewearCheckBox.a && slot == 17)
+									|| (OptWnd.autoLootMouthCheckBox.a && slot == 18)
+									|| (OptWnd.autoLootCapeCheckBox.a && slot == 14)){
+								child.wdgmsg("transfer", Coord.z);
+							} else if (OptWnd.autoLootWeaponCheckBox.a && (slot == 6 || slot == 7)) { // ND: Weapon special case
+								if (!child.getres().name.equals("gfx/invobjs/small/roundshield")) { // ND: Don't need shields, waste of inventory/belt space
+									Inventory belt = returnBelt();
+									if (belt != null) {
+										if (belt.getFreeSpace() > 0) {
+											child.wdgmsg("take", Coord.z);
+											belt.wdgmsg("drop", belt.isRoom(1, 1));
+										}
+									}
+									// ND: If failed, try to transfer to inventory
+									child.wdgmsg("transfer", Coord.z);
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+	}
+	public GItem getWeapon() {
+		GItem lweap = null;
+		GItem rweap = null;
+		if (slots[6] != null) lweap = slots[6].item;
+		if (slots[7] != null) rweap = slots[7].item;
+        if (lweap != null && ItemInfo.hasInfo(lweap.info,"Damage")) {
+            return lweap;
+        } else if (rweap != null && ItemInfo.hasInfo(rweap.info,"Damage")) {
+            return rweap;
+        } else {
+            return null;
+        }
+    }
+
+	public Inventory returnBelt() {
+		Inventory belt = null;
+		for (Widget w = ui.gui.lchild; w != null; w = w.prev) {
+			if (!(w instanceof GItem.ContentsWindow) || !((GItem.ContentsWindow) w).myOwnEquipory) continue;
+			if (!((GItem.ContentsWindow) w).cap.contains("Belt")) continue;
+			for (Widget ww : w.children()) {
+				if (!(ww instanceof Inventory)) continue;
+				belt = (Inventory) ww;
+			}
+		}
+		return belt;
 	}
 
 }

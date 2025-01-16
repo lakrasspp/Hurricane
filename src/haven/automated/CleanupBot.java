@@ -120,9 +120,12 @@ public class CleanupBot extends Window implements Runnable {
                         } catch (InterruptedException e) {
                         }
                     }
-                    else if (ui.gui.getmeter("nrj", 0).a < 0.25) {
-                        gui.error("Need food");
-                        stop();
+                    else if (ui.gui.getmeter("nrj", 0).a < 0.18) {
+                        System.out.println("ENERGY IS LOW, EAT SOME SHIT");
+                        try {
+                            Thread.sleep(6000);
+                        } catch (InterruptedException e) {
+                        }
                     }
                     else if (gui.getmeter("stam", 0).a < 0.40) {
                         try {

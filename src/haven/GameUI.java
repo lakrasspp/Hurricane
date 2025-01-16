@@ -27,9 +27,7 @@
 package haven;
 
 import java.awt.image.BufferedImage;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.util.*;
 import java.awt.Color;
 import java.awt.event.KeyEvent;
@@ -45,6 +43,7 @@ import haven.automated.mapper.MappingClient;
 import haven.render.Location;
 import haven.res.ui.stackinv.ItemStack;
 
+import static haven.Audio.fromres;
 import static haven.Inventory.invsq;
 
 public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.Handler {
@@ -114,12 +113,35 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	public static Map<Long,String> gobIdToKinName = new ConcurrentHashMap<>();
 	public static boolean showUI = true;
 	public MiniStudy miniStudy;
+	public static String backgroundSong = "";
+	public static long delayedMusicStopTime;
+	static public final Resource caveTheme = Resource.local().loadwait("customclient/sfx/cavetheme");
+	static public final Resource caveThemeLegacy = Resource.local().loadwait("customclient/sfx/cavetheme_legacy");
+	static public Audio.CS caveThemeClip = null;
+	static public final Resource cabinTheme = Resource.local().loadwait("customclient/sfx/cabintheme");
+	static public final Resource cabinThemeLegacy = Resource.local().loadwait("customclient/sfx/cabintheme_legacy");
+	static public Audio.CS cabinThemeClip = null;
+	public static boolean playingPoseSong = false;
+	public static String backgroundPoseSong = "";
+	static public final Resource fishingTheme = Resource.local().loadwait("customclient/sfx/fishingtheme");
+	static public final Resource fishingThemeLegacy = Resource.local().loadwait("customclient/sfx/fishingtheme_legacy");
+	static public Audio.CS fishingThemeClip = null;
+	static public final Resource hookahTheme = Resource.local().loadwait("customclient/sfx/hookahtheme");
+	static public final Resource hookahThemeLegacy = Resource.local().loadwait("customclient/sfx/hookahtheme_legacy");
+	static public Audio.CS hookahThemeClip = null;
+	static public final Resource feastingTheme = Resource.local().loadwait("customclient/sfx/feastingtheme");
+	static public final Resource feastingThemeLegacy = Resource.local().loadwait("customclient/sfx/feastingtheme_legacy");
+	static public Audio.CS feastingThemeClip = null;
+	public StatusWdg statusWdg = null;
+	private String yap_old;
+	private Random randYap = new Random();
 
 	// Script Threads
 	public Thread autoRepeatFlowerMenuScriptThread;
 	public Thread interactWithNearestObjectThread;
 	public Thread enterNearestVehicleThread;
 	public Thread wagonNearestLiftableThread;
+	public Thread steakMakerThread;
 	public Thread cloverScriptThread;
 	public Thread coracleScriptThread;
 	public Thread skisScriptThread;
@@ -128,6 +150,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	public Thread combatDistanceToolThread;
 	public Thread harvestNearestDreamcatcherThread;
 	public Thread destroyNearestTrellisPlantScriptThread;
+	public Thread lootNearestKnockedPlayerThread;
 
 	// Tool Threads
 	public MiningSafetyAssistant miningSafetyAssistantWindow;
@@ -415,7 +438,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 		}
 	}, new Coord(umpanel.c.x - (int)(this.sz.x*0.98), UI.scale(1)));
 
-	add(new StatusWdg(){
+	add(statusWdg = new StatusWdg(){
 		@Override
 		public void draw(GOut g) {
 			if (showUI){
@@ -423,10 +446,23 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 					c.x = umpanel.c.x + umpanel.sz.x - UI.scale(10);
 				g.image(players, Coord.z);
 				g.image(pingtime, new Coord(0, players.sz().y));
+				if (UI.province != null && UI.realm != null) {
+					g.image(UI.province, new Coord(0, players.sz().y + pingtime.sz().y));
+					g.image(UI.realm, new Coord(0, players.sz().y + pingtime.sz().y + UI.province.sz().y));
+				}
 				int w = players.sz().x;
 				if (pingtime.sz().x > w)
 					w = pingtime.sz().x;
-				this.sz = new Coord(w, players.sz().y + pingtime.sz().y);
+				if (UI.province != null && UI.realm != null) {
+					if (UI.province.sz().x > w)
+						w = UI.province.sz().x;
+					if (UI.realm.sz().x > w)
+						w = UI.realm.sz().x;
+				}
+				if (UI.province != null && UI.realm != null) {
+					this.sz = new Coord(w, players.sz().y + pingtime.sz().y + UI.province.sz().y + UI.realm.sz().y);
+				} else
+					this.sz = new Coord(w, players.sz().y + pingtime.sz().y);
 			}
 		}
 	}, new Coord(umpanel.sz.x, UI.scale(11)));
@@ -1060,7 +1096,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 		};
 	    invwnd.add(maininv = (Inventory)child, Coord.z);
 	    invwnd.pack();
-	    invwnd.hide();
+	    invwnd.show(OptWnd.alwaysOpenInventoryOnLoginCheckBox.a);
 	    add(invwnd, Utils.getprefc("wndc-inv", new Coord(100, 100)));
 	} else if(place == "equ") {
 	    equwnd = new Hidewnd(Coord.z, "Equipment");
@@ -1128,7 +1164,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 		    {add(cref);}
 
 		    protected Coord getc() {
-			return(new Coord(10, GameUI.this.sz.y - chat.sz.y - this.sz.y - UI.scale( 26)));
+			return(new Coord(10, GameUI.this.sz.y - chat.sz.y - this.sz.y - UI.scale( 100)));
 		    }
 
 		    public void cdestroy(Widget ch) {
@@ -1287,7 +1323,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	    PUtils.blendblit(buf, progt.f[fr + 1][0].scaled().getRaster(), Coord.z, bf);
 
 		BufferedImage img = PUtils.rasterimg(buf);
-		BufferedImage txt = Text.renderstroked(String.format("%d%%", (int) (100 * prog))).img;
+		BufferedImage txt = Text.renderstroked(String.format("%d%%", (int) (100 * prog)),Text.num16boldFnd).img;
 		img.getGraphics().drawImage(txt, (img.getWidth() - txt.getWidth()) / 2, UI.scale(8) - txt.getHeight() / 2, null);
 
 	    if(this.curi != null)
@@ -1352,11 +1388,13 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	int x = (int)(ui.gui.sz.x / 2.0);
 	int y = (int)(ui.gui.sz.y - ((ui.gui.sz.y / 500.0) * OptWnd.combatUITopPanelHeightSlider.val));
 	int bottom = (int)(ui.gui.sz.y - ((ui.gui.sz.y / 500.0) * OptWnd.combatUIBottomPanelHeightSlider.val));
+	int bottomCombatUI = (int)(ui.gui.sz.y - ((ui.gui.sz.y / 500.0) * OptWnd.bottomCombatUIPanelHeighSlider.val));
+
 	if (OptWnd.alwaysShowCombatUIStaminaBarCheckBox.a && showUI) {
 		IMeter.Meter stam = ui.gui.getmeter("stam", 0);
 		if (stam != null) {
 			Coord msz = UI.scale(new Coord(234, 22));
-			Coord sc = OptWnd.stamBarLocationIsTop ? new Coord(x - msz.x/2,  y + UI.scale(70)) : new Coord(x - msz.x/2,  bottom - UI.scale(68));
+			Coord sc = OptWnd.stamBarLocationIsTop ? new Coord(x - msz.x/2,  y + UI.scale(70)) : new Coord(x - msz.x/2,  bottomCombatUI - UI.scale(222));
 			drawStamMeterBar(g, stam, sc, msz);
 		}
 	}
@@ -1364,13 +1402,46 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 		IMeter.Meter hp = ui.gui.getmeter("hp", 0);
 		if (hp != null) {
 			Coord msz = UI.scale(new Coord(234, 22));
-			Coord sc = new Coord(x - msz.x/2,  y + UI.scale(44));
+			Coord sc = OptWnd.healthBarLocationIsTop ? new Coord(x - msz.x/2,  y + UI.scale(44)) : new Coord(x - msz.x/2,  bottomCombatUI - UI.scale(245));
 			drawHealthMeterBar(g, hp, sc, msz);
 		}
 	}
 
+
+
+	if(OptWnd.drawPlayerSpeedBarCheckBox.a && showUI) {
+		Coord msz = UI.scale(new Coord(235,22));
+		Coord sc = new Coord(x - msz.x/2,  bottomCombatUI - UI.scale(275));
+		Gob player = ui.gui.map.player();
+		drawSpeedBar(g, player, sc, msz);
+	}
+
+	if(OptWnd.drawTargetSpeedBarCheckbox.a && this.fv != null && showUI) {
+		Gob currEnemy = getEnemy();
+		Coord msz = UI.scale(new Coord(235, 22));
+		Coord sc = new Coord(x - msz.x/2,  y + UI.scale(44));
+
+		if(currEnemy != null && currEnemy.getres().name.contains("gfx/borka")) {
+			drawSpeedBar(g, currEnemy, sc, msz);
+		}
+		}
+
     }
-    
+
+	private Gob getEnemy() {
+		if (fv.current != null) {
+			long id = fv.current.gobid;
+			synchronized (map.glob.oc) {
+				for (Gob gob : map.glob.oc) {
+					if (gob.id == id) {
+						return gob;
+					}
+				}
+			}
+		}
+		return null;
+	}
+
     private String iconconfname() {
 	StringBuilder buf = new StringBuilder();
 	buf.append("data/mm-icons-2");
@@ -1511,6 +1582,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 			}
 		}
 	}
+	handleBackgroundMusic();
     }
     
     public void uimsg(String msg, Object... args) {
@@ -1780,11 +1852,15 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	public static KeyBinding kb_clickNearestCursorObject  = KeyBinding.get("clickNearestCursorObjectKB",  KeyMatch.nil);
 	public static KeyBinding kb_enterNearestVehicle  = KeyBinding.get("enderNearestVehicle",  KeyMatch.forchar('Q', KeyMatch.C));
 	public static KeyBinding kb_wagonNearestLiftable  = KeyBinding.get("wagonNearestLiftable",  KeyMatch.nil);
+	public static KeyBinding kb_steakMaker = KeyBinding.get("steakMaker", KeyMatch.nil);
 	public static KeyBinding kb_toggleHidingBoxes  = KeyBinding.get("toggleHidingBoxesKB",  KeyMatch.forchar('H', KeyMatch.C));
 	public static KeyBinding kb_toggleCollisionBoxes  = KeyBinding.get("toggleCollisionBoxesKB",  KeyMatch.forchar('B', KeyMatch.S));
 	public static KeyBinding kb_toggleGrowthInfo  = KeyBinding.get("toggleGrowthInfoKB",  KeyMatch.forchar('I',  KeyMatch.C | KeyMatch.S));
 	public static KeyBinding kb_toggleCursorItem = KeyBinding.get("toggleCursorItemKB",  KeyMatch.nil);
+	public static KeyBinding kb_lootNearestKnockedPlayer = KeyBinding.get("lootNearestKnockedPlayerKB",  KeyMatch.forchar('D', KeyMatch.S));
 	public static KeyBinding kb_instantLogout = KeyBinding.get("instantLogoutKB",  KeyMatch.nil);
+	public static KeyBinding kb_pushNearestPlayer = KeyBinding.get("pushNearestKB", KeyMatch.nil);
+	public static KeyBinding kb_pushCurrentPlayer = KeyBinding.get("pushCurrentKB", KeyMatch.nil);
 	public static KeyBinding kb_aggroNearestTargetButton = KeyBinding.get("AggroNearestTargetButtonKB",  KeyMatch.forcode(KeyEvent.VK_SPACE, KeyMatch.S));
 	public static KeyBinding kb_aggroOrTargetNearestCursor = KeyBinding.get("AggroOrTargetNearestCursorButtonKB",  KeyMatch.nil);
 	public static KeyBinding kb_aggroNearestPlayerButton = KeyBinding.get("AggroNearestPlayerButtonKB",  KeyMatch.nil);
@@ -1792,6 +1868,11 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	public static KeyBinding kb_aggroLastTarget = KeyBinding.get("aggroLastTarget",  KeyMatch.forchar('T', KeyMatch.S));
 	public static KeyBinding kb_peaceCurrentTarget  = KeyBinding.get("peaceCurrentTargetKB",  KeyMatch.forchar('P', KeyMatch.M));
 	public static KeyBinding kb_miniStudy = KeyBinding.get("miniStudyKB",  KeyMatch.forchar('S', KeyMatch.M));
+	public static KeyBinding kb_traverse = KeyBinding.get("kb_traverse", KeyMatch.forchar('A', KeyMatch.S));
+	public static KeyBinding kb_yap = KeyBinding.get("kb_yap", KeyMatch.nil);
+	public static KeyBinding kb_autoDistance = KeyBinding.get("kb_autoDistance", KeyMatch.nil);
+	public static KeyBinding kb_flatWorld = KeyBinding.get("kb_flatWorld", KeyMatch.forchar('F', KeyMatch.C));
+
     public boolean globtype(GlobKeyEvent ev) {
 	if(ev.c == ':') {
 	    entercmd();
@@ -1909,6 +1990,14 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 			wagonNearestLiftableThread.start();
 		}
 		return (true);
+	} else if(kb_steakMaker.key().match(ev)) {
+		if(steakMakerThread == null) {
+			steakMakerThread = new Thread(new steakMaker(this),"steakMaker");
+			steakMakerThread.start();
+		} else {
+			steakMakerThread.interrupt();
+			steakMakerThread = null;
+		}
 	} else if(kb_toggleHidingBoxes.key().match(ev)) {
 		OptWnd.toggleGobHidingCheckBox.set(!OptWnd.toggleGobHidingCheckBox.a);
 		return(true);
@@ -1923,6 +2012,22 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 		return(true);
 	} else if (kb_instantLogout.key().match(ev)) {
 		ui.sess.close();
+	} else if(kb_pushNearestPlayer.key().match(ev)) {
+		this.runActionThread(new Thread(new PushNearestPlayer(this), "PushNearestPlayer"));
+		return(true);
+	} else if(kb_pushCurrentPlayer.key().match(ev)) {
+		this.runActionThread(new Thread(new PushCurrentTarget(this), "PushCurrentPlayer"));
+		return(true);
+	} else if (kb_lootNearestKnockedPlayer.key().match(ev)) {
+		if (lootNearestKnockedPlayerThread == null) {
+			lootNearestKnockedPlayerThread = new Thread(new LootNearestKnockedPlayer(this), "LootNearestKnockedPlayer");
+			lootNearestKnockedPlayerThread.start();
+		} else {
+			lootNearestKnockedPlayerThread.interrupt();
+			lootNearestKnockedPlayerThread = null;
+			lootNearestKnockedPlayerThread = new Thread(new LootNearestKnockedPlayer(this), "LootNearestKnockedPlayer");
+			lootNearestKnockedPlayerThread.start();
+		}
 	} else if(kb_aggroNearestTargetButton.key().match(ev)) {
 		this.runActionThread(new Thread(new AggroNearestTarget(this), "AggroNearestTarget"));
 		return(true);
@@ -1943,6 +2048,23 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 		return(true);
 	} else if(kb_miniStudy.key().match(ev)) {
 		miniStudy.show(!miniStudy.visible);
+		return(true);
+	} else if(kb_traverse.key().match(ev)) {
+		this.runActionThread(new Thread(new Traverse(this), "Traverse"));
+		return (true);
+	} else if(kb_yap.key().match(ev)) {
+		Map<String, ChatUI.MultiChat> chats = ui.gui.chat.getMultiChannels();
+		String yap_new = yapper();
+		if (yap_old == null || !yap_new.equals(yap_old)) {
+			chats.get("Area Chat").send(yap_new);
+			yap_old = yap_new;
+		}
+		return(true);
+    } else if(kb_autoDistance.key().match(ev)) {
+		this.runActionThread(new Thread(new AutoDistance(this), "AutoDistance"));
+		return (true);
+	} else if(kb_flatWorld.key().match(ev)) {
+		OptWnd.flatWorldCheckBox.set(!OptWnd.flatWorldCheckBox.a);
 		return(true);
 	} else if((ev.c == 27) && (map != null) && !map.hasfocus) {
 	    setfocus(map);
@@ -2908,7 +3030,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 			g.chcolor(Fightsess.hpBarGreen);
 			g.frect(sc, new Coord(w2, msz.y));
 			g.chcolor(Color.BLACK);
-			g.line(new Coord(sc.x+w, sc.y), new Coord(sc.x+w, sc.y+msz.y), 2);
+			g.line(new Coord(sc.x+w, sc.y), new Coord(sc.x+w, sc.y+msz.y), 1);
 			g.rect(sc, new Coord(msz.x, msz.y));
 
 			g.chcolor(Color.WHITE);
@@ -2919,7 +3041,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 			g.chcolor(Fightsess.hpBarRed);
 			g.frect(sc, new Coord(w2, msz.y));
 			g.chcolor(Color.BLACK);
-			g.line(new Coord(sc.x+w1, sc.y), new Coord(sc.x+w1, sc.y+msz.y), 2);
+			g.line(new Coord(sc.x+w1, sc.y), new Coord(sc.x+w1, sc.y+msz.y), 1);
 			g.rect(sc, new Coord(msz.x, msz.y));
 
 			g.chcolor(Color.WHITE);
@@ -2934,7 +3056,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 		g.chcolor(Fightsess.stamBarBlue);
 		g.frect(sc, new Coord(w1, msz.y));
 		g.chcolor(Color.BLACK);
-		g.line(new Coord(sc.x+w1, sc.y), new Coord(sc.x+w1, sc.y+msz.y), 2);
+		g.line(new Coord(sc.x+w1, sc.y), new Coord(sc.x+w1, sc.y+msz.y), 1);
 		g.rect(sc, new Coord(msz.x, msz.y));
 		g.chcolor(Color.WHITE);
 		String staminaBarText = Fightsess.fmt1DecPlace((int)(m.a*100));
@@ -2946,6 +3068,12 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 		g.aimage(Text.renderstroked(staminaBarText, Text.num12boldFnd).tex(), new Coord(sc.x+msz.x/2, sc.y+msz.y/2), 0.5, 0.5);
 	}
 
+	private void drawSpeedBar(GOut g, Gob target, Coord sc, Coord msz) {
+		if(target != null) {
+			g.aimage(Text.renderstroked(String.format("%.2f", target.gobSpeed), Text.num16boldFnd).tex(), new Coord(sc.x + msz.x / 2, sc.y + msz.y / 2), 0.5, 0.5);
+		}
+	}
+
 	public void toggleCursorItem() {
 		if (hand.isEmpty()) {
 			hand.addAll(handSave);
@@ -2955,6 +3083,172 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 			handSave.addAll(hand);
 			hand.clear();
 			updhand();
+		}
+	}
+
+	public String yapper() {
+		try {
+			Scanner sc = new Scanner(new File("yap/text.txt"));
+			ArrayList<String> lines = new ArrayList<>();
+
+			while(sc.hasNextLine()) {
+				lines.add(sc.nextLine());
+			}
+			return lines.get(randYap.nextInt(lines.size()));
+		} catch(Exception e) {}
+		return "bad";
+
+	}
+
+	public static void playCaveTheme() {
+		if ((caveThemeClip == null || !((Audio.Mixer) Audio.player.stream).playing(caveThemeClip)) && backgroundSong.equals("cave")) {
+			Audio.CS klippi = fromres(caveTheme);
+			if (Utils.getprefi("backgroundMusicTheme", 0) == 0) klippi = fromres(caveTheme);
+			else if (Utils.getprefi("backgroundMusicTheme", 0) == 1) klippi = fromres(caveThemeLegacy);
+			caveThemeClip = new Audio.VolAdjust(klippi, Utils.getprefi("themeSongVolume", 40)/100d);
+			Audio.play(caveThemeClip);
+		}
+	}
+	public static void stopCaveTheme() {
+		if(caveThemeClip != null){
+			Audio.stop(caveThemeClip);
+		}
+	}
+
+	public static void playCabinTheme() {
+		if ((cabinThemeClip == null || !((Audio.Mixer) Audio.player.stream).playing(cabinThemeClip)) && backgroundSong.equals("cabin")) {
+			Audio.CS klippi = fromres(cabinTheme);
+			if (Utils.getprefi("backgroundMusicTheme", 0) == 0) klippi = fromres(cabinTheme);
+			else if (Utils.getprefi("backgroundMusicTheme", 0) == 1) klippi = fromres(cabinThemeLegacy);
+			cabinThemeClip = new Audio.VolAdjust(klippi, Utils.getprefi("themeSongVolume", 40)/100d);
+			Audio.play(cabinThemeClip);
+		}
+	}
+	public static void stopCabinTheme() {
+		if(cabinThemeClip != null){
+			Audio.stop(cabinThemeClip);
+		}
+	}
+
+	public static void playFishingTheme() {
+		if (fishingThemeClip == null || !((Audio.Mixer) Audio.player.stream).playing(fishingThemeClip)) {
+			Audio.CS klippi = fromres(fishingTheme);
+			if (Utils.getprefi("backgroundMusicTheme", 0) == 0) klippi = fromres(fishingTheme);
+			else if (Utils.getprefi("backgroundMusicTheme", 0) == 1) klippi = fromres(fishingThemeLegacy);
+			fishingThemeClip = new Audio.VolAdjust(klippi, Utils.getprefi("themeSongVolume", 40)/100d);
+			Audio.play(fishingThemeClip);
+		}
+	}
+	public static void stopFishingTheme() {
+		if(fishingThemeClip != null){
+			Audio.stop(fishingThemeClip);
+		}
+	}
+
+	public static void playHookahTheme() {
+		if (hookahThemeClip == null || !((Audio.Mixer) Audio.player.stream).playing(hookahThemeClip)) {
+			Audio.CS klippi = fromres(hookahTheme);
+			if (Utils.getprefi("backgroundMusicTheme", 0) == 0) klippi = fromres(hookahTheme);
+			else if (Utils.getprefi("backgroundMusicTheme", 0) == 1) klippi = fromres(hookahThemeLegacy);
+			hookahThemeClip = new Audio.VolAdjust(klippi, Utils.getprefi("themeSongVolume", 40)/100d);
+			Audio.play(hookahThemeClip);
+		}
+	}
+	public static void stopHookahTheme() {
+		if(hookahThemeClip != null){
+			Audio.stop(hookahThemeClip);
+		}
+	}
+
+	public static void playFeastingTheme() {
+		if (feastingThemeClip == null || !((Audio.Mixer) Audio.player.stream).playing(feastingThemeClip)) {
+			Audio.CS klippi = fromres(feastingTheme);
+			if (Utils.getprefi("backgroundMusicTheme", 0) == 0) klippi = fromres(feastingTheme);
+			else if (Utils.getprefi("backgroundMusicTheme", 0) == 1) klippi = fromres(feastingThemeLegacy);
+			feastingThemeClip = new Audio.VolAdjust(klippi, Utils.getprefi("themeSongVolume", 40)/100d);
+			Audio.play(feastingThemeClip);
+		}
+	}
+	public static void stopFeastingTheme() {
+		if(feastingThemeClip != null){
+			Audio.stop(feastingThemeClip);
+		}
+	}
+
+	public static void stopAllThemes(){
+		backgroundSong = "";
+		backgroundPoseSong = "";
+		stopCabinTheme();
+		stopCaveTheme();
+		stopFishingTheme();
+		stopHookahTheme();
+		stopFeastingTheme();
+	}
+
+	public static void settingStopAllThemes(){
+		stopCabinTheme();
+		stopCaveTheme();
+		stopFishingTheme();
+		stopHookahTheme();
+		stopFeastingTheme();
+	}
+
+	private void handleBackgroundMusic(){ // ND: Calling this spaghetti code would be an understatement
+		boolean feasting = false;
+		outerLoop:
+		for (Window wnd : getAllWindows()) {
+			if (wnd.cap.equals("Table")) {
+				for (Widget wdg : wnd.children()) {
+					if (wdg instanceof Button) {
+						feasting = true;
+						break outerLoop; // Break out of both loops
+					}
+				}
+			}
+		}
+		if (feasting) {
+			playingPoseSong = true;
+		}
+		if (!playingPoseSong) {
+			stopFishingTheme();
+			stopHookahTheme();
+			stopFeastingTheme();
+			if (backgroundSong.equals("cabin")) {
+				playCabinTheme();
+				stopCaveTheme();
+			} else if (backgroundSong.equals("cave")) {
+				playCaveTheme();
+				stopCabinTheme();
+			} else {
+				stopCaveTheme();
+				stopCabinTheme();
+			}
+		} else {
+			stopCaveTheme();
+			stopCabinTheme();
+			if (backgroundPoseSong.equals("fishing")){
+				playFishingTheme();
+				stopHookahTheme();
+				stopFeastingTheme();
+				long rightnow = System.currentTimeMillis();
+				if ((rightnow - GameUI.delayedMusicStopTime) > 15000){ // ND: 20 seconds ought to be enough?
+					GameUI.playingPoseSong = false;
+					backgroundPoseSong = "";
+				}
+			} else if (backgroundPoseSong.equals("hookah")){
+				playHookahTheme();
+				stopFishingTheme();
+				stopFeastingTheme();
+			} else if (feasting) {
+				playFeastingTheme();
+				stopFishingTheme();
+				stopHookahTheme();
+			} else {
+				GameUI.playingPoseSong = false;
+				stopFishingTheme();
+				stopHookahTheme();
+				stopFeastingTheme();
+			}
 		}
 	}
 

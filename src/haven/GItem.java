@@ -697,6 +697,14 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 						this.wdgmsg("drop", Coord.z);
 					} else if (AutoDropManagerWindow.autoDropQuarryartzCheckbox.a && itemBaseName.equals("quarryquartz") && parseTextEntryInt(AutoDropManagerWindow.autoDropQuarryartzQualityTextEntry) > quality) {
 						this.wdgmsg("drop", Coord.z);
+					} else if (AutoDropManagerWindow.autoDropBranchesCheckbox.a && itemBaseName.equals("branch") && parseTextEntryInt(AutoDropManagerWindow.autoDropBranchesQualityTextEntry) > quality) {
+						this.wdgmsg("drop", Coord.z);
+					} else if (AutoDropManagerWindow.autoDropBonesCheckBox.a && Config.bonesItemBaseNames.contains(itemBaseName) && parseTextEntryInt(AutoDropManagerWindow.autoDropBonesQualityTextEntry) > quality) {
+						this.wdgmsg("drop", Coord.z);
+					} else if(AutoDropManagerWindow.autoDropMeatCheckBox.a && (itemBaseName.equals("meat") || itemBaseName.equals("entrails") || itemBaseName.equals("intestines")) || itemBaseName.equals("animalfat") && parseTextEntryInt(AutoDropManagerWindow.autoDropMeatQualityTextEntry) > quality) {
+						this.wdgmsg("drop", Coord.z);
+					} else if (AutoDropManagerWindow.autoDropHidesCheckBox.a && itemBaseName.contains("hide") && parseTextEntryInt(AutoDropManagerWindow.autoDropHIdesQualityTextEntry) > quality) {
+						this.wdgmsg("drop", Coord.z);
 					}
 					checkedAutodrop = true;
 				}

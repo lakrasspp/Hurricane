@@ -22,15 +22,15 @@ public class MiningSafeTilesSprite extends Sprite {
     public MiningSafeTilesSprite(final Gob g, final float angle, int size) {
         super(g, null);
         if (size == 0) {
-            this.mesh = ColoredSupportMesh.getMesh(color, positionSmallest, angle, 0.2f);
+            this.mesh = ColoredSupportMesh.getMesh(color, positionSmallest, angle, 0.7f);
         } else if (size == 1) {
-            this.mesh = ColoredSupportMesh.getMesh(color, positionsSmall, angle, 0.3f);
+            this.mesh = ColoredSupportMesh.getMesh(color, positionsSmall, angle, 0.7f);
         } else if (size == 2) {
-            this.mesh = ColoredSupportMesh.getMesh(color, positionsMedium, angle, 0.4f);
+            this.mesh = ColoredSupportMesh.getMesh(color, positionsMedium, angle, 0.7f);
         } else if (size == 3){
-            this.mesh = ColoredSupportMesh.getMesh(color, positionsLarge, angle, 0.5f);
+            this.mesh = ColoredSupportMesh.getMesh(color, positionsLarge, angle, 0.7f);
         } else {
-            this.mesh = ColoredSupportMesh.getMesh(color, positionSmallest, angle, 0.2f);
+            this.mesh = ColoredSupportMesh.getMesh(color, positionSmallest, angle, 0.7f);
         }
     }
 
