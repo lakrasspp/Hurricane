@@ -26,15 +26,22 @@
 
 package haven;
 
+import haven.res.ui.tt.q.qbuff.QBuff;
+import hurricane.nords.DTarget2;
+import hurricane.nords.InventoryListener;
+import hurricane.nords.InventoryObserver;
+
 import java.awt.*;
 import java.util.*;
-import java.awt.image.WritableRaster;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.awt.image.WritableRaster;
 
-public class Inventory extends Widget implements DTarget {
+public class Inventory extends Widget implements DTarget, InventoryListener, InventoryObserver {
     public static final Coord sqsz = UI.scale(new Coord(32, 32)).add(1, 1);
     public static final Tex invsq = Resource.loadtex("gfx/hud/invsq");
     public boolean dropul = true;
+	public final AltInventory ainv;
     public Coord isz;
     public boolean[] sqmask = null;
     public Map<GItem, WItem> wmap = new HashMap<GItem, WItem>();
@@ -110,6 +117,9 @@ public class Inventory extends Widget implements DTarget {
     public Inventory(Coord sz) {
 	super(sqsz.mul(sz).add(1, 1));
 	isz = sz;
+	ainv = new AltInventory(this);
+	add(ainv, Coord.of(this.sz.x, 0));
+	ainv.hide();
     }
     
     public boolean mousewheel(MouseWheelEvent ev) {
@@ -131,6 +141,8 @@ public class Inventory extends Widget implements DTarget {
 	if(child instanceof GItem) {
 	    GItem i = (GItem)child;
 	    wmap.put(i, add(new WItem(i), c.mul(sqsz).add(1, 1)));
+		i.addListeners(listeners());
+		observers().forEach(InventoryListener::dirty);
 	}
     }
     
@@ -139,9 +151,28 @@ public class Inventory extends Widget implements DTarget {
 	if(w instanceof GItem) {
 	    GItem i = (GItem)w;
 	    ui.destroy(wmap.remove(i));
+		i.removeListeners(listeners());
+		observers().forEach(InventoryListener::dirty);
 	}
     }
-    
+
+	@Override
+	protected void added() {
+		super.added();
+		if (ainv.visible()) {
+			Coord max = sqsz.mul(isz).add(1, 1);
+			max.x = Math.max(max.x, ainv.c.x + ainv.sz.x);
+			max.y = Math.max(max.y, ainv.c.y + ainv.sz.y);
+			resize(max);
+		}
+		listeners.add(this);
+	}
+
+	@Override
+	public void reqdestroy() {
+		super.reqdestroy();
+		listeners.remove(this);
+	}
     public boolean drop(Coord cc, Coord ul) {
 	Coord dc;
 	if(dropul)
@@ -318,6 +349,45 @@ public class Inventory extends Widget implements DTarget {
 		return feespace;
 	}
 
+	public void openStacks() {
+		for (Widget wdg = child; wdg != null; wdg = wdg.next) {
+			if (wdg instanceof WItem) {
+				WItem w = (WItem) wdg;
+				if (w.item.contents != null) w.item.showcontwnd(true);
+			}
+		}
+	}
+
+	public void closeStacks() {
+		for (Widget wdg = child; wdg != null; wdg = wdg.next) {
+			if (wdg instanceof WItem) {
+				WItem w = (WItem) wdg;
+				if (w.item.contents != null) w.item.showcontwnd(false);
+			}
+		}
+	}
+
+	public Coord getFreeSlot() {
+		int[][] invTable = new int[isz.x][isz.y];
+		for (Widget wdg = child; wdg != null; wdg = wdg.next) {
+			if (wdg instanceof WItem) {
+				WItem item = (WItem) wdg;
+				for (int i = 0; i < item.sz.div(sqsz).y; i++)
+					for (int j = 0; j < item.sz.div(sqsz).x; j++)
+						invTable[item.c.div(sqsz).x + j][item.c.div(sqsz).y + i] = 1;
+			}
+		}
+		int mo = 0;
+		for (int i = 0; i < isz.y; i++) {
+			for (int j = 0; j < isz.x; j++) {
+				if ((sqmask != null) && sqmask[mo++]) continue;
+				if (invTable[j][i] == 0)
+					return (new Coord(j, i));
+			}
+		}
+		return (null);
+	}
+
 	public List<WItem> getItemsPartial(String... names) {
 		List<WItem> items = new ArrayList<WItem>();
 		for (Widget wdg = child; wdg != null; wdg = wdg.next) {
@@ -334,5 +404,462 @@ public class Inventory extends Widget implements DTarget {
 			}
 		}
 		return items;
+	}
+
+	public static class AltInventory extends Widget implements DTarget2 {
+		private static final Color even = new Color(255, 255, 255, 16);
+		private static final Color odd = new Color(255, 255, 255, 32);
+
+		private final Inventory inv;
+		public final ItemGroupList list;
+		public OldDropBox<Grouping> dropGroup = new OldDropBox<Grouping>(UI.scale(60), 16, UI.scale(16)) {
+			@Override
+			protected Grouping listitem(final int i) {
+				return (Grouping.values()[i]);
+			}
+
+			@Override
+			protected int listitems() {
+				return (Grouping.values().length);
+			}
+
+			@Override
+			protected void drawitem(final GOut g, final Grouping item, final int i) {
+				Tex tex = Text.render(item.name).tex();
+				g.image(tex, Coord.of(0, (itemh - tex.sz().y) / 2));
+			}
+
+			@Override
+			public void change(Grouping item) {
+				super.change(item);
+				inv.dirty();
+			}
+		};
+		public OldDropBox<Sorting> dropSort = new OldDropBox<Sorting>(UI.scale(60), 16, UI.scale(16)) {
+			@Override
+			protected Sorting listitem(final int i) {
+				return (Sorting.values()[i]);
+			}
+
+			@Override
+			protected int listitems() {
+				return (Sorting.values().length);
+			}
+
+			@Override
+			protected void drawitem(final GOut g, final Sorting item, final int i) {
+				Tex tex = Text.render(item.name).tex();
+				g.image(tex, Coord.of(0, (itemh - tex.sz().y) / 2));
+			}
+
+			@Override
+			public void change(final int index) {
+				super.change(index);
+				inv.dirty();
+			}
+		};
+
+		public AltInventory(final Inventory inv) {
+			this.inv = inv;
+			add(dropSort, Coord.of(0, 0)).settip("List Sorting");
+			add(dropGroup, dropSort.pos("ur").adds(5, 0)).settip("Item Picking On Quality");
+			list = add(new ItemGroupList(inv, this, UI.scale(150), 16, UI.scale(16)), dropSort.pos("bl"));
+			list.resizeh(inv.sz.y);
+			dropGroup.change(0);
+			dropSort.change(0);
+			super.pack();
+		}
+
+		@Override
+		public void draw(final GOut g) {
+			super.draw(g);
+			g.chcolor(even);
+			g.rect(Coord.z, g.sz());
+			g.chcolor();
+		}
+
+		@Override
+		public void tick(final double dt) {
+			if (!visible()) return;
+			super.tick(dt);
+		}
+
+		@Override
+		public boolean drop(final WItem target, final Coord cc, final Coord ul) {
+			for (Widget wdg = lchild; wdg != null; wdg = wdg.prev) {
+				if (wdg.visible()) {
+					if (wdg instanceof DTarget) {
+						Coord ccc = cc.sub(wdg.c);
+						Coord ulc = ul.sub(wdg.c);
+						if (ccc.isect(Coord.z, wdg.sz)) {
+							if (((DTarget) wdg).drop(ccc, ulc))
+								return (true);
+						}
+					} else if (wdg instanceof DTarget2) {
+						Coord ccc = cc.sub(wdg.c);
+						Coord ulc = ul.sub(wdg.c);
+						if (ccc.isect(Coord.z, wdg.sz)) {
+							if (((DTarget2) wdg).drop(target, ccc, ulc))
+								return (true);
+						}
+					}
+				}
+			}
+			return (false);
+		}
+
+		@Override
+		public boolean iteminteract(final WItem target, final Coord cc, final Coord ul) {
+			for (Widget wdg = lchild; wdg != null; wdg = wdg.prev) {
+				if (wdg.visible()) {
+					if (wdg instanceof DTarget) {
+						Coord ccc = cc.sub(wdg.c);
+						Coord ulc = ul.sub(wdg.c);
+						if (ccc.isect(Coord.z, wdg.sz)) {
+							if (((DTarget) wdg).iteminteract(ccc, ulc))
+								return (true); ;
+						}
+					} else if (wdg instanceof DTarget2) {
+						Coord ccc = cc.sub(wdg.c);
+						Coord ulc = ul.sub(wdg.c);
+						if (ccc.isect(Coord.z, wdg.sz)) {
+							if (((DTarget2) wdg).iteminteract(target, ccc, ulc))
+								return (true);
+						}
+					}
+				}
+			}
+			return (false);
+		}
+
+		public enum Grouping {
+			NORMAL("Ascending", Comparator.comparingDouble(o -> {
+				QBuff qb = ItemInfo.find(QBuff.class, o.item.info());
+				return (qb == null ? 0.0 : qb.q);
+			})),
+			REVERSED("Descending", NORMAL.cmp.reversed());
+
+			private final String name;
+			private final Comparator<WItem> cmp;
+
+			Grouping(String name, Comparator<WItem> cmp) {
+				this.name = name;
+				this.cmp = cmp;
+			}
+		}
+
+		public enum Sorting {
+			NONE("None", Comparator.comparingInt(g -> 0)),
+			COUNT("Count", Comparator.<Group>comparingInt(g -> g.count).reversed()),
+			NAME("Name", Comparator.comparing(g -> g.name)),
+			RESNAME("ResName", Comparator.comparing(g -> g.resname)),
+			Q("Quality", Comparator.<Group>comparingDouble(g -> g.q).reversed());
+
+			private final String name;
+			private final Comparator<Group> cmp;
+
+			Sorting(String name, Comparator<Group> cmp) {
+				this.name = name;
+				this.cmp = cmp;
+			}
+		}
+
+		public static class Group extends Widget {
+			private final String name;
+			private final String resname;
+			private int count;
+			private double q;
+			private boolean nq;
+			private GSprite spr;
+			private TexI texture;
+			private final List<WItem> items = Collections.synchronizedList(new ArrayList<>());
+			private static final Tex qimg = Resource.remote().loadwait("ui/tt/q/quality").layer(Resource.imgc, 0).tex();
+
+			public Group(final String name, final String resname) {
+				this.name = name;
+				this.resname = resname;
+			}
+
+			public void addItem(final WItem item) {
+				items.add(item);
+				count++;
+				if (spr == null){
+					spr = item.item.spr();
+					if(spr instanceof GSprite.ImageSprite)
+						texture = new TexI(((GSprite.ImageSprite) spr).image());
+				}
+
+			}
+
+			public void calcQuality() {
+				List<Double> stream = items.stream().mapToDouble(i -> {
+					QBuff qb = ItemInfo.find(QBuff.class, i.item.info());
+					return (qb == null ? 0 : qb.q);
+				}).boxed().collect(Collectors.toList());
+				double sum = stream.stream().mapToDouble(d -> d).sum();
+				q = sum / items.size();
+				nq = stream.stream().allMatch(d -> d != q);
+			}
+
+			private WItem takeFirst() {
+				return (items.get(0));
+			}
+
+			@Override
+			public boolean mousedown(MouseDownEvent ev) {/// ///
+				return (takeFirst().mousedown(ev));
+			}
+
+			public boolean mousedown(Coord c, int button){
+				MouseDownEvent ev = new MouseDownEvent(c, button);
+				return (takeFirst().mousedown(ev));
+			}
+
+			@Override
+			public boolean mouseup(MouseUpEvent ev) {
+				return (takeFirst().mouseup(ev));
+			}
+
+			@Override
+			public void mousemove(MouseMoveEvent ev) {
+				takeFirst().mousemove(ev);
+			}
+
+			@Override
+			public boolean mousewheel(final Coord c, final int amount) {
+				return (takeFirst().mousewheel(c, amount));
+			}
+
+			private static final Map<String, Tex> TEX = Collections.synchronizedMap(new WeakHashMap<>());
+			private static Tex create(String text) {
+				return (TEX.computeIfAbsent(text, s -> Text.render(s).tex()));
+			}
+
+			private final Text.UTex<String> ucount = new Text.UTex<>(() -> "x" + count, s -> Text.render(s).tex());
+			private final Text.UTex<String> uq = new Text.UTex<>(() -> (nq ? "~" : "") + Utils.odformat2(q, 2), s -> Text.render(s).tex());
+
+			public void draw(final GOut g, final Coord sz) {
+				int x = 0;
+				TexI texture = this.texture;
+				if (texture != null) {
+					Coord ssz = texture.sz();
+					double sy = 1.0 * ssz.y / sz.y;
+					ssz = ssz.div(sy);
+					g.image(texture, Coord.z, ssz);
+					x += ssz.x;
+				}
+				int count = this.count;
+				if (count > 0) {
+					Tex tex = ucount.get();
+					g.image(tex, Coord.of(x, (sz.y - tex.sz().y) / 2));
+					x += tex.sz().x;
+				}
+				int right = 0;
+				int w = sz.x;
+				double q = this.q;
+				if (q > 0) {
+					Tex tex = uq.get();
+					g.image(tex, Coord.of(w - tex.sz().x, (sz.y - tex.sz().y) / 2));
+					g.aimage(qimg, Coord.of(w - tex.sz().x, (sz.y - tex.sz().y) / 2), 1, 0.05);
+					right = tex.sz().x + qimg.sz().x;
+				}
+				String name = this.name;
+				if (!name.isEmpty()) {
+					x += 5;
+					int max = w - x - right - 5;
+					for (int j = 0; j < name.length(); j++) {
+						if (j != 0) {
+							name = name.substring(0, name.length() - 1 - j).concat("...");
+						}
+						if (Text.std.strsize(name).x <= max)
+							break;
+					}
+					Tex tex = create(name);
+					g.image(tex, Coord.of(x, (sz.y - tex.sz().y) / 2));
+					x += tex.sz().x;
+				}
+			}
+		}
+
+		public static class ItemGroupList extends OldListBox<Group> implements DTarget2 {
+			private final Inventory inv;
+			private final AltInventory ainv;
+			private List<Group> wlist = Collections.emptyList();
+
+			public ItemGroupList(Inventory inv, AltInventory ainv, int w, int h, int itemh) {
+				super(w, h, itemh);
+				this.inv = inv;
+				this.ainv = ainv;
+			}
+
+			@Override
+			protected Group listitem(int i) {
+				return (wlist.get(i));
+			}
+
+			@Override
+			protected int listitems() {
+				return (wlist.size());
+			}
+
+			@Override
+			protected void drawitem(GOut g, Group item, int i) {
+				g.chcolor(((i % 2) == 0) ? even : odd);
+				g.frect(Coord.z, g.sz());
+				g.chcolor();
+				item.draw(g, Coord.of(sz.x - (sb.vis() ? sb.sz.x : 0), itemh));
+			}
+
+			@Override
+			public void dispose() {
+				super.dispose();
+			}
+
+			@Override
+			public void tick(double dt) {
+				super.tick(dt);
+				if (inv.dirty) {
+					inv.dirty = false;
+					try {
+						List<WItem> wlist = new ArrayList<>();
+						for (WItem wItem : inv.wmap.values()) {
+							Widget cont = wItem.item.contents;
+							if (cont != null) {
+								wlist.addAll(cont.getchilds(WItem.class));
+							} else {
+								wlist.add(wItem);
+							}
+						}
+						Map<String, Group> wmap = new HashMap<>();
+						for (WItem wItem : wlist) {
+							ItemInfo.Name ninfo = ItemInfo.find(ItemInfo.Name.class, wItem.item.info());
+							if (ninfo == null) continue;
+							String name = ninfo.str.text;
+							String resname = wItem.item.resource().name;
+							Group gr = wmap.computeIfAbsent(name + resname, n -> new Group(name, resname));
+							gr.addItem(wItem);
+						}
+						for (Group g : wmap.values()) {
+							g.calcQuality();
+
+							g.items.sort(ainv.dropGroup.sel.cmp);
+						}
+						List<Group> list = new ArrayList<>(wmap.values());
+						list.sort(ainv.dropSort.sel.cmp);
+						this.wlist = list;
+					} catch (Loading l) {
+						inv.dirty = true;
+					}
+				}
+			}
+
+			@Override
+			protected void itemclick(final Group item, final int button) {
+				item.mousedown(Coord.z, button);
+			}
+
+			@Override
+			protected void drawbg(GOut g) {}
+//
+//			@Override
+//			public boolean iteminteract(Interact ev) {
+//				Group item = itemat(ev.c);
+//				if(item == null) {return false;}
+//				if(item.items.isEmpty()) {return false;}
+//				item.items.get(0).iteminteract(ev);
+//				return false;
+//			}
+			@Override
+			public boolean iteminteract(final WItem target, final Coord cc, final Coord ul) {
+				int idx = idxat(cc);
+				WItem item = null;
+				if (idx >= 0 && idx < listitems())
+					item = listitem(idx).takeFirst();
+				if (item != null) {
+					item.iteminteract(Coord.z, Coord.z);
+				}
+				return (true);
+			}
+
+			@Override
+			public boolean drop(final WItem target, final Coord cc, final Coord ul) {
+				Coord slot = inv.getFreeSlot();
+				if (slot != null)
+					inv.wdgmsg("drop", slot);
+				return (true);
+			}
+
+
+			@Override
+			public boolean mousewheel(final Coord c, final int amount) {
+				return super.mousewheel(c, amount);
+			}
+
+			@Override
+			public Object tooltip(Coord c, Widget prev) {
+				int idx = idxat(c);
+				WItem item = null;
+				if (idx >= 0 && idx < listitems())
+					item = listitem(idx).takeFirst();
+				if (item != null) {
+					return item.tooltip(Coord.z, prev);
+				}
+				return super.tooltip(c, prev);
+			}
+		}
+	}
+
+	@Override
+	public void pack() {
+		Coord invsz = sqsz.mul(isz).add(1, 1);
+		Coord max = invsz;
+		if (ainv.visible()) {
+			ainv.list.resizeh(invsz.y);
+			ainv.move(Coord.of(invsz.x, 0));
+			max.x = Math.max(max.x, ainv.c.x + ainv.sz.x);
+			max.y = Math.max(max.y, ainv.c.y + ainv.sz.y);
+		}
+		resize(max);
+		parent.pack();
+	}
+
+	public void toggleAltInventory() {
+		ainv.show(!ainv.visible());
+		pack();
+	}
+
+	private boolean dirty = true;
+	@Override
+	public void dirty() {
+		dirty = true;
+	}
+
+	private final List<InventoryListener> listeners = Collections.synchronizedList(new ArrayList<>());
+
+	@Override
+	public void initListeners(final List<InventoryListener> listeners) {
+		this.listeners.addAll(listeners);
+	}
+
+	@Override
+	public List<InventoryListener> listeners() {
+		return (listeners);
+	}
+
+	private final List<InventoryListener> listeners2 = Collections.synchronizedList(new ArrayList<>());
+
+	@Override
+	public List<InventoryListener> observers() {
+		return (listeners2);
+	}
+
+	@Override
+	public void addListeners(final List<InventoryListener> listeners) {
+		this.listeners2.addAll(listeners);
+	}
+
+	@Override
+	public void removeListeners(final List<InventoryListener> listeners) {
+		this.listeners2.removeAll(listeners);
 	}
 }
