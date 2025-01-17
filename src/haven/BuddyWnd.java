@@ -40,7 +40,7 @@ public class BuddyWnd extends Widget implements Iterable<BuddyWnd.Buddy> {
     private BuddyList bl;
     private TextEntry pname, charpass, opass;
     private FlowerMenu menu;
-    private BuddyInfo info = null;
+    public BuddyInfo info = null;
     private Widget infof;
     public int serial = 0;
     public static final int width = UI.scale(270);
@@ -258,8 +258,8 @@ public class BuddyWnd extends Widget implements Iterable<BuddyWnd.Buddy> {
 	}
     }
 
-    private class BuddyInfo extends Widget {
-	private final Buddy buddy;
+    public class BuddyInfo extends Widget {
+	public final Buddy buddy;
 	private final Avaview ava;
 	private final TextEntry nick;
 	private final GroupSelector grp;
