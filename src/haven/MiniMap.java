@@ -638,8 +638,9 @@ public class MiniMap extends Widget {
 	Coord hsz = sz.div(2);
 	int safezoom = calcDrawLevel();
 	Coord zmaps = cmaps.mul(safezoom);
-	Area next = Area.sized(loc.tc.sub(hsz.mul(UI.unscale((safezoom)))).div(zmaps).sub(2, 2),
-	    UI.unscale(sz).div(cmaps).add(6, 6));
+	float zadd = zoomlevel / safezoom;
+	Area next = Area.sized(loc.tc.sub(hsz.mul(UI.unscale((safezoom)))).div(zmaps).sub((int) (2 * zadd), (int) (2 * zadd)),
+	    UI.unscale(sz).div(cmaps).add((int) (6 * zadd), (int) (6 * zadd)));
 	if((display == null) || (loc.seg != dseg) || (dlvl != calcDrawLevel()) || !next.equals(dgext)) {
 	    DisplayGrid[] nd = new DisplayGrid[next.rsz()];
 	    if((display != null) && (loc.seg == dseg) && (dlvl == calcDrawLevel())) {
@@ -831,6 +832,7 @@ public class MiniMap extends Widget {
 	redisplay(loc);
 	remparty();
 	drawparts(g);
+	//FastText.aprint(g, Coord.of(100,100), 0,0, "zoomlevel: " + zoomlevel + " momentum: " + zoomMomentum);
     }
 
     private static boolean hascomplete(DisplayGrid[] disp, Area dext, Coord c) {
