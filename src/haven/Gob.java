@@ -1957,10 +1957,8 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	}
 
 	public void updatePlayerOverlays() {
-		if(getres() != null) {
-			if(isMe)
+			if(Boolean.TRUE.equals(isMe))
 				setBoxOverlay(OptWnd.drawPlayerBox.a);
-		}
 	}
 
 	public void updateBeastDangerRadii() {
