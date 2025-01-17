@@ -2,6 +2,8 @@
 package haven.res.ui.barterbox;
 
 import haven.*;
+import haven.res.ui.tt.q.qbuff.QBuff;
+
 import static haven.Inventory.invsq;
 import static haven.Inventory.sqsz;
 
@@ -31,6 +33,7 @@ public class Shopbox extends Widget implements ItemInfo.SpriteOwner, GSprite.Own
     private Text pnumt, pqt;
     private GSprite spr;
     private Object[] info = {};
+	private Tex quality;
     private Button spipe, bpipe, bbtn, cbtn, bbtn100;
 	private TextEntry tbuy;
     private TextEntry pnume, pqe;
@@ -104,8 +107,13 @@ public class Shopbox extends Widget implements ItemInfo.SpriteOwner, GSprite.Own
 		if(itemnum.get() != null)
 		    sg.aimage(itemnum.get(), sqsz, 1, 1);
 		if(num != null)
-		    g.aimage(num.tex(), itemc.add(invsq.sz()).add(UI.scale(5, 0)), 0.0, 1.0);
+		    g.aimage(num.tex(), itemc.add(invsq.sz()).add(UI.scale(5, 0)), 0.0, 2.3);
 	    }
+
+		if (quality != null) {
+			g.aimage(qlbl.tex(), itemc.add(invsq.sz()).add(UI.scale(5), 0), 0, 1);
+			g.aimage(quality, itemc.add(invsq.sz()).add(UI.scale(8) + qlbl.sz().x, 0), 0, 0.9);
+		}
 	}
 
 	ItemSpec price = this.price;
@@ -122,7 +130,7 @@ public class Shopbox extends Widget implements ItemInfo.SpriteOwner, GSprite.Own
 	    if(!admin) {
 		if(pqt != null) {
 		    g.aimage(qlbl.tex(), qualc, 0, 1);
-		    g.aimage(pqt.tex(), qualc.add(UI.scale(40, 0)), 0, 1);
+		    g.aimage(pqt.tex(), qualc.add(UI.scale(40, 0)), -0.3, 1);
 		}
 	    }
 	}
@@ -130,11 +138,36 @@ public class Shopbox extends Widget implements ItemInfo.SpriteOwner, GSprite.Own
     }
 
     private List<ItemInfo> cinfo;
+
     public List<ItemInfo> info() {
-	if(cinfo == null)
-	    cinfo = ItemInfo.buildinfo(this, info);
+	if(cinfo == null) {
+		cinfo = ItemInfo.buildinfo(this, info);
+		QBuff qb = quality();
+		if (qb != null)
+			quality = PUtils.strokeTex(Text.render((int) qb.q + ""));
+	}
 	return(cinfo);
     }
+
+	private QBuff getQBuff(List<ItemInfo> infolist) {
+		for (ItemInfo info : infolist) {
+			if (info instanceof QBuff)
+				return ((QBuff) info);
+		}
+		return (null);
+	}
+
+	private QBuff quality() {
+		try {
+			for (ItemInfo info : info()) {
+				if (info instanceof ItemInfo.Contents)
+					return (getQBuff(((ItemInfo.Contents) info).sub));
+			}
+			return getQBuff(info());
+		} catch (Loading l) {
+		}
+		return (null);
+	}
 
     public class IconTip implements Indir<Tex>, ItemInfo.InfoTip {
 	private final Tex tex;
