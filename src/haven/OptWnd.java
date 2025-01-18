@@ -832,6 +832,13 @@ public class OptWnd extends Window {
 				Utils.setprefb("alwaysOpenInventoryOnLogin", val);
 			}
 		}, rightColumn.pos("bl").adds(0, 2));
+		rightColumn = add(showInventoryNumbers = new CheckBox("Show Inventory Numbers"){
+			{a = (Utils.getprefb("showInvNumbers", false));}
+			public void set(boolean val) {
+				Utils.setprefb("showInvNumbers", val);
+				a = val;
+			}
+		}, rightColumn.pos("bl").adds(0, 4));
 		rightColumn = add(showMapMarkerNamesCheckBox = new CheckBox("Show Map Marker Names"){
 			{a = (Utils.getprefb("showMapMarkerNames", true));}
 			public void changed(boolean val) {
@@ -858,7 +865,7 @@ public class OptWnd extends Window {
 			public void changed(boolean val) {
 				Utils.setprefb("verticalContainerIndicators", val);
 			}
-		}, rightColumn.pos("bl").adds(0, 32));
+		}, rightColumn.pos("bl").adds(0, 18));
 		verticalContainerIndicatorsCheckBox.tooltip = verticalContainerIndicatorsTooltip;
 		Label expWindowLocationLabel;
 		rightColumn = add(expWindowLocationLabel = new Label("Experience Event Window Location:"), rightColumn.pos("bl").adds(0, 11));{
@@ -898,14 +905,6 @@ public class OptWnd extends Window {
 			mapZoomSpeedSlider.val = 15;
 			Utils.setprefi("mapZoomSpeed", 15);
 		}), rightColumn.pos("ur").adds(6, -4));
-
-		rightColumn = add(showInventoryNumbers = new CheckBox("Show Inventory Numbers"){
-			{a = (Utils.getprefb("showInvNumbers", false));}
-			public void set(boolean val) {
-				Utils.setprefb("showInvNumbers", val);
-				a = val;
-			}
-		}, rightColumn.pos("bl").adds(0, 4));
 
 		Widget backButton;
 		add(backButton = new PButton(UI.scale(200), "Back", 27, back, "Advanced Settings"), leftColumn.pos("bl").adds(0, 30).x(0));
@@ -3617,6 +3616,7 @@ public class OptWnd extends Window {
 	public static CheckBox hideHousesCheckbox;
 	public static CheckBox hideCropsCheckbox;
 	public static CheckBox hideTrellisCheckbox;
+	public static CheckBox hideCheeseRacksCheckBox;
 	public static CheckBox hideDryingFramesCheckbox;
 	public static CheckBox hideSquirrelCachesCheckbox;
 	public static CheckBox hideStockpilesCheckbox;
@@ -3795,6 +3795,17 @@ public class OptWnd extends Window {
 				}
 			}, prev.pos("bl").adds(0, 2));
 			prev.tooltip = RichText.render("This only hides the trellises, and not the crops growing on them.", UI.scale(300));
+
+			prev = add(hideCheeseRacksCheckBox = new CheckBox("Cheese Racks"){
+				{a = Utils.getprefb("hideRacks", false);}
+				public void changed(boolean val) {
+					Utils.setprefb("hideRacks", val);
+					if (ui != null && ui.gui != null) {
+						ui.sess.glob.oc.gobAction(Gob::updateHidingBoxes);
+						ui.gui.map.updatePlobHidingBox();
+					}
+				}
+			}, prev.pos("bl").adds(0, 2));
 
 			prev = add(hideDryingFramesCheckbox = new CheckBox("Drying Frames"){
 				{a = Utils.getprefb("hideDFrames", false);}

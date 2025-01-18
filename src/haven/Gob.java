@@ -1469,6 +1469,9 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 			} else if (OptWnd.hideTrellisCheckbox.a && resName.endsWith("trellis")) {
 				doHide = OptWnd.toggleGobHidingCheckBox.a;
 				doShowHidingBox = true;
+			} else if(OptWnd.hideCheeseRacksCheckBox.a && resName.endsWith("cheeserack")) {
+				doHide = OptWnd.toggleGobHidingCheckBox.a;
+				doShowHidingBox = true;
 			} else if (OptWnd.hideDryingFramesCheckbox.a && resName.endsWith("dframe")) {
 				doHide = OptWnd.toggleGobHidingCheckBox.a;
 				doShowHidingBox = true;
