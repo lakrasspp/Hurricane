@@ -45,6 +45,7 @@ import haven.res.ui.stackinv.ItemStack;
 
 import static haven.Audio.fromres;
 import static haven.Inventory.invsq;
+import static haven.OCache.posres;
 
 public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.Handler {
     private static final int blpw = UI.scale(0), brpw = UI.scale(142);
@@ -1861,6 +1862,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	public static KeyBinding kb_instantLogout = KeyBinding.get("instantLogoutKB",  KeyMatch.nil);
 	public static KeyBinding kb_pushNearestPlayer = KeyBinding.get("pushNearestKB", KeyMatch.nil);
 	public static KeyBinding kb_pushCurrentPlayer = KeyBinding.get("pushCurrentKB", KeyMatch.nil);
+	public static KeyBinding kb_aggroPinged = KeyBinding.get("aggroPinged", KeyMatch.nil);
 	public static KeyBinding kb_aggroNearestTargetButton = KeyBinding.get("AggroNearestTargetButtonKB",  KeyMatch.forcode(KeyEvent.VK_SPACE, KeyMatch.S));
 	public static KeyBinding kb_aggroOrTargetNearestCursor = KeyBinding.get("AggroOrTargetNearestCursorButtonKB",  KeyMatch.nil);
 	public static KeyBinding kb_aggroNearestPlayerButton = KeyBinding.get("AggroNearestPlayerButtonKB",  KeyMatch.nil);
@@ -2029,6 +2031,9 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 			lootNearestKnockedPlayerThread = new Thread(new LootNearestKnockedPlayer(this), "LootNearestKnockedPlayer");
 			lootNearestKnockedPlayerThread.start();
 		}
+	} else if(kb_aggroPinged.key().match(ev)) {
+		aggroPinged();
+		return(true);
 	} else if(kb_aggroNearestTargetButton.key().match(ev)) {
 		this.runActionThread(new Thread(new AggroNearestTarget(this), "AggroNearestTarget"));
 		return(true);
@@ -3101,6 +3106,22 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 		} catch(Exception e) {}
 		return "bad";
 
+	}
+	public void aggroPinged() {
+		try{
+			synchronized (ui.sess.glob.oc){
+				Gob pingedplayer = ui.sess.glob.oc.getgob(ui.sess.glob.oc.pingedplayer);
+				Gob player = map.player();
+				if(player != null && pingedplayer != null) {
+					Coord ppd = pingedplayer.rc.floor(OCache.posres);
+					wdgmsg("act", new Object[]{"aggro"});
+					map.wdgmsg("click", Coord.z, ppd, 1, 0, 0, (int)pingedplayer.id, ppd, 0, -1);
+					map.wdgmsg("click", Coord.z, map.player().rc.floor(posres), 3, 0);
+				}
+			}
+		} catch (Exception e) {
+			error(e + "");
+		}
 	}
 
 	public static void playCaveTheme() {

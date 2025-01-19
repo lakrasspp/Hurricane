@@ -1747,7 +1747,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 			Drawable drawable = getattr(Drawable.class);
 			ResDrawable resDrawable = (drawable instanceof ResDrawable) ? (ResDrawable) drawable : null;
 			int rbuf = (resDrawable != null) ? resDrawable.sdt.checkrbuf(0) : -1; // ND: Just also remember to check if resDrawable is not null wherever we use rbuf
-			if (resName.equals("gfx/terobjs/ttub") && resDrawable != null) {
+			if (resName.equals("gfx/terobjs/ttub")) {
 				if (rbuf == 0 || rbuf == 1 || rbuf == 4 || rbuf == 5) {
 					if (OptWnd.showWorkstationProgressUnpreparedCheckBox.a) setGobStateHighlight(OptWnd.showWorkstationProgressUnpreparedColorOptionWidget.currentColor);
 					else delattr(GobStateHighlight.class);
@@ -1824,6 +1824,19 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 					}
 				} else {
 					delattr(GobStateHighlight.class);
+				}
+			} else if(resName.equals("gfx/terobjs/smokeshed")) {
+				if(olsSize == 1) {
+					if(OptWnd.showWorkstationProgressInProgressCheckBox.a) setGobStateHighlight(OptWnd.showWorkstationProgressInProgressColorOptionWidget.currentColor);
+					else delattr(GobStateHighlight.class);
+				} else if(olsSize == 0) {
+					if(rbuf == 10 || rbuf == 6) {
+						if(OptWnd.showWorkstationProgressReadyForUseCheckBox.a) setGobStateHighlight(OptWnd.showWorkstationProgressReadyForUseColorOptionWidget.currentColor);
+						else delattr(GobStateHighlight.class);
+					} else {
+						if(OptWnd.showWorkstationProgressUnpreparedCheckBox.a) setGobStateHighlight(OptWnd.showWorkstationProgressUnpreparedColorOptionWidget.currentColor);
+						else delattr(GobStateHighlight.class);
+					}
 				}
 			}
 		} else {
@@ -2216,6 +2229,8 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		}
 		h = new GobPingHighlight(this, c);
 		setattr(h);
+		if(this.getres() != null && this.getres().name != null && this.getres().name.equals("gfx/borka/body") && !this.isDeadPlayer)
+			this.glob.oc.pingedplayer = this.id;
 		h.start();
 	}
 
