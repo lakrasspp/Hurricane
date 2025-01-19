@@ -55,6 +55,7 @@ public class OCache implements Iterable<Gob> {
     public static final int OD_ICON = 19;
     public static final int OD_RESATTR = 20;
     public static final int OD_END = 255;
+	public long pingedplayer = 0L;
     public static final int[] compodmap = {OD_REM, OD_RESATTR, OD_FOLLOW, OD_MOVE, OD_RES, OD_LINBEG, OD_LINSTEP, OD_HOMING};
     public static final Coord2d posres = Coord2d.of(0x1.0p-10, 0x1.0p-10).mul(11, 11);
     /* XXX: Use weak refs */

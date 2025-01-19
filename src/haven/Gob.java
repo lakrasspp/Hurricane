@@ -2216,6 +2216,8 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		}
 		h = new GobPingHighlight(this, c);
 		setattr(h);
+		if(this.getres() != null && this.getres().name.equals("gfx/borka/body") && !this.isDeadPlayer)
+			this.glob.oc.pingedplayer = this.id;
 		h.start();
 	}
 
