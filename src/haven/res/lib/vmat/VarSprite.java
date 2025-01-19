@@ -47,6 +47,7 @@ public class VarSprite extends SkelSprite {
 	|| (OptWnd.disableCupboardsVarMatsCheckBox.a && res.name.equals("gfx/terobjs/cupboard"))
 	|| (OptWnd.disableTrellisesVarMatsCheckBox.a && res.name.equals("gfx/terobjs/plants/trellis"))
 	|| (OptWnd.disableSmokeShedsVarMatsCheckBox.a && res.name.equals("gfx/terobjs/smokeshed"))
+	|| (OptWnd.disableCheeseRackVarMatsCheckBox.a && res.name.equals("gfx/terobjs/cheeserack"))
 	|| (OptWnd.disableAllObjectsVarMatsCheckBox.a)){
 		mats = null;
 	}

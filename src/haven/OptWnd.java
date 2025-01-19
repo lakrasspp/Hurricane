@@ -3271,6 +3271,7 @@ public class OptWnd extends Window {
 	public static CheckBox disableCupboardsVarMatsCheckBox;
 	public static CheckBox disableTrellisesVarMatsCheckBox;
 	public static CheckBox disableSmokeShedsVarMatsCheckBox;
+	public static CheckBox disableCheeseRackVarMatsCheckBox;
 	public static CheckBox disableAllObjectsVarMatsCheckBox;
 	public static CheckBox disableValhallaFilterCheckBox;
 	public static CheckBox disableScreenShakingCheckBox;
@@ -3433,6 +3434,10 @@ public class OptWnd extends Window {
 				public void changed(boolean val) {
 					Utils.setprefb("disableSmokeShedsVarMats", val);
 				}
+			}, leftColumn.pos("bl").adds(0, 2));
+			leftColumn = add(disableCheeseRackVarMatsCheckBox = new CheckBox("Cheese Racks Variable Materials"){
+				{a = (Utils.getprefb("disableCheeseRacksVarMats", false));}
+				public void changed(boolean val) { Utils.setprefb("disableCheeseRacksVarMats", val); }
 			}, leftColumn.pos("bl").adds(0, 2));
 
 			leftColumn = add(disableAllObjectsVarMatsCheckBox = new CheckBox("ALL OBJECTS Variable Materials (you weirdo)"){
