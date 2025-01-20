@@ -1833,6 +1833,9 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 					if(rbuf == 10 || rbuf == 6) {
 						if(OptWnd.showWorkstationProgressReadyForUseCheckBox.a) setGobStateHighlight(OptWnd.showWorkstationProgressReadyForUseColorOptionWidget.currentColor);
 						else delattr(GobStateHighlight.class);
+					} else if(rbuf == -22 || rbuf == -26) {
+						if(OptWnd.showWorkstationProgressFinishedCheckBox.a) setGobStateHighlight(OptWnd.showWorkstationProgressFinishedColorOptionWidget.currentColor);
+						else delattr(GobStateHighlight.class);
 					} else {
 						if(OptWnd.showWorkstationProgressUnpreparedCheckBox.a) setGobStateHighlight(OptWnd.showWorkstationProgressUnpreparedColorOptionWidget.currentColor);
 						else delattr(GobStateHighlight.class);
