@@ -515,8 +515,7 @@ public class Config {
 			"gfx/terobjs/ttub",
 			"gfx/terobjs/dframe",
 			"gfx/terobjs/cheeserack",
-			"gfx/terobjs/gardenpot",
-			"gfx/terobjs/smokeshed"
+			"gfx/terobjs/gardenpot"
 	};
 
 
