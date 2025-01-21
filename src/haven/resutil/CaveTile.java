@@ -243,7 +243,7 @@ public class CaveTile extends Tiler {
 	for(int i = 0; i < 4; ++i) {
 		int cid = m.map.gettile(gc.add(tces[i]));
 		if (OptWnd.flatCaveWallsCheckBox.a) {
-			if (cid > id || !(m.map.tiler(cid) instanceof CaveTile)) {
+			if (cid > id && !(m.map.tiler(cid) instanceof CaveTile)) {
 				if (w == null) {
 					w = m.data(walls);
 				}
