@@ -22,7 +22,7 @@ public class HidingBox extends SlottedNode implements Rendered {
 	public static Pipe.Op SOLID_HOLLOW = Pipe.Op.compose(Pipe.Op.compose(new BaseColor(new Color(Integer.parseInt(OptWnd.hiddenObjectsColorSetting[0]), Integer.parseInt(OptWnd.hiddenObjectsColorSetting[1]), Integer.parseInt(OptWnd.hiddenObjectsColorSetting[2]), 170)), new States.LineWidth(WIDTH)), TOP);
 
     // Filled
-    public static Pipe.Op SOLID_FILLED = Pipe.Op.compose(new BaseColor(OptWnd.hiddenObjectsColorOptionWidget.currentColor), new States.Facecull(States.Facecull.Mode.NONE), Rendered.last);
+    public static Pipe.Op SOLID_FILLED = Pipe.Op.compose(new BaseColor(OptWnd.hiddenObjectsColorOptionWidget.currentColor), new States.Facecull(States.Facecull.Mode.NONE), new States.DepthBias(-1, -110), Rendered.last);
 
     private Pipe.Op state = null;
 
