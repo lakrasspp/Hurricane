@@ -1040,9 +1040,14 @@ public class MiniMap extends Widget {
     }
 
     public boolean mousewheel(MouseWheelEvent ev) {
-	if (allowZooming){
-		zoomMomentum += (OptWnd.mapZoomSpeedSlider.val/10f*Math.signum(ev.a));
-		allowZooming = false;
+	if (allowZooming) {
+		if(zoomlevel < 1.6) {
+			zoomlevel += 0.45f * Math.signum(ev.a);
+			allowZooming = false;
+		} else {
+			zoomlevel += 0.9f * Math.signum(ev.a);
+			allowZooming = false;
+		}
 	}
 	return(true);
     }
