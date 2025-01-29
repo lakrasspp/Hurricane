@@ -146,7 +146,7 @@ public class LandSurvey extends Window {
 	public TickList.Ticking ticker() {return(this);}
 
 	public void added(RenderTree.Slot slot) {
-	    slot.ostate(Pipe.Op.compose(dloc, ptsz, new States.Depthtest(States.Depthtest.Test.TRUE), Rendered.last, VertexColor.instance));
+	    slot.ostate(Pipe.Op.compose(dloc, pointSize(ui), new States.Depthtest(States.Depthtest.Test.TRUE), Rendered.last, VertexColor.instance));
 	}
     }
 
@@ -242,4 +242,15 @@ public class LandSurvey extends Window {
 	}
 	super.destroy();
     }
+
+	private Pipe.Op pointSize(UI ui){
+		float size = 3f;
+		if(ui != null) {
+			if (ui.gprefs.rscale.val > 1.01f)
+				size = 6f;
+			if (ui.gprefs.rscale.val > 1.99f)
+				size = 8f;
+		}
+		return new PointSize(size);
+	}
 }
