@@ -182,6 +182,11 @@
     <copy file="Play.bat" todir="bin"/>
     <copy file="Play.sh" todir="bin"/>
     <chmod file="bin/Play.sh" perm="+x" />
+    <copy file="workshop-client.properties" todir="bin"/>
+    <copy file="steamicon.png" todir="bin"/>
+    <copy file="steam_appid.txt" todir="bin"/>
+    <copy file="hafen.hl" todir="bin"/>
+    <copy file="launcher.hl" todir="bin"/>
     <chmod file="bin/hafen.jar" perm="a+x" />
     <copy todir="bin/MapIconsPresets" >
       <fileset dir="MapIconsPresets" includes="**"/>
