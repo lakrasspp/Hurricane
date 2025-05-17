@@ -26,12 +26,15 @@
 
 package haven;
 
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
-import java.awt.Color;
 import java.awt.event.KeyEvent;
 import java.awt.image.WritableRaster;
+import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.Future;
 import java.util.regex.Matcher;
@@ -169,6 +172,136 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	public Thread turnipThread;
 	public CleanupBot cleanupBot;
 	public Thread cleanupThread;
+
+	public Widget stamWgt = new Widget(UI.scale(234,22)) {
+		private UI.Grab dragging;
+		private Coord dc;
+
+
+		@Override
+		public void draw(GOut g) {
+			if (OptWnd.alwaysShowCombatUIStaminaBarCheckBox.a && showUI) {
+				IMeter.Meter stam = ui.gui.getmeter("stam", 0);
+				if (stam != null) {
+					Coord msz = UI.scale(new Coord(180, 22));
+					drawStamMeterBar(g, stam, Coord.z, msz);
+				}
+			}
+		}
+
+		@Override
+		public boolean mousedown(MouseDownEvent ev) {
+			if (!showUI)
+				return(false);
+			if (ev.b == 2 && ui.modmeta) {
+				if((dragging != null)) { // ND: I need to do this extra check and remove it in case you do another click before the mouseup. Idk why it has to be done like this, but it solves the issue.
+					dragging.remove();
+					dragging = null;
+				}
+				dragging = ui.grabmouse(this);
+				dc = ev.c;
+				return true;
+			}
+			return(super.mousedown(ev));
+		}
+
+		@Override
+		public boolean mouseup(MouseUpEvent ev) {
+			checkIfOutsideOfUI(); // ND: Prevent the widget from being dragged outside the current window size
+			if((dragging != null)) {
+				dragging.remove();
+				dragging = null;
+				Utils.setprefc("wndc-stamBarWgt", this.c);
+				return true;
+			}
+			return super.mouseup(ev);
+		}
+
+		@Override
+		public void mousemove(MouseMoveEvent ev) {
+			if (dragging != null) {
+				this.c = this.c.add(ev.c.x, ev.c.y).sub(dc);
+				return;
+			}
+			super.mousemove(ev);
+		}
+
+		public void checkIfOutsideOfUI() {
+			if (this.c.x < 0)
+				this.c.x = 0;
+			if (this.c.y < 0)
+				this.c.y = 0;
+			if (this.c.x > (GameUI.this.sz.x - this.sz.x))
+				this.c.x = GameUI.this.sz.x - this.sz.x;
+			if (this.c.y > (GameUI.this.sz.y - this.sz.y))
+				this.c.y = GameUI.this.sz.y - this.sz.y;
+		}
+	};
+
+	public Widget healthWgt = new Widget(UI.scale(234,22)) {
+		private UI.Grab dragging;
+		private Coord dc;
+
+
+		@Override
+		public void draw(GOut g) {
+			if (OptWnd.alwaysShowCombatUIStaminaBarCheckBox.a && showUI) {
+				IMeter.Meter stam = ui.gui.getmeter("hp", 0);
+				if (stam != null) {
+					Coord msz = UI.scale(new Coord(180, 22));
+					drawHealthMeterBar(g, stam, Coord.z, msz);
+				}
+			}
+		}
+
+		@Override
+		public boolean mousedown(MouseDownEvent ev) {
+			if (!showUI)
+				return(false);
+			if (ev.b == 2 && ui.modmeta) {
+				if((dragging != null)) { // ND: I need to do this extra check and remove it in case you do another click before the mouseup. Idk why it has to be done like this, but it solves the issue.
+					dragging.remove();
+					dragging = null;
+				}
+				dragging = ui.grabmouse(this);
+				dc = ev.c;
+				return true;
+			}
+			return(super.mousedown(ev));
+		}
+
+		@Override
+		public boolean mouseup(MouseUpEvent ev) {
+			checkIfOutsideOfUI(); // ND: Prevent the widget from being dragged outside the current window size
+			if((dragging != null)) {
+				dragging.remove();
+				dragging = null;
+				Utils.setprefc("wndc-healthBarWgt", this.c);
+				return true;
+			}
+			return super.mouseup(ev);
+		}
+
+		@Override
+		public void mousemove(MouseMoveEvent ev) {
+			if (dragging != null) {
+				this.c = this.c.add(ev.c.x, ev.c.y).sub(dc);
+				return;
+			}
+			super.mousemove(ev);
+		}
+
+		public void checkIfOutsideOfUI() {
+			if (this.c.x < 0)
+				this.c.x = 0;
+			if (this.c.y < 0)
+				this.c.y = 0;
+			if (this.c.x > (GameUI.this.sz.x - this.sz.x))
+				this.c.x = GameUI.this.sz.x - this.sz.x;
+			if (this.c.y > (GameUI.this.sz.y - this.sz.y))
+				this.c.y = GameUI.this.sz.y - this.sz.y;
+		}
+	};
 
 
     public static abstract class BeltSlot {
@@ -403,7 +536,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	menubuttons(rbtnimg);
 //	foldbuttons();
 	portrait = ulpanel.add(Frame.with(new Avaview(Avaview.dasz, plid, "avacam"), false), UI.scale(10, 10));
-	buffs = ulpanel.add(new Bufflist(), portrait.c.x + portrait.sz.x + UI.scale(10), portrait.c.y + ((IMeter.fsz.y + UI.scale(2)) * 2) + UI.scale(5 - 2));
+	buffs = ulpanel.add(new Bufflist(),Utils.getprefc("wndc-buffsBarWgt", new Coord (portrait.c.x + portrait.sz.x + UI.scale(10), portrait.c.y + ((IMeter.fsz.y + UI.scale(2)) * 2) + UI.scale(5 - 2))));
 	umpanel.add(new Cal(),UI.scale(new Coord(0, 8)));
 
 	add(new Widget(new Coord(360, umpanel.sz.y)) {
@@ -467,6 +600,9 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 			}
 		}
 	}, new Coord(umpanel.sz.x, UI.scale(11)));
+
+	add(stamWgt, Utils.getprefc("wndc-stamBarWgt", Coord.z));
+	add(healthWgt, Utils.getprefc("wndc-healthBarWgt", Coord.z));
 
 
 	syslog = chat.add(new ChatUI.Log("System"));
@@ -1354,7 +1490,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 			this.time = time;
 		}
 	}
-	Deque<SysTimedMessage> msgDeque = new ArrayDeque<>();
+	Deque<SysTimedMessage> msgDeque = new ConcurrentLinkedDeque<>();
 
 	public void draw(GOut g) {
 //	beltwdg.c = new Coord(chat.c.x, Math.min(chat.c.y - beltwdg.sz.y, sz.y - beltwdg.sz.y));
@@ -1391,22 +1527,22 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	int bottom = (int)(ui.gui.sz.y - ((ui.gui.sz.y / 500.0) * OptWnd.combatUIBottomPanelHeightSlider.val));
 	int bottomCombatUI = (int)(ui.gui.sz.y - ((ui.gui.sz.y / 500.0) * OptWnd.bottomCombatUIPanelHeighSlider.val));
 
-	if (OptWnd.alwaysShowCombatUIStaminaBarCheckBox.a && showUI) {
-		IMeter.Meter stam = ui.gui.getmeter("stam", 0);
-		if (stam != null) {
-			Coord msz = UI.scale(new Coord(234, 22));
-			Coord sc = OptWnd.stamBarLocationIsTop ? new Coord(x - msz.x/2,  y + UI.scale(70)) : new Coord(x - msz.x/2,  bottomCombatUI - UI.scale(222));
-			drawStamMeterBar(g, stam, sc, msz);
-		}
-	}
-	if (OptWnd.alwaysShowCombatUIHealthBarCheckBox.a && showUI) {
-		IMeter.Meter hp = ui.gui.getmeter("hp", 0);
-		if (hp != null) {
-			Coord msz = UI.scale(new Coord(234, 22));
-			Coord sc = OptWnd.healthBarLocationIsTop ? new Coord(x - msz.x/2,  y + UI.scale(44)) : new Coord(x - msz.x/2,  bottomCombatUI - UI.scale(245));
-			drawHealthMeterBar(g, hp, sc, msz);
-		}
-	}
+//	if (OptWnd.alwaysShowCombatUIStaminaBarCheckBox.a && showUI) {
+//		IMeter.Meter stam = ui.gui.getmeter("stam", 0);
+//		if (stam != null) {
+//			Coord msz = UI.scale(new Coord(234, 22));
+//			Coord sc = OptWnd.stamBarLocationIsTop ? new Coord(x - msz.x/2,  y + UI.scale(70)) : new Coord(x - msz.x/2,  bottomCombatUI - UI.scale(222));
+//			drawStamMeterBar(g, stam, sc, msz);
+//		}
+//	}
+//	if (OptWnd.alwaysShowCombatUIHealthBarCheckBox.a && showUI) {
+//		IMeter.Meter hp = ui.gui.getmeter("hp", 0);
+//		if (hp != null) {
+//			Coord msz = UI.scale(new Coord(234, 22));
+//			Coord sc = OptWnd.healthBarLocationIsTop ? new Coord(x - msz.x/2,  y + UI.scale(44)) : new Coord(x - msz.x/2,  bottomCombatUI - UI.scale(245));
+//			drawHealthMeterBar(g, hp, sc, msz);
+//		}
+//	}
 
 
 
@@ -2074,6 +2210,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 		return(true);
 	} else if(kb_playerBox.key().match(ev)) {
 		OptWnd.drawPlayerBox.set(!OptWnd.drawPlayerBox.a);
+		return(true);
 	} else if((ev.c == 27) && (map != null) && !map.hasfocus) {
 	    setfocus(map);
 	    return(true);
@@ -3107,6 +3244,30 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 		return "bad";
 
 	}
+
+	public static String getRandomPrefix(Random rand) {
+		return pref.get(rand.nextInt(pref.size()));
+	}
+	public static final List<String> suff = new ArrayList<>();
+	public static final List<String> pref = new ArrayList<>();
+
+	static {
+
+        try {
+            suff.addAll(Files.readAllLines(Path.of("names/suffixes.txt")));
+        } catch (IOException e) {
+        }
+
+        try {
+            pref.addAll(Files.readAllLines(Path.of("names/prefixes.txt")));
+        } catch (IOException e) {
+        }
+    }
+
+	public static String getRandomSuffix(Random rand) {
+		return suff.get(rand.nextInt(suff.size()));
+	}
+
 	public void aggroPinged() {
 		try{
 			synchronized (ui.sess.glob.oc){

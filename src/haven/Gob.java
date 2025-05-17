@@ -84,6 +84,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	public Boolean knocked = null;  // knocked will be null if pose update request hasn't been received yet
 	private Overlay customAuraOverlay;
 	private Overlay customBoxOverlay;
+	private Overlay customBorderOverlay;
 	private Overlay customRadiusOverlay;
 	public static Boolean batWingCapeEquipped = false; // ND: Check for Bat Wing Cape
 	public static Boolean nightQueenDefeated = false; // ND: Check for Bat Dungeon Experience (Defeated Bat Queen)
@@ -1375,7 +1376,9 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 						else if ((getattr(Vilmate.class) != null))
 							setattr(new Buddy(this, -1, "Village/Realm Member", Color.WHITE));
 						else {
-							setattr(new Buddy(this, -1, "Unknown", Color.GRAY));
+							Random rand = new Random();
+							rand.setSeed(this.id);
+							setattr(new Buddy(this, -1, GameUI.getRandomPrefix(rand) + " " + GameUI.getRandomSuffix(rand), Color.GRAY));
 						}
 					}
 				}
@@ -1960,8 +1963,11 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	}
 
 	public void updatePlayerOverlays() {
-			if(Boolean.TRUE.equals(isMe))
+			if(Boolean.TRUE.equals(isMe)) {
 				setBoxOverlay(OptWnd.drawPlayerBox.a);
+				setBorderOverlay(OptWnd.drawPlayerBox.a);
+			}
+
 	}
 
 	public void updateBeastDangerRadii() {
@@ -2013,6 +2019,19 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 			customBoxOverlay = null;
 		}
 	}
+
+	private void setBorderOverlay(boolean enabled) {
+		if (enabled) {
+			if (customBorderOverlay == null) {
+				customBorderOverlay  = new Overlay(this, new SquareSprite(this, new Coord2d(900,900), null, new Coord2d(MCache.cmaps)));
+				addol(customBorderOverlay);
+			}
+		} else if (customBorderOverlay != null) {
+			removeOl(customBorderOverlay);
+			customBorderOverlay = null;
+		}
+	}
+
 	private void setRadiusOverlay(boolean enabled, Color col, float radius) {
 		if (enabled) {
 			if (customRadiusOverlay != null) {
@@ -2272,6 +2291,8 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 									playPlayerColorAlarm(OptWnd.purplePlayerAlarmEnabledCheckbox.a, OptWnd.purplePlayerAlarmFilename.buf.line(), OptWnd.purplePlayerAlarmVolumeSlider.val);
 								} else if (buddyInfo.rgrp == 7) {
 									playPlayerColorAlarm(OptWnd.orangePlayerAlarmEnabledCheckbox.a, OptWnd.orangePlayerAlarmFilename.buf.line(), OptWnd.orangePlayerAlarmVolumeSlider.val);
+								} else if (buddyInfo.customName != null) {
+									playPlayerColorAlarm(OptWnd.whitePlayerAlarmEnabledCheckbox.a, OptWnd.whitePlayerAlarmFilename.buf.line(), OptWnd.whitePlayerAlarmVolumeSlider.val);
 								}
 							}
 							if (namedInfo != null) {

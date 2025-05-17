@@ -773,6 +773,7 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 		// Category: Other Scripts & Tools
 		makeLocal("customclient/menugrid/OtherScriptsAndTools/Add9CoalScript");
 		makeLocal("customclient/menugrid/OtherScriptsAndTools/Add12CoalScript");
+		makeLocal("customclient/menugrid/OtherScriptsAndTools/Add4BranchesScript");
 		makeLocal("customclient/menugrid/OtherScriptsAndTools/CloverScript");
 		makeLocal("customclient/menugrid/OtherScriptsAndTools/CoracleScript");
 		makeLocal("customclient/menugrid/OtherScriptsAndTools/SkisScript");
@@ -929,6 +930,8 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 				gui.runActionThread(new Thread(new AddCoalToSmelter(gui, 9), "Add9Coal"));
 			} else if (ad[2].equals("Add12CoalScript")) {
 				gui.runActionThread(new Thread(new AddCoalToSmelter(gui, 12), "Add12Coal"));
+			} else if(ad[2].equals("Add4BranchesScript")) {
+				gui.runActionThread(new Thread(new AddBranchesToOven(gui,4), "Add4Branches"));
 			} else if (ad[2].equals("CloverScript")) {
 				if (gui.cloverScriptThread == null) {
 					gui.cloverScriptThread = new Thread(new CloverScript(gui), "CloverScript");

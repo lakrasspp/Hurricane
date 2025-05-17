@@ -39,6 +39,9 @@ public class Bufflist extends Widget {
 	public final static Resource partyperm = Resource.local().loadwait("customclient/buffs/partyperm");
 	public final static Resource itemstacking = Resource.local().loadwait("customclient/buffs/itemcomb");
 
+	private UI.Grab dragging;
+	private Coord dc;
+
     public interface Managed {
 	public void move(Coord c, double off);
     }
@@ -46,6 +49,54 @@ public class Bufflist extends Widget {
     public Bufflist() {
         super(Buff.cframe.sz());
     }
+
+	@Override
+	public boolean mousedown(MouseDownEvent ev) {
+		if (!GameUI.showUI)
+			return(false);
+		if (ev.b == 2 && ui.modmeta) {
+			if((dragging != null)) { // ND: I need to do this extra check and remove it in case you do another click before the mouseup. Idk why it has to be done like this, but it solves the issue.
+				dragging.remove();
+				dragging = null;
+			}
+			dragging = ui.grabmouse(this);
+			dc = ev.c;
+			return true;
+		}
+		return(super.mousedown(ev));
+	}
+
+	@Override
+	public boolean mouseup(MouseUpEvent ev) {
+//		checkIfOutsideOfUI(); // ND: Prevent the widget from being dragged outside the current window size
+		if((dragging != null)) {
+			dragging.remove();
+			dragging = null;
+			Utils.setprefc("wndc-buffsBarWgt", this.c);
+			return true;
+		}
+		return super.mouseup(ev);
+	}
+
+	@Override
+	public void mousemove(MouseMoveEvent ev) {
+		if (dragging != null) {
+			this.c = this.c.add(ev.c.x, ev.c.y).sub(dc);
+			return;
+		}
+		super.mousemove(ev);
+	}
+
+//	public void checkIfOutsideOfUI() {
+//		if (this.c.x < 0)
+//			this.c.x = 0;
+//		if (this.c.y < 0)
+//			this.c.y = 0;
+//		if (this.c.x > (GameUI.this.sz.x - this.sz.x))
+//			this.c.x = GameUI.this.sz.x - this.sz.x;
+//		if (this.c.y > (GameUI.this.sz.y - this.sz.y))
+//			this.c.y = this.sz.y - this.sz.y;
+//	}
 
     private void arrange(Widget imm) {
 	int i = 0, rn = 0, x = 0, y = 0, maxh = 0;
