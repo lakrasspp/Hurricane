@@ -194,7 +194,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 			if (OptWnd.alwaysShowCombatUIStaminaBarCheckBox.a && showUI) {
 				IMeter.Meter stam = ui.gui.getmeter("stam", 0);
 				if (stam != null) {
-					Coord msz = UI.scale(new Coord(180, 22));
+					Coord msz = UI.scale(new Coord(230, 22));
 					drawStamMeterBar(g, stam, Coord.z, msz);
 				}
 			}
@@ -204,7 +204,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 		public boolean mousedown(MouseDownEvent ev) {
 			if (!showUI)
 				return(false);
-			if (ev.b == 2 && ui.modmeta) {
+			if (ev.b == 2 && ui.modctrl) {
 				if((dragging != null)) { // ND: I need to do this extra check and remove it in case you do another click before the mouseup. Idk why it has to be done like this, but it solves the issue.
 					dragging.remove();
 					dragging = null;
@@ -256,11 +256,11 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 
 		@Override
 		public void draw(GOut g) {
-			if (OptWnd.alwaysShowCombatUIStaminaBarCheckBox.a && showUI) {
-				IMeter.Meter stam = ui.gui.getmeter("hp", 0);
-				if (stam != null) {
-					Coord msz = UI.scale(new Coord(180, 22));
-					drawHealthMeterBar(g, stam, Coord.z, msz);
+			if (OptWnd.alwaysShowCombatUIHealthBarCheckBox.a && showUI) {
+				IMeter.Meter hp = ui.gui.getmeter("hp", 0);
+				if (hp != null) {
+					Coord msz = UI.scale(new Coord(230, 22));
+					drawHealthMeterBar(g, hp, Coord.z, msz);
 				}
 			}
 		}
@@ -269,7 +269,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 		public boolean mousedown(MouseDownEvent ev) {
 			if (!showUI)
 				return(false);
-			if (ev.b == 2 && ui.modmeta) {
+			if (ev.b == 2 && ui.modctrl) {
 				if((dragging != null)) { // ND: I need to do this extra check and remove it in case you do another click before the mouseup. Idk why it has to be done like this, but it solves the issue.
 					dragging.remove();
 					dragging = null;
