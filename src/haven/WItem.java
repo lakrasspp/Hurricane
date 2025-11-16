@@ -200,12 +200,9 @@ public class WItem extends Widget implements DTarget {
 	 * of one yet. */
 	GSprite spr = item.spr();
 	if((spr != null) && (spr != lspr)) {
-	    Coord sz = new Coord(spr.sz());
-	    if((sz.x % sqsz.x) != 0)
-		sz.x = sqsz.x * ((sz.x / sqsz.x) + 1);
-	    if((sz.y % sqsz.y) != 0)
-		sz.y = sqsz.y * ((sz.y / sqsz.y) + 1);
-	    resize(sz);
+	    Coord sz = spr.sz();
+	    resize(Coord.of(sqsz.x * ((sz.x + sqsz.x / 2) / sqsz.x),
+			    sqsz.y * ((sz.y + sqsz.y / 2) / sqsz.y)));
 	    lspr = spr;
 	}
 	if (isNotInStudy == null)
@@ -263,11 +260,13 @@ public class WItem extends Widget implements DTarget {
 					if (ah.str.text.equals("Well mined")) {
 						drawwellmined(g);
 					} else if (ah.str.text.equals("Black-truffled")) {
-						drawadhocicon(g, "gfx/invobjs/herbs/truffle-black", 18);
+						drawadhocicon(g, "gfx/invobjs/herbs/truffle-black", 18, 0);
 					} else if (ah.str.text.equals("White-truffled")) {
-						drawadhocicon(g, "gfx/invobjs/herbs/truffle-white", 9);
+						drawadhocicon(g, "gfx/invobjs/herbs/truffle-white", 9, 0);
 					} else if (ah.str.text.equals("Peppered")) {
-						drawadhocicon(g, "gfx/invobjs/pepper", 0);
+						drawadhocicon(g, "gfx/invobjs/pepper", 0, 0);
+					} else if (ah.str.text.equals("Salted")) {
+						drawadhocicon(g, "gfx/invobjs/salt", 18, 9);
 					}
 				}
 			}
@@ -323,17 +322,20 @@ public class WItem extends Widget implements DTarget {
 			ui.rcvr.rcvmsg(ui.lastWidgetID + 1, "cl", option, 0);
 		}
 		if(ui.modctrl && ui.modshift && OptWnd.autoRepeatFlowerMenuCheckBox.a){
-			try {
-				if (ui.gui.autoRepeatFlowerMenuScriptThread == null) {
-					ui.gui.autoRepeatFlowerMenuScriptThread = new Thread(new AutoRepeatFlowerMenuScript(ui.gui, this.item.getres().name), "autoRepeatFlowerMenu");
-					ui.gui.autoRepeatFlowerMenuScriptThread.start();
-				} else {
-					ui.gui.autoRepeatFlowerMenuScriptThread.interrupt();
-					ui.gui.autoRepeatFlowerMenuScriptThread = null;
-					ui.gui.autoRepeatFlowerMenuScriptThread = new Thread(new AutoRepeatFlowerMenuScript(ui.gui, this.item.getres().name), "autoRepeatFlowerMenu");
-					ui.gui.autoRepeatFlowerMenuScriptThread.start();
+			if (!(item != null && item.contents != null)) { // ND: Ctrl+Shift on stack items splits them, so ignore them.
+				try {
+					if (ui.gui.autoRepeatFlowerMenuScriptThread == null) {
+						ui.gui.autoRepeatFlowerMenuScriptThread = new Thread(new AutoRepeatFlowerMenuScript(ui.gui, this.item.getres().name), "autoRepeatFlowerMenu");
+						ui.gui.autoRepeatFlowerMenuScriptThread.start();
+					} else {
+						ui.gui.autoRepeatFlowerMenuScriptThread.interrupt();
+						ui.gui.autoRepeatFlowerMenuScriptThread = null;
+						ui.gui.autoRepeatFlowerMenuScriptThread = new Thread(new AutoRepeatFlowerMenuScript(ui.gui, this.item.getres().name), "autoRepeatFlowerMenu");
+						ui.gui.autoRepeatFlowerMenuScriptThread.start();
+					}
+				} catch (Loading ignored) {
 				}
-			} catch (Loading ignored){}
+			}
 		}
 	    item.wdgmsg("iact", ev.c, ui.modflags());
 	    return(true);
@@ -496,10 +498,10 @@ public class WItem extends Widget implements DTarget {
 		g.chcolor();
 	}
 
-	private void drawadhocicon(GOut g, String resname, int offset) {
+	private void drawadhocicon(GOut g, String resname, int offsetX, int offsetY) {
 		Resource res = Resource.remote().load(resname).get();
 		BufferedImage bufferedimage = res.layer(Resource.imgc).img;
-		g.image(bufferedimage, new Coord(UI.scale(offset), sz.y-UI.scale(16)), new Coord(UI.scale(16),UI.scale(16)));
+		g.image(bufferedimage, new Coord(UI.scale(offsetX), sz.y-UI.scale(16+offsetY)), new Coord(UI.scale(16),UI.scale(16)));
 	}
 
 	private void drawnum(GOut g, Coord sz) {

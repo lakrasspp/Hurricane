@@ -11,7 +11,6 @@ public class EnterNearestVehicle implements Runnable {
 
     public EnterNearestVehicle(GameUI gui) {
         this.gui = gui;
-        Integer ping = GameUI.getPingValue();
     }
 
     @Override
@@ -30,7 +29,7 @@ public class EnterNearestVehicle implements Runnable {
                     res = gob.getres();
                 } catch (Loading l) {
                 }
-                if (res != null) { // TODO: ND: Need to fix or do more rigorous testing. EDEN was going to
+                if (res != null) { // TODO: ND: Need to fix or do more rigorous testing.
                                    //  Either the gob.occupants don't properly update when one of them leaves the rowboat, or something else is wrong
                     int type = 0;
                     if (res.name.equals("gfx/terobjs/vehicle/knarr") /*&& gob.occupants.size() < 10*/) {

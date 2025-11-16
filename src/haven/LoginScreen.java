@@ -27,10 +27,12 @@
 package haven;
 
 import javax.imageio.ImageIO;
+import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.util.*;
 import java.util.List;
@@ -55,7 +57,46 @@ public class LoginScreen extends Widget {
 	private String lastUser = "";
 	private String lastPass = "";
 	public static HSlider themeSongVolumeSlider;
-	static public final Resource mainTheme = Resource.local().loadwait("customclient/sfx/maintheme");
+	static public final List<Resource> themes = new ArrayList<>() {{
+		add(Resource.local().loadwait("customclient/sfx/rogueTheme"));
+		add(Resource.local().loadwait("customclient/sfx/knightTheme"));
+		add(Resource.local().loadwait("customclient/sfx/vikingTheme"));
+		add(Resource.local().loadwait("customclient/sfx/sorceressTheme"));
+		add(Resource.local().loadwait("customclient/sfx/huntressTheme"));
+		add(Resource.local().loadwait("customclient/sfx/alchemistTheme"));
+		add(Resource.local().loadwait("customclient/sfx/valkyrieTheme"));
+		add(Resource.local().loadwait("customclient/sfx/berserkerTheme"));
+		add(Resource.local().loadwait("customclient/sfx/beastmasterTheme"));
+		add(Resource.local().loadwait("customclient/sfx/dryadTheme"));
+	}};
+	private static List<String> backgrounds = new ArrayList<>() {{
+		add(haven.MainFrame.gameDir + "res/customclient/rogueScreen.png");
+		add(haven.MainFrame.gameDir + "res/customclient/knightScreen.png");
+		add(haven.MainFrame.gameDir + "res/customclient/vikingScreen.png");
+		add(haven.MainFrame.gameDir + "res/customclient/sorceressScreen.png");
+		add(haven.MainFrame.gameDir + "res/customclient/huntressScreen.png");
+		add(haven.MainFrame.gameDir + "res/customclient/alchemistScreen.png");
+		add(haven.MainFrame.gameDir + "res/customclient/valkyrieScreen.png");
+		add(haven.MainFrame.gameDir + "res/customclient/berserkerScreen.png");
+		add(haven.MainFrame.gameDir + "res/customclient/beastmasterScreen.png");
+		add(haven.MainFrame.gameDir + "res/customclient/dryadScreen.png");
+	}};
+	final List<String> keys = new ArrayList<>(){{
+		add("Random!");
+		add("Rogue");
+		add("Knight");
+		add("Viking");
+		add("Sorceress");
+		add("Huntress");
+		add("Alchemist");
+		add("Valkyrie");
+		add("Berserker");
+		add("Beastmaster");
+		add("Dryad");
+	}};
+	private OldDropBox backgroundDropBox;
+	static public int bgIndex = 1;
+	public Img backgroundImg;
 	static public Audio.CS mainThemeClip = null;
 	static public boolean mainThemeStopped = false;
 	static public final Resource charSelectTheme = Resource.local().loadwait("customclient/sfx/charselecttheme");
@@ -65,22 +106,58 @@ public class LoginScreen extends Widget {
 	private Window firstTimeUseWindow = null;
 	private Window firstTimeUseExtraBackgroundWindow = null; // ND: Do an extra window to have a solid background, no transparency.
 	private boolean firstTimeWindowCreated = false;
-	private static String backgroundPath = "res/customclient/loginScreen.png";
 	private final Window updateWindow;
 	private boolean githubVersionChecked = false;
-
 
     private String getpref(String name, String def) {
 	return(Utils.getpref(name + "@" + hostname, def));
     }
 
     public LoginScreen(String hostname) {
-	super(bg().sz());
+	super(bg(haven.MainFrame.gameDir + "res/customclient/bgsizer.png").sz());
+	if (Utils.getprefi("loginBgIndex", 0) == 0) {
+		Random rand = new Random();
+		bgIndex = rand.nextInt(keys.size()-1) + 1; // Generates 0–2, then add 1
+	} else {
+		bgIndex = Utils.getprefi("loginBgIndex", 0);
+	}
 	this.hostname = hostname;
-	Tex bg = bg();
+	Tex bg = bg(backgrounds.get(bgIndex-1));
 	setfocustab(true);
-	add(new Img(bg), Coord.z);
-	optbtn = adda(new Button(UI.scale(100), "Options"), pos("cbl").add(10, -10), 0, 1);
+	add(backgroundImg = new Img(bg), Coord.z);
+	backgroundDropBox = new OldDropBox<String>(UI.scale(76), 4, UI.scale(17)) {
+		{
+			super.change(Utils.getprefi("loginBgIndex", 0));
+		}
+		@Override
+		protected String listitem(int i) {
+			if (!keys.isEmpty())
+				return keys.get(i);
+			else return "???";
+		}
+		@Override
+		protected int listitems() {
+			return keys.size();
+		}
+		@Override
+		protected void drawitem(GOut g, String item, int i) {
+			g.aimage(Text.renderstroked(item).tex(), Coord.of(UI.scale(3), g.sz().y / 2), 0.0, 0.5);
+		}
+		@Override
+		public void change(String item) {
+			super.change(item);
+			Utils.setprefi("loginBgIndex", selindex);
+			if (selindex == 0) {
+				Random rand = new Random();
+				bgIndex = rand.nextInt(keys.size()-1) + 1;
+			} else {
+				bgIndex = selindex;
+			}
+			changeLoginScreen(themes.get(bgIndex-1), backgrounds.get(bgIndex-1));
+		}
+	};
+	add(new CircleFadein(0.5));
+	optbtn = adda(new Button(UI.scale(100), "Options"), pos("cbl").add(10, -26), 0, 1);
 	optbtn.setgkey(GameUI.kb_opt);
 //	if(HttpStatus.mond.get() != null)
 //	    adda(new StatusLabel(HttpStatus.mond.get(), 1.0), sz.x - UI.scale(10), UI.scale(10), 1.0, 0.0);
@@ -105,7 +182,7 @@ public class LoginScreen extends Widget {
 		throw(new RuntimeException(e));
 	}
 	mainThemeStopped = false;
-	playMainTheme();
+	playMainTheme(themes.get(bgIndex-1));
 	add(themeSongVolumeSlider = new HSlider(UI.scale(220), 0, 100, Utils.getprefi("themeSongVolume", 40)) {
 		protected void attach(UI ui) {
 			super.attach(ui);
@@ -114,13 +191,14 @@ public class LoginScreen extends Widget {
 			OptWnd.themeSongVolumeSlider.val = val;
 			OptWnd.themeSongVolumeSlider.changed();
 		}
-	}, bg.sz().x - UI.scale(230) , bg.sz().y - UI.scale(20));
-	add(new Label("Background Music Volume"), bg.sz().x - UI.scale(184) , bg.sz().y - UI.scale(36));
+	}, bg.sz().x - UI.scale(230) , bg.sz().y - UI.scale(28));
+	add(new Label("Background Music Volume"), bg.sz().x - UI.scale(180) , bg.sz().y - UI.scale(44));
+	add(new Label("Login Screen Style:"), bg.sz().x - UI.scale(200) , bg.sz().y - UI.scale(60));
+	add(backgroundDropBox, bg.sz().x - UI.scale(100) , bg.sz().y - UI.scale(60));
 	GameUI.swimmingToggled = false;
 	GameUI.trackingToggled = false;
 	GameUI.crimesToggled = false;
 	MenuGrid.loginTogglesNeedUpdate = true;
-	OptWnd.flowerMenuAutoSelectManagerWindow = null;
 	Gob.batWingCapeEquipped = false;
 	Gob.nightQueenDefeated = false;
 	Gob.alarmPlayed.clear();
@@ -161,6 +239,22 @@ public class LoginScreen extends Widget {
 	GameUI.verifiedAccount = false;
 	GameUI.subscribedAccount = false;
 	GameUI.stopAllThemes();
+	add(new IButton("customclient/discord", "", "-d", "-h") {
+		{settip("Hurricane Client Discord");}
+		public void click() {
+			URI uri = null;
+			try {
+				uri = new URI("https://discord.gg/WnEYkeAzja");
+			} catch (URISyntaxException e) {
+				return;
+			}
+			try {
+				WebBrowser.sshow(uri.toURL());
+			} catch (MalformedURLException | WebBrowser.BrowserException ignored) {
+			}
+
+        }
+	}, new Coord(this.sz.x + UI.scale(-60), 10));
     }
 
 //    public static final KeyBinding kb_savtoken = KeyBinding.get("login/savtoken", KeyMatch.forchar('R', KeyMatch.M)); // ND: Why the fuck are there keybinds for these? Someone might press one of those by mistake
@@ -331,7 +425,7 @@ public class LoginScreen extends Widget {
 		parse: if(pw.length() == 64) {
 		    byte[] ptok;
 		    try {
-			ptok = Utils.hex2byte(pw);
+			ptok = Utils.hex.dec(pw);
 		    } catch(IllegalArgumentException e) {
 			break parse;
 		    }
@@ -493,7 +587,7 @@ public class LoginScreen extends Widget {
     }
 
 	public void tick(double dt) {
-		playMainTheme();
+		playMainTheme(themes.get(bgIndex-1));
 		if (!firstTimeWindowCreated && Utils.getprefb("firstTimeOpeningClient", true)){
 			createFirstTimeUseWindow();
 		}
@@ -557,9 +651,9 @@ public class LoginScreen extends Widget {
 		g.aimage(PUtils.strokeTex(progress), bgc.adds(0, 50), 0.5, 0.0);
     }
 
-	private void playMainTheme() {
+	private void playMainTheme(Resource theme) {
 		if (!mainThemeStopped &&(mainThemeClip == null || !((Audio.Mixer) Audio.player.stream).playing(mainThemeClip))) {
-				Audio.CS klippi = fromres(mainTheme);
+				Audio.CS klippi = fromres(theme);
 				mainThemeClip = new Audio.VolAdjust(klippi, Utils.getprefi("themeSongVolume", 40)/100d);
 				Audio.play(mainThemeClip);
 		}
@@ -570,6 +664,13 @@ public class LoginScreen extends Widget {
 			Audio.stop(mainThemeClip);
 			mainThemeStopped = true;
 		}
+	}
+
+	private void changeLoginScreen(Resource theme, String imgPath){
+		stopMainTheme();
+		mainThemeStopped = false;
+		backgroundImg.setimg(bg(imgPath));
+		add(new CircleFadein(0.5));
 	}
 
 	private void createFirstTimeUseWindow(){
@@ -613,9 +714,9 @@ public class LoginScreen extends Widget {
 		firstTimeWindowCreated = true;
 	}
 
-	static Tex bg(){
+	static Tex bg(String imgPath){
 		try {
-			BufferedImage originalImage = ImageIO.read(new File(backgroundPath));
+			BufferedImage originalImage = ImageIO.read(new File(imgPath));
 			// Create a new buffered image with the desired size
 			BufferedImage resizedImage = new BufferedImage(bg.sz().x, bg.sz().y, originalImage.getType());
 			// Create a Graphics2D object to perform the drawing

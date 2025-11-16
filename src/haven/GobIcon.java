@@ -43,12 +43,13 @@ import javax.swing.JFileChooser;
 import javax.swing.filechooser.*;
 
 public class GobIcon extends GAttrib {
-    private static final int size = UI.scale(20);
+    public static int size = UI.scale(Utils.getprefi("mapIconsSize", 20));
     public static final PUtils.Convolution filter = new PUtils.Hanning(1);
     public final Indir<Resource> res;
     public final byte[] sdt;
-    private Icon icon;
+    public Icon icon;
 	private static LinkedHashMap<String, ArrayList<String>> mapIconPresets = new LinkedHashMap<String, ArrayList<String>>();
+	public static boolean presetsInitiated = false;
 
     public GobIcon(Gob g, Indir<Resource> res, byte[] sdt) {
 	super(g);
@@ -96,15 +97,17 @@ public class GobIcon extends GAttrib {
     }
 
     public static class Image {
-	private static final Map<Resource, Image> cache = new WeakHashMap<>();
-	public final BufferedImage img;
-	public final Tex tex;
+	public static final Map<Resource, Image> cache = new WeakHashMap<>();
+	public Resource res;
+	public BufferedImage img;
+	public Tex tex;
 	public Coord cc;
 	public boolean rot;
 	public double ao;
 	public int z;
 
 	public Image(Resource res) {
+		this.res = res;
 	    Resource.Image rimg = res.layer(Resource.imgc);
 	    BufferedImage img = rimg.scaled();
 	    Tex tex = rimg.tex();
@@ -122,15 +125,12 @@ public class GobIcon extends GAttrib {
 	    this.img = img;
 	    this.tex = tex;
 	    this.cc = tex.sz().div(2);
-	    byte[] data = rimg.kvdata.get("mm/rot");
+	    Object data = rimg.info.get("mm/rot");
 	    if(data != null) {
 		this.rot = true;
-		this.ao = Utils.float32d(data, 0) * (Math.PI / 180f);
+		this.ao = Utils.fv(data) * (Math.PI / 180f);
 	    }
-	    this.z = rimg.z;
-	    data = rimg.kvdata.get("mm/z");
-	    if(data != null)
-		this.z = Utils.intvard(data, 0);
+	    this.z = Utils.iv(rimg.info.getOrDefault("mm/z", rimg.z));
 	}
 
 	public static Image get(Resource res) {
@@ -164,6 +164,20 @@ public class GobIcon extends GAttrib {
 	}
 
 	public void draw(GOut g, Coord cc) {
+		if (img.tex.sz().x != size || img.tex.sz().y != size) {
+			Resource.Image rimg = res.layer(Resource.imgc);
+			BufferedImage imgScaled = rimg.scaled();
+			BufferedImage buf = imgScaled;
+			buf = PUtils.rasterimg(PUtils.blurmask2(buf.getRaster(), 1, 1, Color.BLACK));
+			Coord tsz;
+			if(buf.getWidth() > buf.getHeight())
+				tsz = new Coord(size, (size * buf.getHeight()) / buf.getWidth());
+			else
+				tsz = new Coord((size * buf.getWidth()) / buf.getHeight(), size);
+			buf = PUtils.convolve(buf, tsz, filter);
+			img.tex = new TexI(img.img = buf);
+			img.cc = img.tex.sz().div(2);
+		}
 	    if(!img.rot)
 		g.image(img.tex, cc.sub(img.cc));
 	    else
@@ -183,15 +197,8 @@ public class GobIcon extends GAttrib {
 	    return(img.z);
 	}
 
-	private int markdata() {
-	    byte[] data = res.flayer(Resource.imgc).kvdata.get("mm/mark");
-	    if(data == null)
-		return(0);
-	    return(Utils.intvard(data, 0));
-	}
-
 	public Markable markable() {
-	    switch(markdata()) {
+	    switch(Utils.iv(res.flayer(Resource.imgc).info.getOrDefault("mm/mark", 0))) {
 	    case 1:
 		return(Markable.NONDEFAULT);
 	    case 2:

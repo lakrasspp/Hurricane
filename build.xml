@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 
-<project name="hafen" default="deftgt">
+<project name="hafen" default="deftgt" xmlns:if="ant:if">
   <property file="build.properties" />
   <property name="ext-lib-base" value="http://www.havenandhearth.com/java" />
 
@@ -78,6 +78,9 @@
 
 
   <target name="hafen-client" depends="build-env, extlib/jogl, extlib/lwjgl-gl, extlib/steamworks">
+    <condition property="explicit-annotations">
+      <javaversion atleast="21" />
+    </condition>
     <javac srcdir="src" destdir="build/classes" debug="on"
 	   source="15" target="15" includeantruntime="no"
 	   bootclasspath="${boot-classpath}">
@@ -92,7 +95,9 @@
       <pathelement path="lib/rxjava-1.1.5.jar" />
     <pathelement path="lib/sqlite-jdbc-3.42.0.0.jar" />
       </classpath>
+      <compilerarg if:set="explicit-annotations" value="-proc:full" />
       <compilerarg value="-Xlint:unchecked" />
+      <compilerarg value="-Xlint:deprecation" />
       <compilerarg value="-Xlint:-options" />
       <!-- <compilerarg value="-Xbarda" /> -->
     </javac>
@@ -121,6 +126,7 @@
       <manifest>
 	<attribute name="Main-Class" value="haven.MainFrame" />
 	<attribute name="Class-Path" value="jogl-all.jar gluegen-rt.jar lwjgl-fat.jar lwjgl-awt.jar lwjgl-opengl-fat.jar steamworks4j.jar builtin-res.jar hafen-res.jar sqlite-jdbc-3.42.0.0.jar" />
+    <attribute name="Enable-Native-Access" value="ALL-UNNAMED" />
       </manifest>
     </jar>
     <chmod file="build/hafen.jar" perm="a+x" />
@@ -180,8 +186,7 @@
     </copy>
     <copy file="etc/ansgar-config.properties" tofile="bin/haven-config.properties" />
     <copy file="Play.bat" todir="bin"/>
-    <copy file="Play.sh" todir="bin"/>
-    <chmod file="bin/Play.sh" perm="+x" />
+    <copy file="Play_Linux.sh" todir="bin"/>
     <copy file="workshop-client.properties" todir="bin"/>
     <copy file="steamicon.png" todir="bin"/>
     <copy file="steam_appid.txt" todir="bin"/>
@@ -196,10 +201,48 @@
   <target name="deftgt" depends="jars, bin" />
 
   <target name="run" depends="bin">
+        <condition property="jogl-exports">
+            <javaversion atleast="16" />
+        </condition>
+        <condition property="jogl-access">
+            <javaversion atleast="24" />
+        </condition>
+        <java jar="bin/hafen.jar" fork="true">
+            <sysproperty key="sun.java2d.uiScale.enabled" value="false" />
+            <sysproperty key="java.net.preferIPv6Addresses" value="system" />
+            <jvmarg if:set="jogl-exports" value="--add-exports=java.base/java.lang=ALL-UNNAMED" />
+            <jvmarg if:set="jogl-exports" value="--add-exports=java.desktop/sun.awt=ALL-UNNAMED" />
+            <jvmarg if:set="jogl-exports" value="--add-exports=java.desktop/sun.java2d=ALL-UNNAMED" />
+            <jvmarg if:set="jogl-access" value="--enable-native-access=ALL-UNNAMED" />
+            <!-- <sysproperty key="haven.renderer" value="lwjgl" /> -->
+        </java>
+    </target>
+
+  <target name="run > Play (Bat File)" depends="bin">
     <exec dir="bin/" executable="cmd">
       <arg value="/c"/>
       <arg value = "start"/>
       <arg value="Play.bat"/>
+    </exec>
+  </target>
+
+  <target name="Util: Find fetched resource updates" depends="bin">
+    <exec executable="cmd" spawn="true">
+      <arg value="/c" />
+      <arg value="start" />
+      <arg value="cmd" />
+      <arg value="/k" />
+      <arg value="java -cp bin/hafen.jar haven.Resource find-updates" />
+    </exec>
+  </target>
+
+  <target name="Util: Upload to steam workshop" depends="bin">
+    <exec executable="cmd" spawn="true">
+      <arg value="/c" />
+      <arg value="start" />
+      <arg value="cmd" />
+      <arg value="/k" />
+      <arg value="java -cp bin/hafen.jar haven.SteamWorkshop upload bin" />
     </exec>
   </target>
 

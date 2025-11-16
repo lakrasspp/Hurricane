@@ -88,6 +88,7 @@ public class TileHighlight {
 			add("gfx/tiles/swampwater");
 			add("gfx/tiles/thicket");
 			add("gfx/tiles/timberland");
+			add("gfx/tiles/thicket");
 			add("gfx/tiles/wald");
 			add("gfx/tiles/warmdepth");
 			add("gfx/tiles/water");
@@ -256,7 +257,14 @@ public class TileHighlight {
 	
 	private TileItem(String res) {
 	    this.res = res;
-	    this.name = Utils.prettyResName(res);
+		String key = Utils.prettyResName(res).toLowerCase();
+		if (Config.ORE_FULL_NAMES.containsKey(key)) {
+			this.name = Config.ORE_FULL_NAMES.get(key);
+		} else if (Config.STONE_FULL_NAMES.containsKey(key)) {
+			this.name = Config.STONE_FULL_NAMES.get(key);
+		} else {
+			this.name = Utils.prettyResName(res);
+		}
 	    this.tex = elf.renderstroked(this.name, Color.WHITE, Color.BLACK).tex();
 	}
     }

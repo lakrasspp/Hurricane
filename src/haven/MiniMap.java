@@ -26,7 +26,10 @@
 
 package haven;
 
+import haven.automated.pathfinder.Pathfinder;
 import haven.render.*;
+
+import java.awt.image.BufferedImage;
 import java.util.*;
 import java.util.function.*;
 import java.awt.Color;
@@ -46,7 +49,19 @@ import static haven.OCache.posres;
 public class MiniMap extends Widget {
     public static final Tex bg = Resource.loadtex("gfx/hud/mmap/ptex");
     public static final Tex nomap = Resource.loadtex("gfx/hud/mmap/nomap");
-    public static final Tex plp = ((TexI)Resource.loadtex("gfx/hud/mmap/plp")).filter(Texture.Filter.LINEAR);
+    public static Tex plp;
+	public static final Resource.Image plpImg = Resource.local().loadwait("gfx/hud/mmap/plp").layer(Resource.imgc);
+	static {
+		BufferedImage buf = MiniMap.plpImg.img;
+		buf = PUtils.rasterimg(PUtils.blurmask2(buf.getRaster(), 1, 1, Color.BLACK));
+		Coord tsz;
+		if(buf.getWidth() > buf.getHeight())
+			tsz = new Coord(GobIcon.size, (GobIcon.size * buf.getHeight()) / buf.getWidth());
+		else
+			tsz = new Coord((GobIcon.size * buf.getWidth()) / buf.getHeight(), GobIcon.size);
+		buf = PUtils.convolve(buf, tsz, GobIcon.filter);
+		plp = new TexI(buf);
+	}
     public final MapFile file;
     public Location curloc;
     public Location sessloc;
@@ -820,9 +835,6 @@ public class MiniMap extends Widget {
 	drawparty(g);
 	drawbiome(g);
 	drawsprites(g);
-	if (dloc.seg != sessloc.seg){ // ND: Attempts to fix the bug where the segments desync, idk why they desync and it's annoying me alot
-		sessloc.seg = dloc.seg;
-	}
     }
 
     public void draw(GOut g) {
@@ -980,6 +992,9 @@ public class MiniMap extends Widget {
     public boolean mousedown(MouseDownEvent ev) {
 	dsloc = xlate(ev.c);
 	if(dsloc != null) {
+		if (ui.modmeta && ev.b == 1){
+			ui.gui.map.addCheckpoint(dsloc.tc.sub(sessloc.tc).mul(tilesz).add(tilesz.div(2)));
+		}
 	    dsicon = iconat(ev.c);
 	    dsmark = markerat(dsloc.tc);
 	    if((dsicon != null) && clickicon(dsicon, dsloc, ev.b, true))
@@ -994,6 +1009,8 @@ public class MiniMap extends Widget {
 	    dsmark = null;
 	}
 	if(dragp(ev.b)) {
+		if (OptWnd.enableQueuedMovementCheckBox.a && ui.modmeta) // ND: Prevent dragging the map by mistake when we're trying to add a checkpoint for queued movement
+			return false;
 	    Location loc = curloc;
 	    if((drag == null) && (loc != null)) {
 		drag = ui.grabmouse(this);
@@ -1082,11 +1099,15 @@ public class MiniMap extends Widget {
 						chat.send("LOC@" + (int)(clickloc.x-player.rc.x) + "x" + (int)(clickloc.y-player.rc.y));
 					}
 				}
-			} else if (ui.modmeta && button == 1){
-				mv.addCheckpoint(loc.tc.sub(sessloc.tc).mul(tilesz).add(tilesz.div(2)));
 			}
 			if (OptWnd.autoEquipBunnySlippersPlateBootsCheckBox.a) {
 				ui.gui.map.switchToPlateBoots();
+			}
+			synchronized (Pathfinder.class) {
+				if (ui.gui.map.pf != null) {
+					ui.gui.map.pf.terminate = true;
+					ui.gui.map.pfthread.interrupt();
+				}
 			}
 			if(mv.checkpointManager != null && mv.checkpointManagerThread != null && button == 1){
 				if (!ui.modmeta)
@@ -1154,7 +1175,16 @@ public class MiniMap extends Widget {
 			}
 			if(newbiome != null && !newbiome.equals(biome)) {
 				biome = newbiome;
-				biometex = Text.renderstroked(prettybiome(biome)).tex();
+				String key = prettybiome(biome).toLowerCase();
+				String biomeText;
+				if (Config.ORE_FULL_NAMES.containsKey(key)) {
+					biomeText = Config.ORE_FULL_NAMES.get(key);
+				} else if (Config.STONE_FULL_NAMES.containsKey(key)) {
+					biomeText = Config.STONE_FULL_NAMES.get(key);
+				} else {
+					biomeText = prettybiome(biome);
+				}
+				biometex = Text.renderstroked(biomeText).tex();
 			}
 		} catch (Loading ignored) {
 		}

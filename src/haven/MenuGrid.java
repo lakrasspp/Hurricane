@@ -177,8 +177,15 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 	    }
 	    if(pag.id instanceof Indir)
 		pag.scm.wdgmsg("act", Utils.extend(Utils.extend(new Object[0], act().ad), eact));
-	    else
-		pag.scm.wdgmsg("use", Utils.extend(new Object[] {pag.id}, eact));
+		else {
+			if (OptWnd.preventUsingRawHideWhenRidingCheckBox.a && pag.button() != null && pag.button().name() != null && pag.button().name().equals("Raw Hide!")) { // ND: I can't figure out a better reliable way to check the button
+				if (pag.scm.ui != null && pag.scm.ui.gui != null && pag.scm.ui.gui.map != null && pag.scm.ui.gui.map.player() != null && pag.scm.ui.gui.map.player().imOnHorseback){ // ND: Might be overkill, better safe than sorry.
+					pag.scm.ui.gui.error("Prevent Raw Hide when Riding a Horse is ENABLED! Dismount first before using Raw Hide!");
+					return;
+				}
+			}
+			pag.scm.wdgmsg("use", Utils.extend(new Object[]{pag.id}, eact));
+		}
 	}
 	public void tick(double dt) {
 	    if(spr != null)
@@ -761,14 +768,15 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 		makeLocal("customclient/menugrid/Toggles/TileCentering");
 		makeLocal("customclient/menugrid/Toggles/QueuedMovementWindow");
 		makeLocal("customclient/menugrid/Toggles/AutoDrop");
-		makeLocal("customclient/menugrid/Toggles/BarrelContentsText");
 		makeLocal("customclient/menugrid/Toggles/FlowerMenuAutoSelect");
 
 		// Category: Bots
 		makeLocal("customclient/menugrid/Bots/OceanScoutBot");
 		makeLocal("customclient/menugrid/Bots/TarKilnEmptierBot");
 		makeLocal("customclient/menugrid/Bots/TurnipBot");
+		makeLocal("customclient/menugrid/Bots/CellarDiggingBot");
 		makeLocal("customclient/menugrid/Bots/CleanupBot");
+		makeLocal("customclient/menugrid/Bots/RoastingSpitBot");
 
 		// Category: Other Scripts & Tools
 		makeLocal("customclient/menugrid/OtherScriptsAndTools/Add9CoalScript");
@@ -790,6 +798,8 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 		makeLocal("customclient/menugrid/OtherScriptsAndTools/AutoDropManager");
 		makeLocal("customclient/menugrid/OtherScriptsAndTools/FlowerMenuAutoSelectManager");
 		makeLocal("customclient/menugrid/OtherScriptsAndTools/QuestHelper");
+		makeLocal("customclient/menugrid/OtherScriptsAndTools/Add4BranchesScript");
+		makeLocal("customclient/menugrid/OtherScriptsAndTools/Add5WoodBlocksScript");
 
 		// Category: Quick Switch From Belt
 		makeLocal("customclient/menugrid/QuickSwitchFromBelt/Equip_B12");
@@ -861,8 +871,6 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 				OptWnd.enableQueuedMovementCheckBox.set(!OptWnd.enableQueuedMovementCheckBox.a);
 			} else if (ad[2].equals("AutoDrop")) {
 				AutoDropManagerWindow.autoDropItemsCheckBox.set(!AutoDropManagerWindow.autoDropItemsCheckBox.a);
-			} else if (ad[2].equals("BarrelContentsText")) {
-				OptWnd.showBarrelContentsTextCheckBox.set(!OptWnd.showBarrelContentsTextCheckBox.a);
 			} else if (ad[2].equals("FlowerMenuAutoSelect")) {
 				FlowerMenuAutoSelectManagerWindow.flowerMenuAutoSelectCheckBox.set(!FlowerMenuAutoSelectManagerWindow.flowerMenuAutoSelectCheckBox.a);
 			}
@@ -922,6 +930,34 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 						gui.cleanupBot.reqdestroy();
 						gui.cleanupBot = null;
 						gui.cleanupThread = null;
+					}
+				}
+			} else if (ad[2].equals("CellarDiggingBot")) {
+				if (gui.cellarDiggingBot == null && gui.cellarDiggingThread == null) {
+					gui.cellarDiggingBot = new CellarDiggingBot(gui);
+					gui.add(gui.cellarDiggingBot, Utils.getprefc("wndc-cellarDiggingBotWindow", new Coord(gui.sz.x/2 - gui.cellarDiggingBot.sz.x/2, gui.sz.y/2 - gui.cellarDiggingBot.sz.y/2 - 200)));
+					gui.cellarDiggingThread = new Thread(gui.cellarDiggingBot, "CellarDiggingBot");
+					gui.cellarDiggingThread.start();
+				} else {
+					if (gui.cellarDiggingBot != null) {
+						gui.cellarDiggingBot.stop();
+						gui.cellarDiggingBot.reqdestroy();
+						gui.cellarDiggingBot = null;
+						gui.cellarDiggingThread = null;
+					}
+				}
+			} else if (ad[2].equals("RoastingSpitBot")) {
+				if (gui.roastingSpitBot == null && gui.roastingSpitThread == null) {
+					gui.roastingSpitBot = new RoastingSpitBot(gui);
+					gui.add(gui.roastingSpitBot, Utils.getprefc("wndc-roastingSpitBotWindow", new Coord(gui.sz.x/2 - gui.roastingSpitBot.sz.x/2, gui.sz.y/2 - gui.roastingSpitBot.sz.y/2 - 200)));
+					gui.roastingSpitThread = new Thread(gui.roastingSpitBot, "roastingSpitBot");
+					gui.roastingSpitThread.start();
+				} else {
+					if (gui.roastingSpitBot != null) {
+						gui.roastingSpitBot.stop();
+						gui.roastingSpitBot.reqdestroy();
+						gui.roastingSpitBot = null;
+						gui.roastingSpitThread = null;
 					}
 				}
 			}
@@ -1079,6 +1115,10 @@ public class MenuGrid extends Widget implements KeyBinding.Bindable {
 					gui.questhelper.show();
 					gui.questhelper.active = true;
 				}
+			} else if (ad[2].equals("Add4BranchesScript")) {
+				gui.runActionThread(new Thread(new AddBranchesToFurnace(gui, 4), "Add4Branches"));
+			} else if (ad[2].equals("Add5WoodBlocksScript")) {
+				gui.runActionThread(new Thread(new AddWoodBlocksToSmokeShed(gui, 5), "Add5WoodBlocks"));
 			}
 		} else if (ad[1].equals("QuickSwitchFromBelt")) {
 			new Thread(new EquipFromBelt(gui, ad[2]), "EquipFromBelt").start();

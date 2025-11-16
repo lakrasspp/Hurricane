@@ -27,6 +27,8 @@
 package haven;
 
 import haven.res.ui.tt.attrmod.AttrMod;
+import haven.res.ui.tt.attrmod.Attribute;
+import haven.res.ui.tt.attrmod.Entry;
 
 import java.awt.*;
 import java.util.*;
@@ -226,6 +228,7 @@ public abstract class ItemInfo {
 	    public String name();
 	}
 
+	@Resource.PublishedCode.Builtin(type = InfoFactory.class, name = "defn")
 	public static class Default implements InfoFactory {
 	    public static String get(Owner owner) {
 		if(owner instanceof SpriteOwner) {
@@ -574,10 +577,10 @@ public abstract class ItemInfo {
     }
 
 	@SuppressWarnings("unchecked")
-	public static Map<Resource, Integer> getBonuses(List<ItemInfo> infos) {
+	public static Map<Entry, String> getBonuses(List<ItemInfo> infos) {
 		List<ItemInfo> slotInfos = ItemInfo.findall("haven.res.ui.tt.slots.ISlots", infos);
 		List<ItemInfo> gilding = ItemInfo.findall("haven.res.ui.tt.slot.Slotted", infos);
-		Map<Resource, Integer> bonuses = new HashMap<>();
+		Map<Entry, String> bonuses = new HashMap<>();
 		try {
 			for (ItemInfo islots : slotInfos) {
 				List<Object> slots = (List<Object>) Reflect.getFieldValue(islots, "s");
@@ -596,18 +599,12 @@ public abstract class ItemInfo {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static void parseAttrMods(Map<Resource, Integer> bonuses, List infos) {
+	public static void parseAttrMods(Map<Entry, String> bonuses, List infos) {
 		for (Object inf : infos) {
-			List<Object> mods = (List<Object>) Reflect.getFieldValue(inf, "mods");
-			if (mods != null) {
-				for (Object mod : mods) {
-					Resource attr = (Resource) Reflect.getFieldValue(mod, "attr");
-					int value = Reflect.getFieldValueInt(mod, "mod");
-					if (bonuses.containsKey(attr)) {
-						bonuses.put(attr, bonuses.get(attr) + value);
-					} else {
-						bonuses.put(attr, value);
-					}
+			List<Entry> tab = (List<Entry>) Reflect.getFieldValue(inf, "tab");
+			if (tab != null) {
+				for (Entry attrmodEntry : tab) {
+					bonuses.put(attrmodEntry, attrmodEntry.fmtvalue());
 				}
 			}
 		}
@@ -680,7 +677,7 @@ public abstract class ItemInfo {
 				}
 			} else if(info instanceof Name) {
 				Name name = (Name) info;
-				if (!name.str.text.contains("seed")){ // ND: Seeds already show the quantity
+				if (!name.str.text.contains("seed") && !name.str.text.contains("coin")){ // ND: Seeds and coins already show the quantity
 					try {
 						Matcher m = count_pattern.matcher(name.original);
 						if(m.find()) {

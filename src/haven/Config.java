@@ -33,7 +33,6 @@ import java.util.function.*;
 import java.io.*;
 import java.nio.file.*;
 import java.net.URI;
-import java.net.URLConnection;
 import java.io.PrintStream;
 
 public class Config {
@@ -41,7 +40,7 @@ public class Config {
     public static final String confid = "Hurricane";
     public static final Variable<Boolean> par = Variable.def(() -> true);
     public final Properties localprops = getlocalprops();
-	public static final String clientVersion = "v1.22a";
+	public static final String clientVersion = "v1.36a";
 	public static String githubLatestVersion = "Loading...";
 
     private static Config global = null;
@@ -186,7 +185,7 @@ public class Config {
 	    return(prop(name, Double::parseDouble, () -> defval));
 	}
 	public static Variable<byte[]> propb(String name, byte[] defval) {
-	    return(prop(name, Utils::hex2byte, () -> defval));
+	    return(prop(name, Utils.hex::dec, () -> defval));
 	}
 	public static Variable<URI> propu(String name, URI defval) {
 	    return(prop(name, Config::parseuri, () -> defval));
@@ -318,7 +317,7 @@ public class Config {
 		Bootstrap.authuser.set(opt.arg);
 		break;
 	    case 'C':
-		Bootstrap.authck.set(Utils.hex2byte(opt.arg));
+		Bootstrap.authck.set(Utils.hex.dec(opt.arg));
 		break;
 	    case 'p':
 		Utils.prefspec.set(opt.arg);
@@ -439,6 +438,7 @@ public class Config {
 			"gfx/kritter/stagbeetle/stagbeetle",
 			"gfx/kritter/stalagoomba/stalagoomba",
 			"gfx/kritter/tick/tick",
+			"gfx/kritter/tick/tick-bloated",
 			"gfx/kritter/toad/toad",
 			"gfx/kritter/waterstrider/waterstrider",
 			"gfx/kritter/woodgrouse/woodgrouse-f", // ND: Only female can be chased, males will fight you
@@ -1144,5 +1144,40 @@ public class Config {
 		if (automapper != null)
 			automapper.SetPlayerName(OptWnd.liveLocationNameTextEntry.buf.line() + " (" + playername + ")");
 	}
+
+	public static final Map<String, String> ORE_FULL_NAMES = new HashMap<>();
+	static {
+		ORE_FULL_NAMES.put("argentite", "Silvershine (Argentite)");
+		ORE_FULL_NAMES.put("blackcoal", "Coal (Black Coal)");
+		ORE_FULL_NAMES.put("cuprite", "Wine Glance (Cuprite)");
+		ORE_FULL_NAMES.put("cassiterite", "Cassiterite");
+		ORE_FULL_NAMES.put("chalcopyrite", "Chalcopyrite");
+		ORE_FULL_NAMES.put("hematite", "Bloodstone (Hematite)");
+		ORE_FULL_NAMES.put("hornsilver", "Horn Silver");
+		ORE_FULL_NAMES.put("ilmenite", "Heavy Earth (Ilmenite)");
+		ORE_FULL_NAMES.put("leadglance", "Lead Glance");
+		ORE_FULL_NAMES.put("limonite", "Iron Ochre (Limonite)");
+		ORE_FULL_NAMES.put("malachite", "Malachite");
+		ORE_FULL_NAMES.put("magnetite", "Black Ore (Magnetite)");
+		ORE_FULL_NAMES.put("nagyagite", "Leaf Ore (Nagyagite)");
+		ORE_FULL_NAMES.put("peacockore", "Peacockore");
+		ORE_FULL_NAMES.put("petzite", "Direvein (Petzite)");
+		ORE_FULL_NAMES.put("sylvanite", "Schrifterz (Sylvanite)");
+		ORE_FULL_NAMES.put("galena", "Galena");
+	}
+
+	public static final Map<String, String> STONE_FULL_NAMES = new HashMap<>();
+	static {
+		STONE_FULL_NAMES.put("corund", "Korund (Corund)");
+	}
+
+	public static final Map<String, Float> WEAPON_NAMES_AND_RANGES = new LinkedHashMap<>() {{
+		put("hirdsword", 16f);
+		put("bronzesword", 16f);
+		put("pickaxe", 16f);
+		put("b12axe", 18f);
+		put("cutblade", 19f);
+		put("boarspear", 20f);
+	}};
 
 }

@@ -126,7 +126,6 @@ public class SkillWnd extends Widget {
     public class Experience {
 	public final Indir<Resource> res;
 	public final int mtime, score;
-	private String sortkey = "\uffff";
 	private Tex small;
 
 	private Experience(Indir<Resource> res, int mtime, int score) {
@@ -136,7 +135,7 @@ public class SkillWnd extends Widget {
 		try {
 			if (res.get().name.equals("paginae/exp/nightqueen")) { // ND: Bat Dungeon Experience (Defeated Bat Queen)
 				Gob.nightQueenDefeated = true;
-				ui.sess.glob.oc.gobAction(Gob::updateBeastDangerRadii);
+				ui.sess.glob.oc.gobAction(Gob::updateDangerousBeastRadii);
 			}
 		} catch (Exception ignored){}
 	}
@@ -389,16 +388,8 @@ public class SkillWnd extends Widget {
 	    super.tick(dt);
 	    if(loading) {
 		loading = false;
-		for(Experience exp : seen.items) {
-		    try {
-			exp.sortkey = exp.res.get().flayer(Resource.tooltip).t;
-		    } catch(Loading l) {
-			exp.sortkey = "\uffff";
-			loading = true;
-		    }
-		}
-		Collections.sort(seen.items, (a, b) -> a.sortkey.compareTo(b.sortkey));
-	    }
+        Collections.sort(seen.items, Comparator.comparing((Experience a) -> a.mtime).reversed());
+        }
 	}
     }
 

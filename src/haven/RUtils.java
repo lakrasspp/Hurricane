@@ -291,4 +291,19 @@ public class RUtils {
 			} catch (Exception ignored) {}
 		}
 	}
+
+	public static Collection<Slot> multiaddSafe(Collection<Slot> slots, Node node) {
+		Collection<Slot> added = new ArrayList<>(slots.size());
+		try {
+			for(Slot slot : slots)
+				added.add(slot.add(node));
+		} catch (RenderTree.SlotRemoved ignored){
+		} catch(RuntimeException e) {
+			for(Slot slot : added)
+				slot.remove();
+			throw(e);
+		} catch (Exception ignored){}
+		return(added);
+	}
+
 }

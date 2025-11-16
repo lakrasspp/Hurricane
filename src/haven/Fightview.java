@@ -89,6 +89,7 @@ public class Fightview extends Widget {
 		if (g != null) {
 			g.removeCombatFoeCircleOverlay();
 			g.removeCombatFoeHighlight();
+			g.removeCombatDataInfo();
 		}
 	}
 
@@ -126,11 +127,13 @@ public class Fightview extends Widget {
 		playCombatSoundEffect(lastact);
 	}
 
-	public void updateCombatOverlays() {
+	public void updateCombatOverlays(Relation rel) {
 		final Gob g = ui.sess.glob.oc.getgob(gobid);
 		if (g != null) {
-			g.setCombatFoeCircleOverlay();
+			if (rel != current)
+				g.setCombatFoeCircleOverlay();
 			g.setCombatFoeHighlightOverlay();
+			g.addCombatDataInfo(rel);
 		}
 	}
     }
@@ -347,7 +350,7 @@ public class Fightview extends Widget {
     public void tick(double dt) {
 	super.tick(dt);
 	for(Relation rel : lsrel) {
-		rel.updateCombatOverlays();
+		rel.updateCombatOverlays(rel);
 	    Widget inf = obinfo(rel.gobid, false);
 	    if(inf != null)
 		inf.tick(dt);

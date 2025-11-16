@@ -6,26 +6,24 @@ import haven.res.ui.tt.q.qbuff.QBuff;
 
 import static haven.Inventory.invsq;
 import static haven.Inventory.sqsz;
-
-import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.util.*;
 import java.awt.Color;
 
 /* >wdg: haven.res.ui.barterbox.Shopbox */
-@haven.FromResource(name = "ui/barterbox", version = 74)
+@haven.FromResource(name = "ui/barterbox", version = 75)
 public class Shopbox extends Widget implements ItemInfo.SpriteOwner, GSprite.Owner {
     public static final Text qlbl = Text.render("Quality:");
     public static final Text any = Text.render("Any");
     public static final Tex bg = Resource.classres(Shopbox.class).layer(Resource.imgc, 0).tex();
     public static final Coord itemc = UI.scale(5, 5),
-	buyc = UI.scale(5, 43),
-	buyca = UI.scale(5, 66),
+	buyc = UI.scale(5, 66),
 	pricec = UI.scale(200, 5),
 	qualc = UI.scale(220 + 40, 5).add(invsq.sz()),
 	cbtnc = UI.scale(220, 66),
-	spipec = UI.scale(85, 43),
-	bpipec = UI.scale(299, 66);
+	spipec = UI.scale(85, 40),
+	bulkTextEntryc = UI.scale(87, 68),
+	bpipec = UI.scale(300, 66);
     public ResData res;
     public ItemSpec price;
     public Text num;
@@ -33,12 +31,10 @@ public class Shopbox extends Widget implements ItemInfo.SpriteOwner, GSprite.Own
     private Text pnumt, pqt;
     private GSprite spr;
     private Object[] info = {};
-	private Tex quality;
-    private Button spipe, bpipe, bbtn, cbtn, bbtn100;
-	private TextEntry tbuy;
-    private TextEntry pnume, pqe;
+    private Button spipe, bpipe, bbtn, cbtn;
+    private TextEntry pnume, pqe, bulkTextEntry;
     public final boolean admin;
-	private int count = 0;
+	private Text quality;
 
     public static Widget mkwidget(UI ui, Object... args) {
 	boolean adm = (Integer)args[0] != 0;
@@ -62,7 +58,7 @@ public class Shopbox extends Widget implements ItemInfo.SpriteOwner, GSprite.Own
     public abstract class AttrCache<T> {
 	private List<ItemInfo> forinfo = null;
 	private T save = null;
-
+	
 	public T get() {
 	    try {
 		List<ItemInfo> info = info();
@@ -75,7 +71,7 @@ public class Shopbox extends Widget implements ItemInfo.SpriteOwner, GSprite.Own
 	    }
 	    return(save);
 	}
-
+	
 	protected abstract T find(List<ItemInfo> info);
     }
 
@@ -83,7 +79,7 @@ public class Shopbox extends Widget implements ItemInfo.SpriteOwner, GSprite.Own
 	protected Tex find(List<ItemInfo> info) {
 	    GItem.NumberInfo ninf = ItemInfo.find(GItem.NumberInfo.class, info);
 	    if(ninf == null) return(null);
-	    return(new TexI(Utils.outline2(Text.render(Integer.toString(ninf.itemnum()), Color.WHITE).img, Utils.contrast(Color.WHITE))));
+	    return(PUtils.strokeTex(WItem.quantityFoundry.renderstroked2(Integer.toString(ninf.itemnum()), Color.WHITE, Color.BLACK)));
 	}
     };
 
@@ -105,15 +101,13 @@ public class Shopbox extends Widget implements ItemInfo.SpriteOwner, GSprite.Own
 		}
 		spr.draw(sg);
 		if(itemnum.get() != null)
-		    sg.aimage(itemnum.get(), sqsz, 1, 1);
+		    sg.aimage(itemnum.get(), sqsz, 0.9, 0.8);
 		if(num != null)
-		    g.aimage(num.tex(), itemc.add(invsq.sz()).add(UI.scale(5, 0)), 0.0, 2.3);
-	    }
-
+		    g.aimage(PUtils.strokeTex(num), itemc.add(invsq.sz()).add(UI.scale(5, 0)), 0.0, 1.0);
 		if (quality != null) {
-			g.aimage(qlbl.tex(), itemc.add(invsq.sz()).add(UI.scale(5), 0), 0, 1);
-			g.aimage(quality, itemc.add(invsq.sz()).add(UI.scale(8) + qlbl.sz().x, 0), 0, 0.9);
+			g.aimage(PUtils.strokeTex(quality), itemc.add(invsq.sz()).add(UI.scale(4, -18)), 0.0, 1.0);
 		}
+	    }
 	}
 
 	ItemSpec price = this.price;
@@ -126,11 +120,11 @@ public class Shopbox extends Widget implements ItemInfo.SpriteOwner, GSprite.Own
 		sg.image(WItem.missing.layer(Resource.imgc).tex(), Coord.z, sqsz);
 	    }
 	    if(!admin && (pnumt != null))
-		g.aimage(pnumt.tex(), pricec.add(invsq.sz()), 0.0, 1.0);
+		g.aimage(PUtils.strokeTex(pnumt), pricec.add(invsq.sz()), 0.0, 1.0);
 	    if(!admin) {
 		if(pqt != null) {
-		    g.aimage(qlbl.tex(), qualc, 0, 1);
-		    g.aimage(pqt.tex(), qualc.add(UI.scale(40, 0)), -0.3, 1);
+		    g.aimage(PUtils.strokeTex(qlbl), qualc, 0, 1);
+		    g.aimage(PUtils.strokeTex(pqt), qualc.add(UI.scale(40, 0)), 0, 1);
 		}
 	    }
 	}
@@ -138,36 +132,15 @@ public class Shopbox extends Widget implements ItemInfo.SpriteOwner, GSprite.Own
     }
 
     private List<ItemInfo> cinfo;
-
     public List<ItemInfo> info() {
 	if(cinfo == null) {
 		cinfo = ItemInfo.buildinfo(this, info);
 		QBuff qb = quality();
 		if (qb != null)
-			quality = PUtils.strokeTex(Text.render((int) qb.q + ""));
+			quality = Text.render("Quality: " + (int) qb.q);
 	}
 	return(cinfo);
     }
-
-	private QBuff getQBuff(List<ItemInfo> infolist) {
-		for (ItemInfo info : infolist) {
-			if (info instanceof QBuff)
-				return ((QBuff) info);
-		}
-		return (null);
-	}
-
-	private QBuff quality() {
-		try {
-			for (ItemInfo info : info()) {
-				if (info instanceof ItemInfo.Contents)
-					return (getQBuff(((ItemInfo.Contents) info).sub));
-			}
-			return getQBuff(info());
-		} catch (Loading l) {
-		}
-		return (null);
-	}
 
     public class IconTip implements Indir<Tex>, ItemInfo.InfoTip {
 	private final Tex tex;
@@ -222,7 +195,7 @@ public class Shopbox extends Widget implements ItemInfo.SpriteOwner, GSprite.Own
     public Resource resource() {return(res.res.get());}
     public GSprite sprite() {
 	if(spr == null)
-	    throw(new Loading("Still waiting for sprite to be constructed"));
+		this.spr = GSprite.create(this, res.res.get(), res.sdt.clone());
 	return(spr);
     }
     public Resource getres() {return(res.res.get());}
@@ -243,37 +216,25 @@ public class Shopbox extends Widget implements ItemInfo.SpriteOwner, GSprite.Own
 	}
     }
 
-    public boolean mousedown(Coord c, int button) {
-	if((button == 3) && c.isect(pricec, sqsz) && (price != null)) {
+    public boolean mousedown(MouseDownEvent ev) {
+	if((ev.b == 3) && ev.c.isect(pricec, sqsz) && (price != null)) {
 	    wdgmsg("pclear");
 	    return(true);
 	}
-	return(super.mousedown(c, button));
+	return(super.mousedown(ev));
     }
 
     public void wdgmsg(Widget sender, String msg, Object... args) {
 	Integer n;
-	int i;
 	if(sender == bbtn) {
-		if (this.ui.modshift && !this.ui.modctrl) {
-			for(i = 0; i < 5; ++i) {
-				this.wdgmsg("buy");
-			}
-		} else if (this.ui.modshift && this.ui.modctrl) {
-			for(i = 0; i < 20; ++i) {
+		if (!bulkTextEntry.text().isEmpty()) {
+			int count = Integer.parseInt(bulkTextEntry.text());
+			for (int i = 0; i < count; ++i) {
 				this.wdgmsg("buy");
 			}
 		} else {
 			this.wdgmsg("buy");
 		}
-	} else if(sender == bbtn100) {
-		if (count > 0) {
-			for (i = 0; i < count; i++)
-				wdgmsg("buy");
-		} else {
-			ui.gui.error("You can't buy 0 items.");
-		}
-
 	} else if(sender == spipe) {
 	    wdgmsg("spipe");
 	} else if(sender == bpipe) {
@@ -289,41 +250,18 @@ public class Shopbox extends Widget implements ItemInfo.SpriteOwner, GSprite.Own
 
     private void updbtn() {
 	boolean canbuy = (res != null) && (price != null) && (pnum > 0);
-	if(canbuy && (bbtn == null) || (bbtn100 == null)) {
-	    bbtn = add(new Button(UI.scale(75), "Buy"), buyc);
-		bbtn.tooltip = "Left click to buy 1, Shift left click to buy 5, ctrl shift left click to buy 20.";
-		bbtn100 = add(new Button(75, "Buy x"), buyca);
-		bbtn100.tooltip = "Type the number in box press enter and press this button.";
-
-		tbuy = add(new TextEntry(UI.scale(73), "") {
-			String backup = text();
-
-			@Override
-			public boolean keydown(KeyEvent e) {
-				if (e.getKeyCode() == KeyEvent.VK_ENTER) {
-					try {
-						count = Integer.parseInt(dtext());
-						return true;
-					} catch (NumberFormatException ex) {
-					}
-				}
-				backup = text();
-				boolean b = super.keydown(e);
-				try {
-					if (!text().isEmpty())
-						Integer.parseInt(text());
-					if (text().length() > 2)
-						settext(backup);
-				} catch (Exception ex) {
-					settext(backup);
-				}
-				return (b);
+	if(canbuy && (bbtn == null)) {
+	    bbtn = add(new Button(UI.scale(75), "Buy:"), buyc);
+		bulkTextEntry = add(new TextEntry(UI.scale(71), ""){
+			protected void changed() {
+				this.settext(this.text().replaceAll("[^\\d]", "")); // Only numbers
+				this.settext(this.text().replaceAll("(?<=^.{2}).*", "")); // No more than 2 digits
+				super.changed();
 			}
-		}, UI.scale(86, 68));
+		}, bulkTextEntryc);
 	} else if(!canbuy && (bbtn != null)) {
 	    bbtn.reqdestroy();
 	    bbtn = null;
-		bbtn100 = null;
 	}
     }
 
@@ -384,4 +322,24 @@ public class Shopbox extends Widget implements ItemInfo.SpriteOwner, GSprite.Own
 	    super.uimsg(name, args);
 	}
     }
+
+	private QBuff quality() {
+		try {
+			for (ItemInfo info : info()) {
+				if (info instanceof ItemInfo.Contents)
+					return getQBuff(((ItemInfo.Contents) info).sub);
+			}
+			return getQBuff(info());
+		} catch (Exception ignored) {
+		}
+		return null;
+	}
+
+	private QBuff getQBuff(List<ItemInfo> infolist) {
+		for (ItemInfo info : infolist) {
+			if (info instanceof QBuff)
+				return (QBuff) info;
+		}
+		return null;
+	}
 }

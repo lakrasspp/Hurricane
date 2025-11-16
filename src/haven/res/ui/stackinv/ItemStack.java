@@ -7,9 +7,10 @@ import hurricane.nords.InventoryListener;
 import hurricane.nords.InventoryObserver;
 
 import java.util.*;
+import static haven.Inventory.*;
 
 /* >wdg: ItemStack */
-@haven.FromResource(name = "ui/stackinv", version = 1)
+@haven.FromResource(name = "ui/stackinv", version = 2)
 public class ItemStack extends Widget implements DTarget, InventoryListener, InventoryObserver {
     public final List<GItem> order = new ArrayList<>();
     public final Map<GItem, WItem> wmap = new HashMap<>();

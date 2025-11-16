@@ -181,7 +181,7 @@ public class MCache implements MapSource {
 	    if(ver == 1) {
 		int matid = 0, omatid = -1;
 		Collection<String> tags = Collections.emptyList();
-		Object[] data = buf.list();
+		Object[] data = buf.list(resmapper());
 		for(Object argp : data) {
 		    Object[] arg = (Object[])argp;
 		    switch((String)arg[0]) {
@@ -207,7 +207,7 @@ public class MCache implements MapSource {
 		this.omatid = omatid;
 		this.tags = tags;
 	    } else {
-		throw(new Resource.LoadException("unknown overlay version: " + ver, res));
+		throw(new Resource.UnknownFormatException(res, "overlay version", ver));
 	    }
 	}
 
@@ -536,9 +536,9 @@ public class MCache implements MapSource {
 	}
 
 		public void checkTiles() { // ND: Taken from Trollex
-			Coord2d origin = sess.ui.gui.map.player().rc;
+			Coord2d origin = new Coord2d(sess.ui.gui.map.getcc());
 			MCache mcache = MCache.this;
-
+//			GameUI.backgroundSong = "";
 			outerLoop:
 			for(int i = -45; i <= 45; ++i) {
 				for(int j = -45; j <= 45; ++j) {

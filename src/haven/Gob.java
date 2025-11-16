@@ -36,6 +36,7 @@ import java.util.concurrent.Future;
 import java.util.function.*;
 import java.util.stream.Collectors;
 
+import haven.automated.helpers.HitBoxes;
 import haven.automated.mapper.MappingClient;
 import haven.render.*;
 import haven.render.gl.GLObject;
@@ -75,8 +76,11 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	private HitBoxGobSprite<HidingBox> hidingBoxHollow = null;
 	private HitBoxGobSprite<HidingBox> hidingBoxFilled = null;
 	public HitBoxGobSprite<CollisionBox> collisionBox = null;
-	private final GobQualityInfo qualityInfo;
+	private GobQualityInfo qualityInfo;
 	GobGrowthInfo growthInfo;
+	GobReadyForHarvestInfo readyForHarvestInfo;
+	GobFoodWaterInfo foodWaterInfo;
+	GobBeeskepHarvestInfo beeskepHarvestInfo;
 	public boolean isHidden;
 	private final GobCustomSizeAndRotation customSizeAndRotation = new GobCustomSizeAndRotation();
 	public double gobSpeed = 0;
@@ -86,6 +90,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	private Overlay customBoxOverlay;
 	private Overlay customBorderOverlay;
 	private Overlay customRadiusOverlay;
+	private Overlay skyboxOverlay;
 	public static Boolean batWingCapeEquipped = false; // ND: Check for Bat Wing Cape
 	public static Boolean nightQueenDefeated = false; // ND: Check for Bat Dungeon Experience (Defeated Bat Queen)
 	public String playerGender = "unknown";
@@ -104,20 +109,25 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	public Boolean imDrinking = false;
 	public Boolean imInCoracle = false;
 	public Boolean imOnSkis = false;
+	public Boolean imOnHorseback = false;
 	List<String> onWaterAnimations = List.of("coracleidle", "coraclerowan", "dugout", "rowboat", "rowing", "snekkja", "knarr");
 	private Overlay archeryVector;
 	private Overlay archeryRadius;
 	BarrelContentsGobInfo barrelContentsGobInfo;
 	IconSignGobInfo iconSignGobInfo;
+	GobCheeseRackInfo cheeseRackInfo;
 	public boolean combatFoeHighlighted = false;
+	private GobSpeedInfo gobSpeedInfo;
+	public String currentWeapon = "";
+	GobCombatDataInfo combatDataInfo;
 
-    public static class Overlay implements RenderTree.Node {
+    public static class Overlay implements RenderTree.Node, Sprite.Owner {
 	public final int id;
 	public final Gob gob;
 	public final Sprite.Mill<?> sm;
 	public Sprite spr;
 	public boolean delign = false, old = false;
-	private Collection<RenderTree.Slot> slots = null;
+	public Collection<RenderTree.Slot> slots = null;
 	private boolean added = false;
 
 	public Overlay(Gob gob, int id, Sprite.Mill<?> sm) {
@@ -144,7 +154,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 
 	private void init() {
 	    if(spr == null) {
-		spr = sm.create(gob);
+		spr = sm.create(this);
 		if(old)
 		    spr.age();
 		if(added && (spr instanceof SetupMod))
@@ -213,6 +223,13 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	    if(slots != null)
 		slots.remove(slot);
 	}
+
+	private static final ClassResolver<Overlay> ctxr = new ClassResolver<Overlay>()
+	    .add(Overlay.class, o -> o);
+	public <T> T context(Class<T> cl) {return(OwnerContext.orparent(cl, ctxr.context(cl, this, false), gob));}
+	public Random mkrandoom() {return(gob.mkrandoom());}
+//	@Deprecated
+	public Resource getres() {return(gob.getres());}
 
 	public String getSprResName() {
 		Sprite spr = this.spr;
@@ -516,14 +533,6 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		addDmg();
 	}
 	setupmods.add(customSizeAndRotation);
-	qualityInfo = new GobQualityInfo(this);
-	setattr(GobQualityInfo.class, qualityInfo);
-	growthInfo = new GobGrowthInfo(this);
-	setattr(GobGrowthInfo.class, growthInfo);
-	barrelContentsGobInfo = new BarrelContentsGobInfo(this);
-	iconSignGobInfo = new IconSignGobInfo(this);
-	setattr(BarrelContentsGobInfo.class, barrelContentsGobInfo);
-	setattr(IconSignGobInfo.class, iconSignGobInfo);
 	updwait(this::updateDrawableStuff, waiting -> {});
     }
 
@@ -558,6 +567,17 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	if (isMe != null) {
 		setCustomPlayerName();
 		playPlayerAlarm();
+		if (OptWnd.enableSkyboxCheckBox.a && !(GameUI.backgroundSong.equals("cabin") || GameUI.backgroundSong.equals("cave")) && skyboxOverlay == null && isMe) {
+			skyboxOverlay = new Overlay(this, new SkyBoxSprite(this, null));
+			synchronized (ols) {
+				addol(skyboxOverlay);
+			}
+		} else if (!OptWnd.enableSkyboxCheckBox.a || (GameUI.backgroundSong.equals("cabin") || GameUI.backgroundSong.equals("cave"))) {
+			if (skyboxOverlay != null) {
+				removeOl(skyboxOverlay);
+				skyboxOverlay = null;
+			}
+		}
 	}
 	if (getattr(Moving.class) instanceof Following){
 		Following following = (Following) getattr(Moving.class);
@@ -651,7 +671,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	}
 	ol.init();
 	ol.add0();
-	synchronized(ols){
+	synchronized(ols){ // TODO: CHECK IF IT IS USED, OR look str 953
 		ols.add(ol);
 	}
 	try {
@@ -788,7 +808,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		}
 	    }
 	    if(a instanceof SetupMod)
-			setupmods.add((SetupMod)a);
+		setupmods.add((SetupMod)a);
 	    attr.put(ac, a);
 	}
 	if (ac == Drawable.class) {
@@ -811,11 +831,16 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		}
 		if (isMe != null && isMe)
 			glob.sess.ui.gui.map.gobPathLastClick = null;
+		gobSpeed = 0;
 	}
 	if (a instanceof Moving) {
 		if (gobChaseVector != null) {
 			gobChaseVector.remove();
 			gobChaseVector = null;
+		}
+		if (gobSpeedInfo == null) {
+			gobSpeedInfo = new GobSpeedInfo(this);
+			setattr(GobSpeedInfo.class, gobSpeedInfo);
 		}
 	}
 	if (a instanceof Homing) {
@@ -947,7 +972,8 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 
     public void added(RenderTree.Slot slot) {
 	slot.ostate(curstate());
-	for(Overlay ol : ols) {
+	List<Overlay> olsSnapshot = new ArrayList<>(ols);
+	for (Overlay ol : olsSnapshot) {
 	    if(ol.slots != null)
 		slot.add(ol);
 	}
@@ -1012,7 +1038,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	return(Utils.mkrandoom(id));
     }
 
-    @Deprecated
+//    @Deprecated
     public Resource getres() {
 	Drawable d = getattr(Drawable.class);
 	if(d != null)
@@ -1215,19 +1241,51 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 						alarmPlayed.add(id);
 				}
 			}
+			if (res.name.startsWith("gfx/terobjs/barrel") && barrelContentsGobInfo == null) {
+				barrelContentsGobInfo = new BarrelContentsGobInfo(this);
+				setattr(BarrelContentsGobInfo.class, barrelContentsGobInfo);
+			}
+			if (res.name.startsWith("gfx/terobjs/iconsign") && iconSignGobInfo == null) {
+				iconSignGobInfo = new IconSignGobInfo(this);
+				setattr(IconSignGobInfo.class, iconSignGobInfo);
+			}
+			if (res.name.startsWith("gfx/terobjs/cheeserack") && cheeseRackInfo == null) {
+				cheeseRackInfo = new GobCheeseRackInfo(this);
+				setattr(GobCheeseRackInfo.class, cheeseRackInfo);
+			}
+			if(((res.name.contains("gfx/terobjs/trees") && !res.name.endsWith("log") && !res.name.endsWith("oldtrunk"))
+			|| (res.name.contains("gfx/terobjs/bushes"))
+			|| (res.name.contains("gfx/terobjs/plants") && !res.name.endsWith("trellis"))) && growthInfo == null){
+				growthInfo = new GobGrowthInfo(this);
+				setattr(GobGrowthInfo.class, growthInfo);
+			}
+			if(((res.name.contains("gfx/terobjs/trees") && !res.name.endsWith("log") && !res.name.endsWith("oldtrunk"))
+			|| (res.name.contains("gfx/terobjs/bushes"))) && readyForHarvestInfo == null){
+				readyForHarvestInfo = new GobReadyForHarvestInfo(this);
+				setattr(GobReadyForHarvestInfo.class, readyForHarvestInfo);
+			}
+			if ((res.name.equals("gfx/terobjs/chickencoop") || res.name.equals("gfx/terobjs/rabbithutch")) && foodWaterInfo == null) {
+				foodWaterInfo = new GobFoodWaterInfo(this);
+				setattr(GobFoodWaterInfo.class, foodWaterInfo);
+			}
+			if (res.name.equals("gfx/terobjs/beehive") && beeskepHarvestInfo == null) {
+				beeskepHarvestInfo = new GobBeeskepHarvestInfo(this);
+				setattr(GobBeeskepHarvestInfo.class, beeskepHarvestInfo);
+			}
 		}
 		updateCustomIcons();
 		updateCritterAuras();
 		updateSpeedBuffAuras();
 		updateMidgesAuras();
+		updateDangerousBeastRadii();
 		updateRowboatAuras();
-		updateBeastDangerRadii();
 		updateTroughsRadius();
 		updateBeeSkepRadius();
 		updateMoundBedsRadius();
 		updateMineLadderRadius();
 		updateSupportOverlays();
 		initPermanentHighlightOverlay();
+		HitBoxes.addHitBox(this);
 	}
 
 	public void updPose(HashSet<String> poses) {
@@ -1247,9 +1305,9 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 			isSkeleton = (poses.contains("deadskeletonpose"));
 		}
 		updateCritterAuras();
-		updateBeastDangerRadii();
-		if (this.getres().name.equals("gfx/borka/body") && isMannequin != null && !isMannequin && isSkeleton != null && !isSkeleton){
-			setPlayerGender();
+		updateDangerousBeastRadii();
+		if (this.getres().name.equals("gfx/borka/body") && isSkeleton != null && !isSkeleton){
+			checkIfPlayerOrMannequin();
 			if  (!isDeadPlayer){
 				checkIfPlayerIsDead(poses);
 				if (playerPoseUpdatedCounter >= 2) { // ND: Do this to prevent the sounds from being played if you load in an already knocked/killed hearthling.
@@ -1260,6 +1318,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 			imDrinking = (poses.contains("drinkan"));
 			imInCoracle = (poses.contains("coracleidle") || poses.contains("coraclerowan"));
 			imOnSkis = (poses.contains("skian-idle") || poses.contains("skian-walk") || poses.contains("skian-run"));
+			imOnHorseback = (poses.contains("riding-idle"));
 			boolean imOnWater = onWaterAnimations.stream().anyMatch(target -> poses.stream().anyMatch(s -> s.contains(target)));
 			if (poses.contains("spear-ready")) {
 				archeryIndicator(155, !imOnWater);
@@ -1491,25 +1550,11 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 				if (doHide) {
 					if (d.slots != null) {
 						ArrayList<RenderTree.Slot> tmpSlots = new ArrayList<>(d.slots);
-						try {
-							glob.loader.defer(() -> {
-								synchronized(Gob.this) {
-									RUtils.multiremSafe(tmpSlots);
-								}
-							}, null);
-						} catch (Exception ignored) {
-						}
+						glob.loader.defer(() -> RUtils.multiremSafe(tmpSlots), null);
 					}
 				} else {
 					ArrayList<RenderTree.Slot> tmpSlots = new ArrayList<>(slots);
-					try {
-						glob.loader.defer(() -> {
-							synchronized(Gob.this) {
-								RUtils.multiadd(tmpSlots, d);
-							}
-						}, null);
-					} catch (Exception ignored) {
-					}
+					glob.loader.defer(() -> RUtils.multiaddSafe(tmpSlots, d), null);
 				}
 			}
 			if ((OptWnd.toggleGobHidingCheckBox.a && doShowHidingBox)) {
@@ -1556,7 +1601,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		}
 		Resource res = Gob.this.getres();
 		if (res != null) {
-			if ((OptWnd.toggleGobCollisionBoxesCheckBox.a)) {
+			if ((OptWnd.showObjectCollisionBoxesCheckBox.a)) {
 				if (collisionBox != null) {
 					if (!collisionBox.show(true)) {
 						collisionBox.fx.updateState();
@@ -1577,8 +1622,15 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	}
 
 	public void setQualityInfo(int quality){
-		qualityInfo.clear();
-		qualityInfo.setQ(quality);
+		if (qualityInfo == null) {
+			qualityInfo = new GobQualityInfo(this);
+			setattr(GobQualityInfo.class, qualityInfo);
+			qualityInfo.clear();
+			qualityInfo.setQ(quality);
+		} else {
+			qualityInfo.clear();
+			qualityInfo.setQ(quality);
+		}
 	}
 
 
@@ -1725,16 +1777,15 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 			if (collisionBox != null) {
 				collisionBox.fx.updateState();
 			}
-			synchronized (ols) {
-				for (Overlay ol : ols) {
-					if (ol.spr != null && ol.spr.res != null && ol.spr.res.name.equals("gfx/terobjs/items/parchment-decal") && ol.slots != null) {
-						synchronized (ol.slots) {
-							for (RenderTree.Slot slot : ol.slots) {
-								if (OptWnd.flatCupboardsCheckBox.a) {
-									slot.cstate(Pipe.Op.compose(Location.scale(1, 1, 1.6f), Location.xlate(new Coord3f(0, 0, -5.4f))));
-								} else {
-									slot.cstate(Pipe.Op.compose(Location.scale(1, 1, 1), Location.xlate(new Coord3f(0, 0, 0))));
-								}
+			List<Overlay> olsSnapshot = new ArrayList<>(ols);
+			for (Overlay ol : olsSnapshot) {
+				if (ol.spr != null && ol.spr.res != null && ol.spr.res.name.equals("gfx/terobjs/items/parchment-decal") && ol.slots != null) {
+					synchronized (ol.slots) {
+						for (RenderTree.Slot slot : ol.slots) {
+							if (OptWnd.flatCupboardsCheckBox.a) {
+								slot.cstate(Pipe.Op.compose(Location.scale(1, 1, 1.6f), Location.xlate(new Coord3f(0, 0, -5.4f))));
+							} else {
+								slot.cstate(Pipe.Op.compose(Location.scale(1, 1, 1), Location.xlate(new Coord3f(0, 0, 0))));
 							}
 						}
 					}
@@ -1750,7 +1801,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 			Drawable drawable = getattr(Drawable.class);
 			ResDrawable resDrawable = (drawable instanceof ResDrawable) ? (ResDrawable) drawable : null;
 			int rbuf = (resDrawable != null) ? resDrawable.sdt.checkrbuf(0) : -1; // ND: Just also remember to check if resDrawable is not null wherever we use rbuf
-			if (resName.equals("gfx/terobjs/ttub")) {
+			if (resName.equals("gfx/terobjs/ttub") && resDrawable != null) {
 				if (rbuf == 0 || rbuf == 1 || rbuf == 4 || rbuf == 5) {
 					if (OptWnd.showWorkstationProgressUnpreparedCheckBox.a) setGobStateHighlight(OptWnd.showWorkstationProgressUnpreparedColorOptionWidget.currentColor);
 					else delattr(GobStateHighlight.class);
@@ -1773,7 +1824,8 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 			if (resName.equals("gfx/terobjs/dframe")) {
 				boolean done = true;
 				boolean empty = true;
-				for (Overlay ol : ols) {
+				List<Overlay> olsSnapshot = new ArrayList<>(ols);
+				for (Overlay ol : olsSnapshot) {
 					try {
 						Resource olres = ol.spr.res;
 						if (olres != null) {
@@ -1970,7 +2022,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 
 	}
 
-	public void updateBeastDangerRadii() {
+	public void updateDangerousBeastRadii() {
 		if (getres() != null) {
 			String resourceName = getres().name;
 			if (knocked != null && knocked == false) {
@@ -1979,10 +2031,10 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 						if (nightQueenDefeated || batWingCapeEquipped) {
 							setRadiusOverlay(false, null, 0f);
 						} else {
-							setRadiusOverlay(OptWnd.showBeastDangerRadiiCheckBox.a, new Color(192, 0, 0, 140), 120F);
+							setRadiusOverlay(OptWnd.showDangerousBeastRadiiCheckBox.a, new Color(192, 0, 0, 140), 120F);
 						}
 					} else {
-						setRadiusOverlay(OptWnd.showBeastDangerRadiiCheckBox.a, new Color(192, 0, 0, 140), 120F);
+						setRadiusOverlay(OptWnd.showDangerousBeastRadiiCheckBox.a, new Color(192, 0, 0, 140), 120F);
 					}
 				}
 			} else if (knocked != null && knocked == true) {
@@ -1996,10 +2048,10 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 						if (nightQueenDefeated || batWingCapeEquipped) {
 							setRadiusOverlay(false, null, 0f);
 						} else {
-							setRadiusOverlay(OptWnd.showBeastDangerRadiiCheckBox.a, new Color(192, 0, 0, 140), 120F);
+							setRadiusOverlay(OptWnd.showDangerousBeastRadiiCheckBox.a, new Color(192, 0, 0, 140), 120F);
 						}
 					} else {
-						setRadiusOverlay(OptWnd.showBeastDangerRadiiCheckBox.a, new Color(192, 0, 0, 140), 120F);
+						setRadiusOverlay(OptWnd.showDangerousBeastRadiiCheckBox.a, new Color(192, 0, 0, 140), 120F);
 					}
 				}
 			}
@@ -2075,7 +2127,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		}
 	}
 
-	private void setPlayerGender(){
+	private void checkIfPlayerOrMannequin(){
 		try {
 			if (getres() != null) {
 				for (GAttrib g : attr.values()) {
@@ -2086,8 +2138,13 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 								for (Composited.MD item : c.comp.cmod) {
 									if (item.mod.get().basename().equals("male")) {
 										playerGender = "male";
+										break;
 									} else if (item.mod.get().basename().equals("female")) {
 										playerGender = "female";
+										break;
+									} else if (item.mod.get().basename().equals("mannequin-w1") || item.mod.get().basename().equals("mannequin-w2")){
+										isMannequin = true;
+										break;
 									}
 								}
 							}
@@ -2162,7 +2219,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 					}
 					if (poses.contains("knock") || poses.contains("drowned")) {
 						if (!imDead) {
-							File file = new File("res/customclient/sfx/PlayerKnockedOut.wav");
+							File file = new File(haven.MainFrame.gameDir + "res/customclient/sfx/PlayerKnockedOut.wav");
 							if (file.exists()) {
 								try {
 									AudioInputStream in = AudioSystem.getAudioInputStream(file);
@@ -2180,9 +2237,9 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 							isDeadPlayer = true;
 							File file = null;
 							if (playerGender.equals("male")) {
-								file = new File("res/customclient/sfx/MalePlayerKilled.wav");
+								file = new File(haven.MainFrame.gameDir + "res/customclient/sfx/MalePlayerKilled.wav");
 							} else if (playerGender.equals("female")) {
-								file = new File("res/customclient/sfx/FemalePlayerKilled.wav");
+								file = new File(haven.MainFrame.gameDir + "res/customclient/sfx/FemalePlayerKilled.wav");
 							}
 							if (file != null && file.exists() && somethingJustDied) {
 								try {
@@ -2265,6 +2322,8 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 
 	public void playPlayerAlarm() {
 		if (!alarmPlayed.contains(id)){
+			Composite c = getattr(Composite.class);
+			if (c == null || c.comp.cmod.isEmpty()) return;
 			if (getres() != null) {
 				if (isMannequin != null && !isMannequin && isSkeleton != null && !isSkeleton){
 					if (getres().name.equals("gfx/borka/body")) {
@@ -2347,7 +2406,8 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 
 	public void setMiningSafeTilesOverlay(boolean enabled, float angle, int size) {
 		if (enabled) {
-			for (Overlay ol : ols) {
+			List<Overlay> olsSnapshot = new ArrayList<>(ols);
+			for (Overlay ol : olsSnapshot) {
 				if (ol.spr instanceof MiningSafeTilesSprite) {
 					return;
 				}
@@ -2513,15 +2573,28 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		updateCustomSizeAndRotation();
 		updateWorkstationProgressHighlight();
 		checkIfObjectJustDied();
-		growthInfo.clear();
-		barrelContentsGobInfo.clear();
-		iconSignGobInfo.signInfoTex = null;
-		iconSignGobInfo.clear();
+		if (growthInfo != null) growthInfo.clear();
+		if (readyForHarvestInfo != null) readyForHarvestInfo.clear();
+		if (foodWaterInfo != null) foodWaterInfo.clear();
+		if (beeskepHarvestInfo != null) beeskepHarvestInfo.clear();
+		if (barrelContentsGobInfo != null) barrelContentsGobInfo.clear();
+		if (cheeseRackInfo != null) cheeseRackInfo.clear();
+		if (iconSignGobInfo != null) iconSignGobInfo.clear();
 		setGobSearchOverlay();
 	}
 
 	public void refreshGrowthInfo(){
-		growthInfo.clear();
+		if (growthInfo != null) growthInfo.clear();
+	}
+
+	//Useful for getting stage information or model type
+	public int sdt() {
+		Drawable d = getattr(Drawable.class);
+		if(d instanceof ResDrawable) {
+			ResDrawable dw = (ResDrawable) d;
+			return dw.sdtnum();
+		}
+		return 0;
 	}
 
 	public Message sdtm() {
@@ -2531,6 +2604,44 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 			return dw.sdt.clone();
 		}
 		return null;
+	}
+
+	public void reloadPalisadeScale(){
+		if (getres() != null) {
+			if ((getres().name.startsWith("gfx/terobjs/arch/palisade") || getres().name.startsWith("gfx/terobjs/arch/brickwall")) && !getres().name.contains("gate")) {
+				customSizeAndRotation.update(this);
+			}
+		}
+	}
+
+	public void updateCurrentWeapon(List<Composited.ED> equ) {
+		if (!equ.isEmpty()) {
+			for (Composited.ED item : equ) {
+				if (Config.WEAPON_NAMES_AND_RANGES.containsKey(item.res.res.get().basename())){
+					currentWeapon = item.res.res.get().basename();
+					if (isMe != null && isMe)
+						OptWnd.refreshMyWeaponRange = true;
+					return;
+				}
+			}
+			currentWeapon = "";
+			if (isMe != null && isMe)
+				OptWnd.refreshMyWeaponRange = true;
+		}
+	}
+
+	public void addCombatDataInfo(Fightview.Relation rel) {
+		if (combatDataInfo == null) {
+			combatDataInfo = new GobCombatDataInfo(this, rel);
+			setattr(GobCombatDataInfo.class, combatDataInfo);
+		}
+	}
+
+	public void removeCombatDataInfo() {
+		if (combatDataInfo != null) {
+			delattr(GobCombatDataInfo.class);
+			combatDataInfo = null;
+		}
 	}
 
 }

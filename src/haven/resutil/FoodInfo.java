@@ -81,6 +81,7 @@ public class FoodInfo extends ItemInfo.Tip {
 	public Effect(List<ItemInfo> info, double p) {this.info = info; this.p = p;}
     }
 
+	// TODO: ND: This method needs to be cleaned up
     public BufferedImage tipimg() {
 		String head = null;
 		double hungerEfficiency = 100;
@@ -88,6 +89,8 @@ public class FoodInfo extends ItemInfo.Tip {
 		double satiation = 1;
 		boolean calculateEfficiency = ui != null && !ui.modshift;
 		double tableFoodEventBonus = 1.0;
+		boolean isSalted = (owner instanceof GItem && ((GItem) owner).isSalted());
+		double saltSatiation = 1;
 		Window feastingWindow = null;
 		if (ui != null && ui.gui != null && ui.gui.chrwdg != null && ui.gui.chrwdg.battr != null && ui.gui.chrwdg.battr.cons != null && ui.gui.chrwdg.battr.glut != null) {
 			for(int i = 0; i < ui.gui.chrwdg.battr.cons.els.size(); i++) {
@@ -95,9 +98,13 @@ public class FoodInfo extends ItemInfo.Tip {
 				for (int type : types) {
 					if (type == i) {
 						satiation = (1.0 - el.a);
-						hungerEfficiency = fepEfficiency = 100 * satiation;
+						hungerEfficiency = fepEfficiency *= satiation;
 						break;
 					}
+				}
+				if (isSalted && el.t.res.get().basename().equals("salt")) {
+					saltSatiation = (1.0 - el.a);
+					hungerEfficiency = fepEfficiency *= saltSatiation;
 				}
 			}
 			fepEfficiency *= ui.gui.chrwdg.battr.glut.gmod;
@@ -129,8 +136,23 @@ public class FoodInfo extends ItemInfo.Tip {
 					}
 				}
 			}
-
-			head = String.format("\nFood Efficiency: $col[49,255,39]{%s%%}", Utils.odformat2(calculateEfficiency ? fepEfficiency : 100, 2));
+			boolean deepWorm = false;
+			if (ui != null && ui.gui != null && ui.gui.chrwdg != null && ui.gui.chrwdg.wound != null && ui.gui.chrwdg.wound.wounds != null && ui.gui.chrwdg.wound.wounds.wounds != null) {
+				for (WoundWnd.Wound wound : ui.gui.chrwdg.wound.wounds.wounds) {
+					if (wound != null && wound.res != null && wound.res.get() != null && wound.res.get().name != null && wound.res.get().name.equals("paginae/wound/deepworm")) {
+						deepWorm = true;
+						break;
+					}
+				}
+			}
+			if (deepWorm) {
+				head = "\n$col[255,25,25]{HEY! You have a Deep Worm Wound!" +
+						"\nYour food efficiency will be reduced!" +
+						"\nThe following values are inaccurate!}" +
+						"\n";
+				head += String.format("\nFood Efficiency: $col[49,255,39]{%s%%}", Utils.odformat2(calculateEfficiency ? fepEfficiency : 100, 2));
+			} else
+				head = String.format("\nFood Efficiency: $col[49,255,39]{%s%%}", Utils.odformat2(calculateEfficiency ? fepEfficiency : 100, 2));
 		}
 		else
 			head = "";
@@ -188,6 +210,8 @@ public class FoodInfo extends ItemInfo.Tip {
 			else if (GameUI.verifiedAccount) imgs.add(RichText.render("x 1.2 - $col[185,185,185]{Verified}", 300).img);
 			imgs.add(RichText.render(String.format("x %s - $col[185,185,185]{FEP Multiplier (Hunger Bar)}", Utils.odformat2(ui.gui.chrwdg.battr.glut.gmod, 2)), 300).img);
 			imgs.add(RichText.render(String.format("x %s - $col[185,185,185]{Satiation}", Utils.odformat2(satiation, 2)), 300).img);
+			if (isSalted)
+			imgs.add(RichText.render(String.format("x %s - $col[185,185,185]{Salt Satiation}", Utils.odformat2(saltSatiation, 2)), 300).img);
 			if (feastingWindow != null) {
 				imgs.add(RichText.render(String.format("x %s - $col[185,185,185]{Table Food Event Bonus}", Utils.odformat2(tableFoodEventBonus, 2)), 300).img);
 			}

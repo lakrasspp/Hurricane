@@ -72,7 +72,7 @@ public class OCache implements Iterable<Gob> {
     public OCache(Glob glob) {
 	this.glob = glob;
 	if (OptWnd.toggleGobHidingCheckBox.a) gobAction(Gob::updateHidingBoxes);
-	if (OptWnd.toggleGobCollisionBoxesCheckBox.a) gobAction(Gob::updateCollisionBoxes);
+	if (OptWnd.showObjectCollisionBoxesCheckBox.a) gobAction(Gob::updateCollisionBoxes);
 	if (OptWnd.showContainerFullnessCheckBox.a) gobAction(Gob::updateContainerFullnessHighlight);
 	gobAction(Gob::updateCustomSizeAndRotation);
 	if (OptWnd.showWorkstationProgressCheckBox.a) gobAction(Gob::updateWorkstationProgressHighlight);
@@ -483,7 +483,22 @@ public class OCache implements Iterable<Gob> {
 	    this.id = id;
 	    this.frame = frame;
 	}
+
+	public ObjDelta(ObjDelta from) {
+	    this.fl = from.fl;
+	    this.id = from.id;
+	    this.frame = from.frame;
+	    this.initframe = from.initframe;
+	    this.rem = from.rem;
+	    for(AttrDelta attr : from.attrs)
+		attrs.add(attr.clone());
+	}
+
 	public ObjDelta() {}
+
+	public ObjDelta clone() {
+	    return(new ObjDelta(this));
+	}
     }
 
     public static class AttrDelta extends PMessage {

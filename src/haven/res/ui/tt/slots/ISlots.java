@@ -2,7 +2,7 @@
 package haven.res.ui.tt.slots;
 
 import haven.*;
-import haven.res.ui.tt.attrmod.AttrMod;
+import haven.res.ui.tt.attrmod.*;
 
 import static haven.PUtils.*;
 import java.awt.image.*;
@@ -10,6 +10,8 @@ import java.awt.Graphics;
 import java.awt.Font;
 import java.awt.Color;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /* >tt: Fac */
@@ -23,6 +25,8 @@ public class ISlots extends ItemInfo.Tip implements GItem.NumberInfo {
     public final Resource[] attrs;
     public final boolean ignol;
 	private UI ui = null;
+	static final Pattern integerStatPattern = Pattern.compile("\\{([+-]?\\d+)\\}");
+	static final Pattern percentageStatPattern = Pattern.compile("\\{([+-]?\\d*(\\.\\d+)?|\\d+)%\\}");
 
     public ISlots(Owner owner, int left, double pmin, double pmax, Resource[] attrs) {
 	super(owner);
@@ -38,7 +42,7 @@ public class ISlots extends ItemInfo.Tip implements GItem.NumberInfo {
 
     public static final String chc = "192,192,255";
     public void layout(Layout l) {
-	boolean extendedView = ui != null && ui.modshift;
+	boolean extendedView = ui == null || (ui != null && ui.modshift); // ND: There's a weird bug with barterstands. The UI from the Shopbox class doesn't detect ui.modshift or some crap.
 	l.cmp.add(ch.img, new Coord(UI.scale(2), l.cmp.sz.y + UI.scale(4)));
 	if(attrs.length > 0) {
 	    BufferedImage head = RichText.render(String.format("Chance: $col[%s]{%d%%} to $col[%s]{%d%%}", chc, Math.round(100 * pmin), chc, Math.round(100 * pmax)), 0).img;
@@ -55,35 +59,71 @@ public class ISlots extends ItemInfo.Tip implements GItem.NumberInfo {
 	    BufferedImage head = RichText.render(String.format("Chance: $col[%s]{%d%%}", chc, (int)Math.round(100 * pmin)), 0).img;
 	    l.cmp.add(head, new Coord(10, l.cmp.sz.y));
 	}
-	Map<Resource, Integer> totalAttr = new HashMap<>();
+	Map<Entry, String> totalAttr = new HashMap<>();
 	for(SItem si : s) {
 		if (extendedView)
 			si.layout(l);
 		for (ItemInfo ii : si.info) {
 			if (ii instanceof AttrMod) {
-				for (AttrMod.Mod mod : ((AttrMod) ii).mods) {
+				AttrMod attrMod = (AttrMod) ii;
+				for (Entry attrmodEntry : attrMod.tab) {
 					boolean exist = false;
-					for (Map.Entry<Resource, Integer> entry : totalAttr.entrySet()) {
-						if (entry.getKey().equals(mod.attr)) {
-							exist = true;
-							entry.setValue(entry.getValue() + mod.mod);
-							break;
+					for (Map.Entry<Entry, String> entry : totalAttr.entrySet()) {
+						if (entry.getKey().attr.name().equals(attrmodEntry.attr.name())) {
+							Matcher integerMatcher1 = integerStatPattern.matcher(attrmodEntry.fmtvalue());
+							Matcher integerMatcher2 = integerStatPattern.matcher(entry.getValue());
+							Matcher percentageMatcher1 = percentageStatPattern.matcher(attrmodEntry.fmtvalue());
+							Matcher percentageMatcher2 = percentageStatPattern.matcher(entry.getValue());
+							if (integerMatcher1.find() && integerMatcher2.find()) {
+								int sum = Integer.parseInt(integerMatcher2.group(1)) + Integer.parseInt(integerMatcher1.group(1));
+								entry.setValue(String.format("%s{%s%d}", RichText.Parser.col2a((sum < 0) ? haven.res.ui.tt.attrmod.Attribute.debuff : haven.res.ui.tt.attrmod.Attribute.buff), sum < 0 ? "-" : "+", Math.abs(sum)));
+								exist = true;
+								break;
+							}
+							if (percentageMatcher1.find() && percentageMatcher2.find()) {
+								double sum = Double.parseDouble(percentageMatcher1.group(1)) + Double.parseDouble(percentageMatcher2.group(1));
+								entry.setValue(String.format("%s{%s%s%%}",
+										RichText.Parser.col2a((sum < 0) ? haven.res.ui.tt.attrmod.Attribute.debuff : haven.res.ui.tt.attrmod.Attribute.buff),
+										(sum < 0) ? "-" : "+", Utils.odformat2(sum, 1)));
+								exist = true;
+								break;
+							}
 						}
 					}
-					if (!exist)
-						totalAttr.put(mod.attr, mod.mod);
+					if (!exist) totalAttr.put(attrmodEntry, attrmodEntry.fmtvalue());
 				}
 			}
 		}
 	}
 	if (!extendedView) {
 		if (totalAttr.size() > 0) {
-			List<AttrMod.Mod> lmods = new ArrayList<>();
-			List<Map.Entry<Resource, Integer>> sortAttr = totalAttr.entrySet().stream().sorted(this::BY_PRIORITY).collect(Collectors.toList());
-			for (Map.Entry<Resource, Integer> entry : sortAttr) {
-				lmods.add(new AttrMod.Mod(entry.getKey(), entry.getValue()));
+			List<Entry> lmods = new ArrayList<>();
+			List<Map.Entry<Entry, String>> sortAttr = totalAttr.entrySet().stream().sorted(this::BY_PRIORITY).collect(Collectors.toList());
+			for (Map.Entry<Entry, String> entry : sortAttr) {
+				lmods.add(new StringEntry(entry.getKey().attr, entry.getValue()));
 			}
-			l.cmp.add(AttrMod.modimg(lmods), new Coord(10, l.cmp.sz.y));
+			Entry[] tab = lmods.toArray(new Entry[0]);
+			BufferedImage[] icons = new BufferedImage[tab.length];
+			BufferedImage[] names = new BufferedImage[tab.length];
+			BufferedImage[] values = new BufferedImage[tab.length];
+			int w = 0;
+			for(int i = 0; i < tab.length; i++) {
+				Entry row = tab[i];
+				names[i] = Text.render(row.attr.name()).img;
+				icons[i] = row.attr.icon();
+				if(icons[i] != null)
+					icons[i] = convolvedown(icons[i], Coord.of(names[i].getHeight()), CharWnd.iconfilter);
+				values[i] = RichText.render(row.fmtvalue(), 0).img;
+				w = Math.max(w, names[i].getWidth());
+			}
+			for(int i = 0; i < tab.length; i++) {
+				int y = l.cmp.sz.y;
+				if(icons[i] != null)
+					l.cmp.add(icons[i], Coord.of(0, y));
+				int nx = names[i].getHeight() + (int)UI.scale(0.75);
+				l.cmp.add(names[i], Coord.of(nx, y));
+				l.cmp.add(values[i], Coord.of(nx + w + UI.scale(5), y));
+			}
 		}
 	}
 	if(left > 0)
@@ -159,9 +199,9 @@ public class ISlots extends ItemInfo.Tip implements GItem.NumberInfo {
 		return(l.render());
 	}
 
-	private int BY_PRIORITY(Map.Entry<Resource, Integer> o1, Map.Entry<Resource, Integer> o2) {
-		Resource r1 = o1.getKey();
-		Resource r2 = o2.getKey();
-		return Integer.compare(Config.statsAndAttributesOrder.indexOf(r2.layer(Resource.tooltip).t), Config.statsAndAttributesOrder.indexOf(r1.layer(Resource.tooltip).t));
+	private int BY_PRIORITY(Map.Entry<Entry, String> o1, Map.Entry<Entry, String> o2) {
+		String a1 =  o1.getKey().attr.name();
+		String a2 =  o2.getKey().attr.name();
+		return Integer.compare(Config.statsAndAttributesOrder.indexOf(a2), Config.statsAndAttributesOrder.indexOf(a1));
 	}
 }

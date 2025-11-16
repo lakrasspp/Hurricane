@@ -23,7 +23,7 @@ public class AutoRepeatFlowerMenuScript implements Runnable{
             }, 2000, TimeUnit.MILLISECONDS);
         this.gui = gui;
         Integer ping = GameUI.getPingValue();
-        this.ping = ping != null ? ping + 20 : 100;
+        this.ping = ping != null ? ping + 10 : 200;
         option = "";
         this.name = name;
         items = iterateThroughItems(name);
@@ -81,7 +81,8 @@ public class AutoRepeatFlowerMenuScript implements Runnable{
                             }
                         }
                         items = iterateThroughItems(name);
-                        ping = GameUI.getPingValue() != null ? GameUI.getPingValue() + 10 : 100;
+                        Integer pingValue = GameUI.getPingValue();
+                        ping = pingValue != null ? pingValue + 10 : 200;
                     }
                     stop = true;
                 }

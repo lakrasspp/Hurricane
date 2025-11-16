@@ -27,6 +27,7 @@ public class Cavein extends Sprite implements Sprite.CDel, PView.Render2D {
     float life;
     Coord3f off;
     Coord3f sz;
+	public Gob gobowner = null;
 
 	final Tex numberTex;
 	Integer number;
@@ -45,6 +46,7 @@ public class Cavein extends Sprite implements Sprite.CDel, PView.Render2D {
     public Cavein(Owner owner, Resource res, Message sdt) {
 	super(owner, res);
 	str = sdt.uint8();
+//	System.out.println(str);
 	sz = new Coord3f(sdt.float8() * 11f, sdt.float8() * 11f, 0f);
 	off = new Coord3f(-sz.x / 2f, -sz.y / 2f, sdt.float8() * 11f);
 	life = 60 * OptWnd.sweeperDurations.get(OptWnd.sweeperSetDuration);
@@ -54,6 +56,10 @@ public class Cavein extends Sprite implements Sprite.CDel, PView.Render2D {
 			numberTex = new TexI(Utils.outline2(Text.num20boldFnd.renderstroked(String.valueOf(number), numberColor, Color.BLACK).img, Color.BLACK, true));
 		else
 			numberTex = new TexI(Utils.outline2(Text.num20boldFnd.renderstroked(String.valueOf(number), numberColor, Color.WHITE).img, Color.BLACK, true));
+	if (owner instanceof Gob)
+		gobowner = (Gob) owner;
+	else if (owner instanceof Gob.Overlay)
+		gobowner = ((Gob.Overlay) owner).gob;
 	}
 
     class Boll {
@@ -138,14 +144,16 @@ public class Cavein extends Sprite implements Sprite.CDel, PView.Render2D {
 
 	@Override
 	public void draw(GOut g, Pipe state) {
-		if (OptWnd.flatWorldCheckBox.a) { // TODO: ND: Need to figure out a way to make flatworld not needed for this. Something to do with the Z coordinate of the virtual gob probably.
-			if (OptWnd.enableMineSweeperCheckBox.a){
-				try {
-					Coord2d sc3f = ((Gob)owner).rc;
-					Coord sc = ((Gob)owner).glob.sess.ui.gui.map.screenxf(sc3f).round2();
+		if (OptWnd.enableMineSweeperCheckBox.a) {
+			try {
+				Coord2d sc2d = gobowner.rc;
+				double z = gobowner.glob.map.getcz(sc2d);
+				if (z == 0) {
+					Coord3f sc3f = gobowner.glob.sess.ui.gui.map.screenxf(sc2d);
+					Coord sc = sc3f.round2();
 					g.aimage(numberTex, sc, 0.5, 0.5);
-				} catch (Exception ignored) {
 				}
+			} catch (Exception ignored) {
 			}
 		}
 	}

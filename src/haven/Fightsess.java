@@ -27,7 +27,8 @@
 package haven;
 
 import haven.render.*;
-import haven.sprites.CurrentTargetSprite;
+import haven.sprites.CombatRangeSprite;
+import haven.sprites.CurrentAggroSprite;
 
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
@@ -55,27 +56,15 @@ public class Fightsess extends Widget {
     public int use = -1, useb = -1;
     public Coord pcc;
     public int pho;
-    private Fightview fv;
+    public Fightview fv;
+	public static final Text.Foundry ipFoundry = new Text.Foundry(Text.serif.deriveFont(Font.BOLD), 22);
 	public static final Text.Foundry ipAdditionalFont = new Text.Foundry(Text.dfont.deriveFont(Font.BOLD), 12);
 	public static final Text.Foundry openingAdditionalFont = new Text.Foundry(Text.dfont.deriveFont(Font.BOLD), 10);
 	public static final Text.Foundry cleaveAdditionalFont = new Text.Foundry(Text.dfont.deriveFont(Font.BOLD), 10);
-	public Map<Fightview.Relation, Coord> relations = new HashMap<>();
 	int combatMedColorShift = 0;
 	public static final Text.Foundry keybindsFoundry = new Text.Foundry(Text.sans.deriveFont(java.awt.Font.BOLD), 14);
 	public static final Text.Foundry damageFoundry = new Text.Foundry(Text.sans.deriveFont(java.awt.Font.BOLD), 11);
-	private static final Color coinsInfoBG = new Color(0, 0, 0, 120);
-	public static final Color ipInfoColorMe = new Color(0, 201, 4);
-	public static final Color ipInfoColorEnemy = new Color(245, 0, 0);
-	private static final Text.Furnace ipf = new PUtils.BlurFurn(new Text.Foundry(Text.serif.deriveFont(Font.BOLD), 22, new Color(0, 201, 4)).aa(true), 1, 1, new Color(0, 0, 0));
-	private static final Text.Furnace ipfEnemy = new PUtils.BlurFurn(new Text.Foundry(Text.serif.deriveFont(Font.BOLD), 22, new Color(245, 0, 0)).aa(true), 1, 1, new Color(0, 0, 0));
-	private final Text.UText<?> ip = new Text.UText<Integer>(ipf) {
-		public String text(Integer v) {return("" + v);} // ND: Removed "IP" text. I only need to see the number, we already know it's the IP/Coins
-		public Integer value() {return(fv.current.ip);}
-	};
-	private final Text.UText<?> oip = new Text.UText<Integer>(ipfEnemy) { // Changed this so I can give the enemy IP a different color
-		public String text(Integer v) {return("" + v);} // ND: Removed "IP" text. I only need to see the number, we already know it's the IP/Coins
-		public Integer value() {return(fv.current.oip);}
-	};
+
 	public static final Color stamBarBlue = new Color(47, 58, 207, 200);
 	public static final Color hpBarGreen = new Color(0, 166, 10, 255);
 	public static final Color hpBarGray = new Color(113, 113, 113, 255);
@@ -90,13 +79,12 @@ public class Fightsess extends Widget {
 	private static int basedmg = 0;
 	public static double myStrength = 1;
 
-	Map<String, Color> openingsColorMap = new HashMap<>() {{
-		put("paginae/atk/offbalance", new Color(0, 128, 3));
-		put("paginae/atk/dizzy", new Color(39, 82, 191));
-		put("paginae/atk/reeling", new Color(217, 177, 20));
-		put("paginae/atk/cornered", new Color(192, 28, 28));
-	}};
 	private boolean combatMedAlphaShiftUp = true;
+
+	private Tex myHealthBarTex = null;
+	private String myLastHealthBarText = "";
+	private Tex myStaminaBarTex = null;
+	private String myLastStaminaBarText = "";
 
 	private static Coord actc(int i) {
 		int rl = OptWnd.singleRowCombatMovesCheckBox.a ? 10 : 5;
@@ -262,59 +250,11 @@ public class Fightsess extends Widget {
     private Text lastacttip1 = null, lastacttip2 = null;
     private Effect curtgtfx;
 	private Effect curtgtfx2;
+	private Effect unarmedRangeFx;
+	private Effect weaponRangeFx;
     public void draw(GOut g) {
 //	updatepos();
-	relations.clear();
-	MapView map = getparent(GameUI.class).map;
-	if (map != null){
-		for (Fightview.Relation rel : fv.lsrel) {
-			try {
-				Coord3f rawc = map.glob.oc.getgob(rel.gobid).placed.getc();
-				rawc.z = rawc.z + 15;
-				if (rawc == null)
-					continue;
-				relations.put(rel, map.screenxf(rawc).round2());
-			} catch (NullPointerException ignore) {}
-		}
-	}
-	int fps = GLPanel.Loop.fps > 0 ? GLPanel.Loop.fps : 1;
-	int alphaShiftSpeed = 2400/fps;
-	if (combatMedAlphaShiftUp) {
-		if (combatMedColorShift + alphaShiftSpeed <= 255) {
-			combatMedColorShift += alphaShiftSpeed;
-		} else {
-			combatMedAlphaShiftUp = false;
-			combatMedColorShift = 255;
-		}
-	} else {
-		if (combatMedColorShift - alphaShiftSpeed >= 0){
-			combatMedColorShift -= alphaShiftSpeed;
-		} else {
-			combatMedAlphaShiftUp = true;
-			combatMedColorShift = 0;
-		}
-	}
-	if (OptWnd.drawFloatingCombatDataCheckBox.a) {
-		if (OptWnd.drawFloatingCombatDataOnCurrentTargetCheckBox.a) {
-			try {
-				Coord sc = relations.get(fv.current);
-				if (sc != null)
-					drawCombatData(g, fv.current, sc, true, true);
-			} catch (NullPointerException ignored) {}
-		}
-		if (OptWnd.drawFloatingCombatDataOnOthersCheckBox.a) {
-			try {
-				for (Map.Entry<Fightview.Relation, Coord> entry : relations.entrySet()) {
-					Fightview.Relation otherRelation = entry.getKey();
-					Coord sc = entry.getValue();
-					if (sc == null || fv.current == otherRelation) {
-						continue;
-					}
-					drawCombatData(g, otherRelation, sc, !OptWnd.onlyShowOpeningsAbovePercentageCombatInfoCheckBox.a, !OptWnd.onlyShowCoinsAbove4CombatInfoCheckBox.a);
-				}
-			} catch (NullPointerException ignored) {}
-		}
-	}
+		combatMedAlphaShift();
 	if (OptWnd.drawFloatingCombatOpeningsAboveYourselfCheckBox.a) {
 		try {
 			drawSelfCombatOpenings(g);
@@ -367,9 +307,12 @@ public class Fightsess extends Widget {
 			} else {
 				g.image(Buff.frame, new Coord(x + myLocation - UI.scale(3), y - UI.scale(20) - UI.scale(3)));
 			}
-			if (Buff.improvedOpeningsImageColor.containsKey(buff.res.get().name)) {
-				g.chcolor(Buff.improvedOpeningsImageColor.get(buff.res.get().name));
-				g.frect(new Coord(x + myLocation, y - UI.scale(20)), isz);
+			if (OptWnd.improvedOpeningsImageColor.containsKey(buff.res.get().name)) {
+				g.chcolor(OptWnd.improvedOpeningsImageColor.get(buff.res.get().name));
+				if (OptWnd.showCombatOpeningsAsLettersCheckBox.a)
+					g.image(img, new Coord(x + myLocation, y - UI.scale(20)));
+				else
+					g.frect(new Coord(x + myLocation, y - UI.scale(20)), isz);
 				g.chcolor(Color.WHITE);
 				if(ameteri != buff.nmeter) {
 					buff.ntext = null;
@@ -427,9 +370,12 @@ public class Fightsess extends Widget {
 				} else {
 					g.image(Buff.frame, new Coord(x + location - UI.scale(3), y - UI.scale(20) - UI.scale(3)));
 				}
-				if (Buff.improvedOpeningsImageColor.containsKey(name)) {
-					g.chcolor(Buff.improvedOpeningsImageColor.get(name));
-					g.frect(new Coord(x + location, y - UI.scale(20)), isz);
+				if (OptWnd.improvedOpeningsImageColor.containsKey(name)) {
+					g.chcolor(OptWnd.improvedOpeningsImageColor.get(name));
+					if (OptWnd.showCombatOpeningsAsLettersCheckBox.a)
+						g.image(img, new Coord(x + location, y - UI.scale(20)));
+					else
+						g.frect(new Coord(x + location, y - UI.scale(20)), isz);
 					g.chcolor(Color.WHITE);
 					if(ameteri != buff.nmeter) {
 						buff.ntext = null;
@@ -437,7 +383,7 @@ public class Fightsess extends Widget {
 					}
 				} else {
 					if (name.equals("paginae/atk/combmed")){
-						if(meterValue > 75){
+						if(meterValue > 70){
 							g.chcolor(255, 255-combatMedColorShift, 255-combatMedColorShift, 255);
 						}
 					}
@@ -451,12 +397,29 @@ public class Fightsess extends Widget {
 			}
 		}
 
-	    g.aimage(ip.get().tex(), new Coord(x - UI.scale(40), y - UI.scale(30)), 1, 0.5);
-	    g.aimage(oip.get().tex(), new Coord(x + UI.scale(40), y - UI.scale(30)), 0, 0.5);
+//	    g.aimage(ip.get().tex(), new Coord(x - UI.scale(40), y - UI.scale(30)), 1, 0.5);
+		g.aimage(PUtils.strokeTex(Text.renderstroked(Integer.toString(fv.current.ip), OptWnd.myIPCombatColorOptionWidget.currentColor, Color.BLACK, ipFoundry)), new Coord(x - UI.scale(40), y - UI.scale(30)), 1, 0.5);
+
+//	    g.aimage(oip.get().tex(), new Coord(x + UI.scale(40), y - UI.scale(30)), 0, 0.5);
+		g.aimage(PUtils.strokeTex(Text.renderstroked(Integer.toString(fv.current.oip), OptWnd.enemyIPCombatColorOptionWidget.currentColor, Color.BLACK, ipFoundry)), new Coord(x + UI.scale(40), y - UI.scale(30)), 0, 0.5);
+
 
 //	    if(fv.lsrel.size() > 1)
 //		curtgtfx = fxon(fv.current.gobid, tgtfx, curtgtfx);
-		curtgtfx2 = fxon2(fv.current.gobid, tgtfx, curtgtfx2);
+		if (!OptWnd.refreshCurrentTargetSpriteColor)
+			curtgtfx2 = fxon2(fv.current.gobid, tgtfx, curtgtfx2);
+		else
+			OptWnd.refreshCurrentTargetSpriteColor = false;
+		if (OptWnd.showYourCombatRangeCirclesCheckBox.a) {
+			if (!OptWnd.refreshMyUnarmedRange)
+				unarmedRangeFx = unarmedRangeFx(unarmedRangeFx);
+			else
+				OptWnd.refreshMyUnarmedRange = false;
+			if (!OptWnd.refreshMyWeaponRange)
+				weaponRangeFx = weaponRangeFx(weaponRangeFx);
+			else
+				OptWnd.refreshMyWeaponRange = false;
+		}
 	}
 
 	    Coord cdc = new Coord(x, y);
@@ -516,25 +479,12 @@ public class Fightsess extends Widget {
 				boolean cutbladeEquipped = false;
 				boolean pickaxeEquipped = false;
 				if (gob != null) {
-					for (GAttrib gobAttrib : gob.attr.values()) {
-						if (gobAttrib instanceof Composite) {
-							Composite c = (Composite) gobAttrib;
-							if (c.comp.cequ.size() > 0) {
-								for (Composited.ED item : c.comp.cequ) { // ND: Check for the equipped weapon
-									if (item.res.res.get().basename().equals("b12axe")){
-										b12Equipped = true;
-										break;
-									} else if (item.res.res.get().basename().equals("cutblade")){
-										cutbladeEquipped = true;
-										break;
-									} else if (item.res.res.get().basename().equals("pickaxe")){
-										pickaxeEquipped = true;
-										break;
-									}
-								}
-							}
-						}
-					}
+					if (gob.currentWeapon.equals("b12axe"))
+						b12Equipped = true;
+					else if (gob.currentWeapon.equals("cutblade"))
+						cutbladeEquipped = true;
+					else if (gob.currentWeapon.equals("pickaxe"))
+						pickaxeEquipped = true;
 					if (!b12Equipped && !cutbladeEquipped && !pickaxeEquipped) { // ND: Default cooldowns, weapon has 100% attack speed
 						if (Config.attackCooldownNumbers.keySet().stream().anyMatch(moveDefaultCooldown::equals)){
 							if (Config.attackCooldownNumbers.get(moveDefaultCooldown).keySet().stream().anyMatch(lastMoveCooldown::equals)){
@@ -587,9 +537,9 @@ public class Fightsess extends Widget {
 			if (fv.current.minAgi != 0 && fv.current.maxAgi != 2D) {
 				g.aimage(Text.renderstroked("" + fv.current.minAgi + "x - " + fv.current.maxAgi + "x").tex(), cdc3, 0, 0.5);
 			} else if (fv.current.minAgi == 0 && fv.current.maxAgi != 2D) {
-				g.aimage(Text.renderstroked("<" + fv.current.maxAgi + "x", ipInfoColorMe, Color.BLACK).tex(), cdc3, 0, 0.5);
+				g.aimage(Text.renderstroked("<" + fv.current.maxAgi + "x", OptWnd.myIPCombatColorOptionWidget.currentColor, Color.BLACK).tex(), cdc3, 0, 0.5);
 			} else if (fv.current.minAgi != 0 && fv.current.maxAgi == 2D) {
-				g.aimage(Text.renderstroked(">" + fv.current.minAgi + "x", ipInfoColorEnemy, Color.BLACK).tex(), cdc3, 0, 0.5);
+				g.aimage(Text.renderstroked(">" + fv.current.minAgi + "x", OptWnd.enemyIPCombatColorOptionWidget.currentColor, Color.BLACK).tex(), cdc3, 0, 0.5);
 			} else {
 				g.aimage(Text.renderstroked("Unknown").tex(), cdc3, 0, 0.5);
 			}
@@ -642,6 +592,7 @@ public class Fightsess extends Widget {
 			}
 			if (OptWnd.showDamagePredictUICheckBox.a) {
 				String name = act.res.get().basename();
+				String damage = "";
 				if(Config.MapAttInfo.containsKey(name)) {	//Exists?
 					Config.AttackInfo attack = Config.MapAttInfo.get(name);
 					double openingMul;
@@ -661,14 +612,14 @@ public class Fightsess extends Widget {
 					if(attack.isMC()) {
 						double weaponDamageCalc;
 						weaponDamageCalc = basedmg * Math.sqrt( Math.sqrt(ql* myStrength) / 10);
-						name = Integer.toString((int)Math.ceil( //I need to cast this into Integer so it doesnt print "0.0", printing "0" is prettier.
+						damage = Integer.toString((int)Math.ceil( //I need to cast this into Integer so it doesnt print "0.0", printing "0" is prettier.
 						weaponDamageCalc //Full damage
 						*attack.getDmgMul()
 						*openingMul
 					));
 					}
 					else {
-						name = Integer.toString((int)Math.ceil( //I need to cast this into Integer so it doesnt print "0.0", printing "0" is prettier.
+						damage = Integer.toString((int)Math.ceil( //I need to cast this into Integer so it doesnt print "0.0", printing "0" is prettier.
 							attack.getDmg()*Math.sqrt(myStrength/10) //Full damage
 							*openingMul
 						));
@@ -676,11 +627,11 @@ public class Fightsess extends Widget {
 					}
 				}
 				else{
-					name = "";
+					damage = "";
 				}
-				if(!name.isEmpty()) {
+				if(!damage.isEmpty()) {
 					infoY += 12;
-					g.aimage(new TexI(Utils.outline2(damageFoundry.render(name,Color.RED).img, Color.BLACK, true)), ca.add((int)(img.sz().x/2), img.sz().y + UI.scale(infoY)), 0.5, 0.5);
+					g.aimage(new TexI(Utils.outline2(damageFoundry.render(damage,Color.RED).img, Color.BLACK, true)), ca.add((int)(img.sz().x/2), img.sz().y + UI.scale(infoY)), 0.5, 0.5);
 				}
 			}
 		    if(i == use) {
@@ -722,19 +673,60 @@ public class Fightsess extends Widget {
 	int bottom = (int)(ui.gui.sz.y - ((ui.gui.sz.y / 500.0) * OptWnd.combatUIBottomPanelHeightSlider.val));
 	int bottomCombatUI = (int)(ui.gui.sz.y - ((ui.gui.sz.y / 500.0) * OptWnd.bottomCombatUIPanelHeighSlider.val));
 
-	for(Buff buff : fv.buffs.children(Buff.class)) {
-	    Coord dc = new Coord(x - buff.c.x - Buff.cframe.sz().x - UI.scale(80), y - UI.scale(20));
+	ArrayList<Buff> myOpenings = new ArrayList<>(fv.buffs.children(Buff.class));
+	myOpenings.sort((o2, o1) -> Integer.compare(getOpeningValue(o1), getOpeningValue(o2)));
+	Buff myManeuver = null;
+	for (Buff buff : myOpenings) {
+		try {
+			if (buff.res != null && buff.res.get() != null) {
+				String name = buff.res.get().name;
+				if (Config.maneuvers.contains(name)) {
+					myManeuver = buff;
+					break;
+				}
+			}
+		} catch (Loading ignored) {
+		}
+	}
+	if (myManeuver != null && myOpenings.size() > 1) {
+		myOpenings.remove(myManeuver);
+		myOpenings.add(myOpenings.size(), myManeuver);
+	}
+	int myLocation = - Buff.cframe.sz().x - UI.scale(80);
+	for(Buff buff : myOpenings) {
+	    Coord dc = new Coord(x + myLocation, y - UI.scale(20));
 	    if(c.isect(dc, buff.sz)) {
 		Object ret = buff.tooltip(c.sub(dc), prevtt);
 		if(ret != null) {
 		    prevtt = buff;
 		    return(ret);
 		}
+			myLocation -= UI.scale(40);
 	    }
 	}
 	if(fv.current != null) {
-	    for(Buff buff : fv.current.buffs.children(Buff.class)) {
-		Coord dc = new Coord(x + buff.c.x + UI.scale(80), y - UI.scale(20));
+		ArrayList<Buff> enemyOpenings = new ArrayList<>(fv.current.buffs.children(Buff.class));
+		enemyOpenings.sort((o1, o2) -> Integer.compare(getOpeningValue(o2), getOpeningValue(o1)));
+		Buff maneuver = null;
+		for (Buff buff : enemyOpenings) {
+			try {
+				if (buff.res != null && buff.res.get() != null) {
+					String name = buff.res.get().name;
+					if (Config.maneuvers.contains(name)) {
+						maneuver = buff;
+						break;
+					}
+				}
+			} catch (Loading ignored) {
+			}
+		}
+		if (maneuver != null && enemyOpenings.size() > 1) {
+			enemyOpenings.remove(maneuver);
+			enemyOpenings.add(enemyOpenings.size(), maneuver);
+		}
+		int location = UI.scale(80);
+	    for(Buff buff : enemyOpenings) {
+		Coord dc = new Coord(x + location, y - UI.scale(20));
 		if(c.isect(dc, buff.sz)) {
 		    Object ret = buff.tooltip(c.sub(dc), prevtt);
 		    if(ret != null) {
@@ -742,6 +734,7 @@ public class Fightsess extends Widget {
 			return(ret);
 		    }
 		}
+			location += UI.scale(40);
 	    }
 	}
 	final int rl = 5;
@@ -935,7 +928,7 @@ public class Fightsess extends Widget {
 		}
 		if((cur == null) || (cur.slot == null)) {
 			try {
-				cur = new Effect(new CurrentTargetSprite(null));
+				cur = new Effect(new CurrentAggroSprite(null));
 				cur.slot = map.basic.add(cur.spr, place);
 			} catch(Loading l) {
 				return(null);
@@ -948,172 +941,62 @@ public class Fightsess extends Widget {
 		return(cur);
 	}
 
-	private void drawCombatData(GOut g, Fightview.Relation rels, Coord sc, boolean showAllOpenings, boolean alwaysShowCoins) {
-		int scaledY = sc.y - UI.scale(86);
-		Coord topLeft = new Coord(sc.x - UI.scale(32), scaledY);
-		boolean openings;
-		boolean cleaveUsed = false;
-		long cleaveDuration = 4300;
-		//Check if cleave indicator is needed
-		if (rels.lastActCleave != null) {
-			Gob gob = ui.sess.glob.oc.getgob(rels.gobid);
-			for (GAttrib gobAttrib : gob.attr.values()) { // ND: Do the following stuff to figure out the *MINIMUM* cooldown someone can have after cleaving.
-				if (gobAttrib instanceof Composite) {
-					Composite c = (Composite) gobAttrib;
-					if (c.comp.cequ.size() > 0) {
-						for (Composited.ED item : c.comp.cequ) { // ND: Check for the equipped weapon
-							if (item.res.res.get().basename().equals("b12axe")) { // 5.4
-								cleaveDuration = 5400;
-								break;
-							}
-							if (item.res.res.get().basename().equals("cutblade")) { // 5.2
-								cleaveDuration = 5200;
-								break;
-							} else { // 4.3 seconds for anything else
-								cleaveDuration = 4300;
-							}
-						}
-					}
-				}
-			}
-			cleaveUsed = System.currentTimeMillis() - rels.lastActCleave < cleaveDuration;
+	private Effect unarmedRangeFx(Effect currentMeleeRangeFx) {
+		MapView map = getparent(GameUI.class).map;
+		if (map == null)
+			return null;
+		Gob player = ui.gui.map.player();
+		if (player == null || player.occupiedGobID != null)
+			return null;
+		Pipe.Op place;
+		try {
+			place = player.placed.curplace();
+		} catch(Loading l) {
+			return(null);
 		}
-		boolean defenseUsed = false;
-		if (rels.lastActDefence != null) {
-			defenseUsed = System.currentTimeMillis() - rels.lastActDefence < rels.lastDefenceDuration;
-		}
-
-		// ND: Check for openings depending if it's a player or not.
-		Gob gob = ui.sess.glob.oc.getgob(rels.gobid);
-		if (gob != null && gob.getres() != null) {
-			if (gob.getres().name.equals("gfx/borka/body")) { // ND: If it's a player, the first buff is the maneuver, always, so skip it.
-				openings = rels.buffs.children(Buff.class).size() > 1;
-			} else { // ND: Everything else doesn't have a maneuver.
-				openings = rels.buffs.children(Buff.class).size() > 0;
+		if((currentMeleeRangeFx == null) || (currentMeleeRangeFx.slot == null)) {
+			try {
+				currentMeleeRangeFx = new Effect(new CombatRangeSprite(null, 13.7f, OptWnd.unarmedCombatRangeColorOptionWidget.currentColor));
+				currentMeleeRangeFx.slot = map.basic.add(currentMeleeRangeFx.spr, place);
+			} catch(Loading l) {
+				return(null);
 			}
+			curfx.add(currentMeleeRangeFx);
 		} else {
-			openings = rels.buffs.children(Buff.class).size() > 1;
+			currentMeleeRangeFx.slot.cstate(place);
 		}
-
-		topLeft.x -= UI.scale(2) * rels.buffs.children(Buff.class).size();
-
-		// IP / OIP Text
-		boolean showCoins = true;
-		if (!alwaysShowCoins)
-			if (rels.ip < 4 && rels.oip < 4)
-				showCoins = false;
-		if (showCoins) {
-			g.chcolor(0, 0, 0, 120);
-			g.frect(new Coord(topLeft.x + UI.scale(3), topLeft.y + UI.scale(9)), UI.scale(new Coord(39, 20)));
-			g.chcolor(255, 255, 255, 255);
-			int oipOffset = rels.oip < 10 ? 35 : 40;
-			g.aimage(Text.renderstroked(Integer.toString(rels.ip), ipInfoColorMe, Color.BLACK, ipAdditionalFont).tex(), new Coord(topLeft.x + UI.scale(20), topLeft.y + UI.scale(19)), 1, 0.5);
-			g.aimage(Text.renderstroked("/", Color.WHITE, Color.BLACK, ipAdditionalFont).tex(), new Coord(topLeft.x + UI.scale(25), topLeft.y + UI.scale(19)), 1, 0.5);
-			g.aimage(Text.renderstroked(Integer.toString(rels.oip), ipInfoColorEnemy, Color.BLACK, ipAdditionalFont).tex(), new Coord(topLeft.x + UI.scale(oipOffset), topLeft.y + UI.scale(19)), 1, 0.5);
-		}
-
-		// Maneuver
-		if (OptWnd.showCombatManeuverCombatInfoCheckBox.a) {
-			for (Buff buff : rels.buffs.children(Buff.class)) {
-				try {
-					if (buff.res != null && buff.res.get() != null) {
-						String name = buff.res.get().name;
-						if (Config.maneuvers.contains(name)) {
-							g.chcolor(0, 0, 0, 255);
-							g.frect(new Coord(topLeft.x + UI.scale(41), topLeft.y + UI.scale(9)), UI.scale(new Coord(20, 20)));
-							g.chcolor(255, 255, 255, 255);
-							int meterValue = getOpeningValue(buff);
-							Resource.Image img = buff.res.get().flayer(Resource.imgc);
-							Tex maneuverTexture = new TexI(PUtils.uiscale(img.scaled, UI.scale(new Coord(18, 18))));
-							if (name.equals("paginae/atk/combmed")) {
-								if (meterValue > 70) {
-									g.chcolor(255, 255 - combatMedColorShift, 255 - combatMedColorShift, 255);
-								}
-							}
-							g.image(maneuverTexture, new Coord(topLeft.x + UI.scale(42), topLeft.y + UI.scale(10)));
-
-							// Meter
-							if (meterValue > 1) {
-								g.chcolor(0, 0, 0, 255);
-								g.frect(new Coord(topLeft.x + UI.scale(61), topLeft.y + UI.scale(9)), UI.scale(new Coord(5, 20)));
-								if (meterValue < 30) {
-									g.chcolor(255, 255, 255, 255);
-								} else {
-									g.chcolor(255, (255 - (255 * meterValue) / 100), (255 - (255 * meterValue) / 100), 255);
-								}
-								g.frect(new Coord(topLeft.x + UI.scale(62), topLeft.y + UI.scale(28) - ((18 * meterValue) / 100)), UI.scale(new Coord(3, (18 * meterValue) / 100)));
-							}
-						}
-					}
-				} catch (Loading ignored) {
-				}
-			}
-		}
-
-
-		// openings, only if it has any
-		if (openings) {
-			List<TemporaryOpening> openingList = new ArrayList<>();
-			for (Buff buff : rels.buffs.children(Buff.class)) {
-				try {
-					if (buff.res != null && buff.res.get() != null) {
-						String name = buff.res.get().name;
-						if (openingsColorMap.containsKey(name)) {
-							int meterValue = getOpeningValue(buff);
-							openingList.add(new TemporaryOpening(meterValue, openingsColorMap.get(name)));
-						}
-					}
-				} catch (Loading ignored) {
-				}
-			}
-			openingList.sort((o1, o2) -> Integer.compare(o2.value, o1.value));
-			boolean showOpenings = true;
-			if (!showAllOpenings){
-				if (!openingList.isEmpty() && !OptWnd.minimumOpeningTextEntry.text().isEmpty()){
-					if (openingList.get(0).value < Integer.parseInt(OptWnd.minimumOpeningTextEntry.text())){
-						showOpenings = false;
-					}
-				}
-			}
-			if (showOpenings) {
-				int openingOffsetX = 4;
-				for (TemporaryOpening opening : openingList) {
-					g.chcolor(0, 0, 0, 255);
-					g.frect(new Coord(topLeft.x + UI.scale(openingOffsetX) - UI.scale(1), topLeft.y + UI.scale(30) - UI.scale(1)), UI.scale(new Coord(20, 20)));
-					g.chcolor(opening.color);
-					g.frect(new Coord(topLeft.x + UI.scale(openingOffsetX), topLeft.y + UI.scale(30)), UI.scale(new Coord(18, 18)));
-					g.chcolor(255, 255, 255, 255);
-
-					int valueOffset = opening.value < 10 ? 15 : opening.value< 100 ? 18 : 20;
-					g.aimage(Text.renderstroked(String.valueOf(opening.value), openingAdditionalFont).tex(), new Coord(topLeft.x + UI.scale(openingOffsetX) + UI.scale(valueOffset) - UI.scale(1), topLeft.y + UI.scale(39)), 1, 0.5);
-					openingOffsetX += 19;
-				}
-			}
-		}
-
-		//add cleave cooldown indicator
-		if (cleaveUsed) {
-			long timer = ((cleaveDuration - (System.currentTimeMillis() - rels.lastActCleave)));
-			g.chcolor(new Color(0, 0, 0, 255));
-			g.frect(new Coord(topLeft.x + UI.scale(3), topLeft.y - UI.scale(4)), UI.scale(new Coord((int) ((76 * timer)/cleaveDuration)+2, 13)));
-			g.chcolor(new Color(213, 0, 0, 255));
-			g.frect(new Coord(topLeft.x + UI.scale(4), topLeft.y - UI.scale(3)), UI.scale(new Coord((int) ((76 * timer)/cleaveDuration), 11)));
-			g.chcolor(new Color(255, 255, 255, 255));
-			g.aimage(Text.renderstroked(getCooldownTime(timer), cleaveAdditionalFont).tex(), new Coord(topLeft.x + UI.scale(52), topLeft.y + UI.scale(2)), 1, 0.5);
-		}
-
-		//add defense cooldown indicator, just like cleave
-		if (defenseUsed) {
-			long timer = ((rels.lastDefenceDuration - (System.currentTimeMillis() - rels.lastActDefence)));
-			g.chcolor(new Color(0, 0, 0, 255));
-			g.frect(new Coord(topLeft.x + UI.scale(3), topLeft.y - UI.scale(4)), UI.scale(new Coord((int) ((76 * timer)/rels.lastDefenceDuration)+2, 13)));
-			g.chcolor(new Color(227, 136, 0, 255));
-			g.frect(new Coord(topLeft.x + UI.scale(4), topLeft.y - UI.scale(3)), UI.scale(new Coord((int) ((76 * timer)/rels.lastDefenceDuration), 11)));
-			g.chcolor(new Color(255, 255, 255, 255));
-			g.aimage(Text.renderstroked(getCooldownTime(timer), cleaveAdditionalFont).tex(), new Coord(topLeft.x + UI.scale(52), topLeft.y + UI.scale(2)), 1, 0.5);
-		}
-		g.chcolor(255, 255, 255, 255);
+		currentMeleeRangeFx.used = true;
+		return(currentMeleeRangeFx);
 	}
+
+	private Effect weaponRangeFx(Effect currentWeaponRangeFx) {
+		MapView map = getparent(GameUI.class).map;
+		if (map == null)
+			return null;
+		Gob player = ui.gui.map.player();
+		if (player == null || player.occupiedGobID != null || player.currentWeapon.equals("") || Config.WEAPON_NAMES_AND_RANGES.get(player.currentWeapon) == null)
+			return null;
+		Pipe.Op place;
+		try {
+			place = player.placed.curplace();
+		} catch(Loading l) {
+			return(null);
+		}
+		if((currentWeaponRangeFx == null) || (currentWeaponRangeFx.slot == null)) {
+			try {
+				currentWeaponRangeFx = new Effect(new CombatRangeSprite(null, Config.WEAPON_NAMES_AND_RANGES.get(player.currentWeapon), OptWnd.weaponCombatRangeColorOptionWidget.currentColor));
+				currentWeaponRangeFx.slot = map.basic.add(currentWeaponRangeFx.spr, place);
+			} catch(Loading l) {
+				return(null);
+			}
+			curfx.add(currentWeaponRangeFx);
+		} else {
+			currentWeaponRangeFx.slot.cstate(place);
+		}
+		currentWeaponRangeFx.used = true;
+		return(currentWeaponRangeFx);
+	}
+
 
 	private void drawSelfCombatOpenings(GOut g) {
 		Coord3f rawc = ui.gui.map.player().placed.getc();
@@ -1146,10 +1029,11 @@ public class Fightsess extends Widget {
 		for (Buff buff : fv.buffs.children(Buff.class)) {
 			try {
 				if (buff.res != null && buff.res.get() != null) {
+					Tex img = buff.res.get().flayer(Resource.imgc).tex();
 					String name = buff.res.get().name;
-					if (openingsColorMap.containsKey(name)) {
+					if (OptWnd.improvedOpeningsImageColor.containsKey(name)) {
 						int meterValue = getOpeningValue(buff);
-						openingList.add(new TemporaryOpening(meterValue, openingsColorMap.get(name)));
+						openingList.add(new TemporaryOpening(meterValue, name, OptWnd.improvedOpeningsImageColor.get(name), img));
 					}
 				}
 			} catch (Loading ignored) {
@@ -1161,7 +1045,10 @@ public class Fightsess extends Widget {
 			g.chcolor(0, 0, 0, 255);
 			g.frect(new Coord(topLeft.x + UI.scale(openingOffsetX) - UI.scale(1), topLeft.y + UI.scale(30) - UI.scale(1)), UI.scale(new Coord(20, 20)));
 			g.chcolor(opening.color);
-			g.frect(new Coord(topLeft.x + UI.scale(openingOffsetX), topLeft.y + UI.scale(30)), UI.scale(new Coord(18, 18)));
+			if (OptWnd.showCombatOpeningsAsLettersCheckBox.a)
+				g.image(opening.img, new Coord(topLeft.x + UI.scale(openingOffsetX), topLeft.y + UI.scale(30)), UI.scale(new Coord(18, 18)));
+			else
+				g.frect(new Coord(topLeft.x + UI.scale(openingOffsetX), topLeft.y + UI.scale(30)), UI.scale(new Coord(18, 18)));
 			g.chcolor(255, 255, 255, 255);
 
 			int valueOffset = opening.value < 10 ? 15 : opening.value< 100 ? 18 : 20;
@@ -1179,19 +1066,18 @@ public class Fightsess extends Widget {
 		return 0;
 	}
 
-	private static class TemporaryOpening{
-		private int value;
-		private Color color;
+	public static class TemporaryOpening{
+		public int value;
+		public String name;
+		public Color color;
+		public Tex img;
 
-		public TemporaryOpening(int value, Color color) {
+		public TemporaryOpening(int value, String name, Color color, Tex img) {
 			this.value = value;
+			this.name = name;
 			this.color = color;
+			this.img = img;
 		}
-	}
-
-	public String getCooldownTime(long time) {
-		double convertedTime = time / 1000.0;
-		return String.format("%.1f", convertedTime);
 	}
 
 	public static String fmt1DecPlace(double value) {
@@ -1207,49 +1093,75 @@ public class Fightsess extends Widget {
 	private void drawHealthMeterBar(GOut g, IMeter.Meter m, Coord sc, Coord msz) {
 		int w = msz.x;
 		int w1 = (int) Math.ceil(w * m.a);
-		int w2 = (int) Math.ceil(w * (IMeter.characterSoftHealthPercent/100));
+		int w2 = (int) Math.ceil(w * (IMeter.characterSoftHealthPercent / 100));
+
 		if (IMeter.sparring) {
 			g.chcolor(Fightsess.hpBarGray);
 			g.frect(sc, new Coord(w, msz.y));
 			g.chcolor(Fightsess.hpBarGreen);
 			g.frect(sc, new Coord(w2, msz.y));
 			g.chcolor(Color.BLACK);
-			g.line(new Coord(sc.x+w, sc.y), new Coord(sc.x+w, sc.y+msz.y), 2);
+			g.line(new Coord(sc.x + w, sc.y), new Coord(sc.x + w, sc.y + msz.y), 2);
 			g.rect(sc, new Coord(msz.x, msz.y));
 
 			g.chcolor(Color.WHITE);
-			g.aimage(Text.renderstroked((IMeter.characterCurrentHealth), Text.num12boldFnd).tex(), new Coord(sc.x+msz.x/2, sc.y+msz.y/2), 0.5, 0.5);
+			String currentText = IMeter.characterCurrentHealth;
+			if (!currentText.equals(myLastHealthBarText)) {
+				if (myHealthBarTex != null)
+					myHealthBarTex.dispose();
+				myHealthBarTex = Text.renderstroked(currentText, Text.num12boldFnd).tex();
+				myLastHealthBarText = currentText;
+			}
+			g.aimage(myHealthBarTex, new Coord(sc.x + msz.x / 2, sc.y + msz.y / 2), 0.5, 0.5);
 		} else {
 			g.chcolor(Fightsess.hpBarYellow);
 			g.frect(sc, new Coord(w1, msz.y));
 			g.chcolor(Fightsess.hpBarRed);
 			g.frect(sc, new Coord(w2, msz.y));
 			g.chcolor(Color.BLACK);
-			g.line(new Coord(sc.x+w1, sc.y), new Coord(sc.x+w1, sc.y+msz.y), 2);
+			g.line(new Coord(sc.x + w1, sc.y), new Coord(sc.x + w1, sc.y + msz.y), 2);
 			g.rect(sc, new Coord(msz.x, msz.y));
 
 			g.chcolor(Color.WHITE);
-			String HHPpercentage = OptWnd.includeHHPTextHealthBarCheckBox.a ? " ("+(Fightsess.fmt1DecPlace((int)(m.a*100))) + "% HHP)" : "";
-			g.aimage(Text.renderstroked((IMeter.characterCurrentHealth + HHPpercentage), Text.num12boldFnd).tex(), new Coord(sc.x+msz.x/2, sc.y+msz.y/2), 0.5, 0.5);
+			String HHPpercentage = OptWnd.includeHHPTextHealthBarCheckBox.a
+					? " (" + (Fightsess.fmt1DecPlace((int)(m.a * 100))) + "% HHP)"
+					: "";
+			String currentText = IMeter.characterCurrentHealth + HHPpercentage;
+			if (!currentText.equals(myLastHealthBarText)) {
+				if (myHealthBarTex != null)
+					myHealthBarTex.dispose();
+				myHealthBarTex = Text.renderstroked(currentText, Text.num12boldFnd).tex();
+				myLastHealthBarText = currentText;
+			}
+			g.aimage(myHealthBarTex, new Coord(sc.x + msz.x / 2, sc.y + msz.y / 2), 0.5, 0.5);
 		}
 	}
 
 	private void drawStamMeterBar(GOut g, IMeter.Meter m, Coord sc, Coord msz) {
 		int w = msz.x;
 		int w1 = (int) Math.ceil(w * m.a);
-		g.chcolor(stamBarBlue);
+		g.chcolor(Fightsess.stamBarBlue);
 		g.frect(sc, new Coord(w1, msz.y));
 		g.chcolor(Color.BLACK);
-		g.line(new Coord(sc.x+w1, sc.y), new Coord(sc.x+w1, sc.y+msz.y), 2);
+		g.line(new Coord(sc.x + w1, sc.y), new Coord(sc.x + w1, sc.y + msz.y), 2);
 		g.rect(sc, new Coord(msz.x, msz.y));
 		g.chcolor(Color.WHITE);
-		String staminaBarText = fmt1DecPlace((int)(m.a*100));
+
+		String staminaBarText = Fightsess.fmt1DecPlace((int)(m.a * 100));
 		Gob myself = ui.gui.map.player();
 		if (myself != null && myself.imDrinking) {
 			g.chcolor(new Color(0, 222, 0));
-			staminaBarText = staminaBarText + " (Drinking)";
+			staminaBarText += " (Drinking)";
 		}
-		g.aimage(Text.renderstroked(staminaBarText, Text.num12boldFnd).tex(), new Coord(sc.x+msz.x/2, sc.y+msz.y/2), 0.5, 0.5);
+
+		if (!staminaBarText.equals(myLastStaminaBarText)) {
+			if (myStaminaBarTex != null)
+				myStaminaBarTex.dispose();
+			myStaminaBarTex = Text.renderstroked(staminaBarText, Text.num12boldFnd).tex();
+			myLastStaminaBarText = staminaBarText;
+		}
+
+		g.aimage(myStaminaBarTex, new Coord(sc.x + msz.x / 2, sc.y + msz.y / 2), 0.5, 0.5);
 	}
 
 	private void targetNearestFoe(GameUI gui) {
@@ -1286,6 +1198,7 @@ public class Fightsess extends Widget {
 	}
 	private void setupOpeningArr(ArrayList<Buff> buffs){
 		try {
+			openingArr = new int[] {0,0,0,0};
 			for(Buff buff : buffs) {
 				switch(buff.res.get().name)	{
 					case "paginae/atk/offbalance":
@@ -1312,5 +1225,25 @@ public class Fightsess extends Widget {
 		//ui.gui.msg("ql: "+ql,Color.white);
 		basedmg = (int)(Math.ceil(wepdmg/Math.sqrt(ql/10)));
 		//ui.gui.msg("basedmg: "+basedmg,Color.white);
+	}
+
+	private void combatMedAlphaShift(){
+		int fps = GLPanel.Loop.fps > 0 ? GLPanel.Loop.fps : 1;
+		int alphaShiftSpeed = 2400/fps;
+		if (combatMedAlphaShiftUp) {
+			if (combatMedColorShift + alphaShiftSpeed <= 255) {
+				combatMedColorShift += alphaShiftSpeed;
+			} else {
+				combatMedAlphaShiftUp = false;
+				combatMedColorShift = 255;
+			}
+		} else {
+			if (combatMedColorShift - alphaShiftSpeed >= 0){
+				combatMedColorShift -= alphaShiftSpeed;
+			} else {
+				combatMedAlphaShiftUp = true;
+				combatMedColorShift = 0;
+			}
+		}
 	}
 }
