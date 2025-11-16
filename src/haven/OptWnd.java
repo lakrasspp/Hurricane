@@ -606,16 +606,6 @@ public class OptWnd extends Window {
 			}
 		}, leftColumn.pos("bl").adds(0, 2));
 
-		leftColumn = add(new Label("Quern Sound Effect Volume"), leftColumn.pos("bl").adds(0, 5).x(0));
-		leftColumn = add(quernSoundVolumeSlider = new HSlider(UI.scale(audioSliderWidth), 0, 100, Utils.getprefi("quernSoundVolume", 10)) {
-			protected void attach(UI ui) {
-				super.attach(ui);
-			}
-			public void changed() {
-				Utils.setprefi("quernSoundVolume", val);
-			}
-		}, leftColumn.pos("bl").adds(0, 2));
-
 		leftColumn = add(new Label("Butchering Sound Volume"), leftColumn.pos("bl").adds(0, 5).x(0));
 		leftColumn = add(butcherSoundVolumeSlider = new HSlider(UI.scale(audioSliderWidth), 0, 100, Utils.getprefi("butcherSoundVolume", 75)) {
 			protected void attach(UI ui) {
@@ -635,16 +625,6 @@ public class OptWnd extends Window {
 				Utils.setprefi("quernSoundVolume", val);
 			}
 		}, leftColumn.pos("bl").adds(0, 2));
-
-		rightColumn = add(new Label("Music Instruments Volume"), rightColumn.pos("bl").adds(0, 119));
-		rightColumn = add(instrumentsSoundVolumeSlider = new HSlider(UI.scale(audioSliderWidth), 0, 100, Utils.getprefi("instrumentsSoundVolume", 70)) {
-			protected void attach(UI ui) {
-				super.attach(ui);
-			}
-			public void changed() {
-				Utils.setprefi("instrumentsSoundVolume", val);
-			}
-		}, rightColumn.pos("bl").adds(0, 2));
 
 		rightColumn = add(new Label("Clap Sound Effect Volume"), rightColumn.pos("bl").adds(0, 5));
 		rightColumn = add(clapSoundVolumeSlider = new HSlider(UI.scale(audioSliderWidth), 0, 100, Utils.getprefi("clapSoundVolume", 10)) {
@@ -1641,12 +1621,25 @@ public class OptWnd extends Window {
 			}, rightColumn.pos("ur").adds(26, 4));
 			targetSpriteSizeSlider.tooltip = targetSpriteTooltip;
 
+//			rightColumn = add(drawChaseVectorsCheckBox = new CheckBox("Draw Chase Vectors"){
+//				{a = Utils.getprefb("drawChaseVectors", true);}
+//				public void changed(boolean val) {
+//					Utils.setprefb("drawChaseVectors", val);
+//				}
+//			}, rightColumn.pos("bl").adds(0, 12).xs(320));
+//			drawChaseVectorsCheckBox.tooltip = drawChaseVectorsTooltip;
+//			rightColumn = add(drawYourCurrentPathCheckBox = new CheckBox("Draw Your Current Path"){
+//				{a = Utils.getprefb("drawYourCurrentPath", false);}
+//				public void changed(boolean val) {
+//					Utils.setprefb("drawYourCurrentPath", val);
+//				}
+//			}, rightColumn.pos("bl").adds(0, 2));
 			rightColumn = add(drawChaseVectorsCheckBox = new CheckBox("Draw Chase Vectors"){
 				{a = Utils.getprefb("drawChaseVectors", true);}
 				public void changed(boolean val) {
 					Utils.setprefb("drawChaseVectors", val);
 				}
-			}, rightColumn.pos("bl").adds(0, 12).xs(320));
+			}, rightColumn.pos("ur").adds(16, 0));
 			drawChaseVectorsCheckBox.tooltip = drawChaseVectorsTooltip;
 			rightColumn = add(drawYourCurrentPathCheckBox = new CheckBox("Draw Your Current Path"){
 				{a = Utils.getprefb("drawYourCurrentPath", false);}
@@ -1654,6 +1647,19 @@ public class OptWnd extends Window {
 					Utils.setprefb("drawYourCurrentPath", val);
 				}
 			}, rightColumn.pos("bl").adds(0, 2));
+			rightColumn = add(drawYourCurrentPathColorOptionWidget = new ColorOptionWidget("Your path color:", "yourCurrentPath", 115, Integer.parseInt(drawYourCurrentPathColorSetting[0]), Integer.parseInt(drawYourCurrentPathColorSetting[1]), Integer.parseInt(drawYourCurrentPathColorSetting[2]), Integer.parseInt(drawYourCurrentPathColorSetting[3]), (Color col) -> {
+				if (ui != null && ui.gui != null) {
+					ui.sess.glob.oc.gobAction(Gob::updateSpeedBuffAuras);
+				}
+			}){}, rightColumn.pos("bl").adds(0, 2));
+			add(new Button(UI.scale(70), "Reset", false).action(() -> {
+				Utils.setprefsa("drawYourCurrentPath" + "_colorSetting", new String[]{"255", "255", "255", "120"});
+				drawYourCurrentPathColorOptionWidget.cb.colorChooser.setColor(drawYourCurrentPathColorOptionWidget.currentColor = new Color(255, 255, 255, 120));
+				if (ui != null && ui.gui != null) {
+					ui.sess.glob.oc.gobAction(Gob::updateSpeedBuffAuras);
+				}
+			}), drawYourCurrentPathColorOptionWidget.pos("ur").adds(10, 0));
+
 			drawYourCurrentPathCheckBox.tooltip = drawYourCurrentPathTooltip;
 			rightColumn = add(showYourCombatRangeCirclesCheckBox = new CheckBox("Show Your Combat Range Circles"){
 				{a = Utils.getprefb("showYourCombatRangeCircles", false);}
@@ -2526,7 +2532,7 @@ public class OptWnd extends Window {
 				Utils.setprefsa("partyChatPing" + "_colorSetting", new String[]{"243", "0", "0", "255"});
 				partyChatPingColorOptionWidget.cb.colorChooser.setColor(partyChatPingColorOptionWidget.currentColor = new Color(243, 0, 0, 255));
 			}), partyChatPingColorOptionWidget.pos("ur").adds(10, 0)).tooltip = resetButtonTooltip;
-			rightColumn = add(showObjectsSpeedCheckBox = new CheckBox("Show Objects Speed"){
+			rightColumn = add(showObjectsSpeedCheckBox = new CheckBox("Show Objects Speed (Gob)"){
 				{a = Utils.getprefb("showObjectsSpeed", false);}
 				public void changed(boolean val) {
 					Utils.setprefb("showObjectsSpeed", val);
@@ -2630,46 +2636,20 @@ public class OptWnd extends Window {
 			}, rightColumn.pos("bl").adds(0, 2));
 			showCheeseRacksTierTextCheckBox.tooltip = showCheeseRacksTierTextTooltip;
 
-			//gnomeness
-			rightColumn = add(drawChaseVectorsCheckBox = new CheckBox("Draw Chase Vectors"){
-				{a = Utils.getprefb("drawChaseVectors", true);}
-				public void changed(boolean val) {
-					Utils.setprefb("drawChaseVectors", val);
-				}
-			}, UI.scale(480, 0));
-			drawChaseVectorsCheckBox.tooltip = drawChaseVectorsTooltip;
-			rightColumn = add(drawYourCurrentPathCheckBox = new CheckBox("Draw Your Current Path"){
-				{a = Utils.getprefb("drawYourCurrentPath", false);}
-				public void changed(boolean val) {
-					Utils.setprefb("drawYourCurrentPath", val);
-				}
-			}, rightColumn.pos("bl").adds(0, 2));
-			rightColumn = add(drawYourCurrentPathColorOptionWidget = new ColorOptionWidget("Your path color:", "yourCurrentPath", 115, Integer.parseInt(drawYourCurrentPathColorSetting[0]), Integer.parseInt(drawYourCurrentPathColorSetting[1]), Integer.parseInt(drawYourCurrentPathColorSetting[2]), Integer.parseInt(drawYourCurrentPathColorSetting[3]), (Color col) -> {
-				if (ui != null && ui.gui != null) {
-					ui.sess.glob.oc.gobAction(Gob::updateSpeedBuffAuras);
-				}
-			}){}, rightColumn.pos("bl").adds(0, 2));
-			add(new Button(UI.scale(70), "Reset", false).action(() -> {
-				Utils.setprefsa("drawYourCurrentPath" + "_colorSetting", new String[]{"255", "255", "255", "120"});
-				drawYourCurrentPathColorOptionWidget.cb.colorChooser.setColor(drawYourCurrentPathColorOptionWidget.currentColor = new Color(255, 255, 255, 120));
-				if (ui != null && ui.gui != null) {
-					ui.sess.glob.oc.gobAction(Gob::updateSpeedBuffAuras);
-				}
-			}), drawYourCurrentPathColorOptionWidget.pos("ur").adds(10, 0));
-
-			rightColumn = add(drawPlayerSpeedBarCheckBox = new CheckBox("Draw Player Speed Bar"){
+			//gnominess
+			rightColumn = add(drawPlayerSpeedBarCheckBox = new CheckBox("Draw Player Speed Bar (Fightsess)"){
 				{a = Utils.getprefb("drawSpeedBar", false);}
 				public void changed(boolean val) {
 					Utils.setprefb("drawSpeedBar", val);
 				}
 			}, rightColumn.pos("bl").adds(0, 2));
-			rightColumn = add(drawTargetSpeedBarCheckbox = new CheckBox("Draw Current Targeted Player Speed Bar"){
+			rightColumn = add(drawTargetSpeedBarCheckbox = new CheckBox("Draw Current Targeted Player Speed Bar (Fightsess)"){
 				{a = Utils.getprefb("drawTargetSpeedBar", false);}
 				public void changed(boolean val) {
 					Utils.setprefb("drawTargetSpeedBar", val);
 				}
 			}, rightColumn.pos("bl").add(0, 2));
-			rightColumn = add(drawPlayerBox = new CheckBox("Draw Player Box"){
+			rightColumn = add(drawPlayerBox = new CheckBox("Draw Player and Render Box"){
 				{a = Utils.getprefb("drawPlayerBox", false);}
 				public void changed(boolean val) {
 					Utils.setprefb("drawPlayerBox", val);
@@ -2679,102 +2659,6 @@ public class OptWnd extends Window {
 				}
 
 			}, rightColumn.pos("bl").add(0, 2));
-
-			rightColumn = add(highlightPartyMembersCheckBox = new CheckBox("Highlight Party Members"){
-				{a = Utils.getprefb("highlightPartyMembers", false);}
-				public void changed(boolean val) {
-					Utils.setprefb("highlightPartyMembers", val);
-					if (ui != null && ui.gui != null && ui.gui.map != null && ui.gui.map.partyHighlight != null)
-						ui.gui.map.partyHighlight.update();
-				}
-			}, rightColumn.pos("bl").adds(0, 12));
-			highlightPartyMembersCheckBox.tooltip = highlightPartyMembersTooltip;
-			rightColumn = add(showCirclesUnderPartyMembersCheckBox = new CheckBox("Show Circles under Party Members"){
-				{a = Utils.getprefb("showCirclesUnderPartyMembers", true);}
-				public void changed(boolean val) {
-					Utils.setprefb("showCirclesUnderPartyMembers", val);
-					if (ui != null && ui.gui != null && ui.gui.map != null && ui.gui.map.partyCircles != null)
-						ui.gui.map.partyCircles.update();
-				}
-			}, rightColumn.pos("bl").adds(0, 2));
-			showCirclesUnderPartyMembersCheckBox.tooltip = showCirclesUnderPartyMembersTooltip;
-
-			rightColumn = add(yourselfPartyColorOptionWidget = new ColorOptionWidget("Yourself (Party Color):", "yourselfParty", 115, Integer.parseInt(yourselfPartyColorSetting[0]), Integer.parseInt(yourselfPartyColorSetting[1]), Integer.parseInt(yourselfPartyColorSetting[2]), Integer.parseInt(yourselfPartyColorSetting[3]), (Color col) -> {
-				PartyHighlight.YOURSELF_OL_COLOR = col;
-				PartyCircles.YOURSELF_OL_COLOR = col;
-			}){}, rightColumn.pos("bl").adds(1, 1));
-			add(new Button(UI.scale(70), "Reset", false).action(() -> {
-				Utils.setprefsa("yourselfParty" + "_colorSetting", new String[]{"255", "255", "255", "128"});
-				yourselfPartyColorOptionWidget.cb.colorChooser.setColor(yourselfPartyColorOptionWidget.currentColor = new Color(255, 255, 255, 128));
-				PartyHighlight.YOURSELF_OL_COLOR = yourselfPartyColorOptionWidget.currentColor;
-				PartyCircles.YOURSELF_OL_COLOR = yourselfPartyColorOptionWidget.currentColor;
-			}), yourselfPartyColorOptionWidget.pos("ur").adds(10, 0));
-			rightColumn = add(leaderPartyColorOptionWidget = new ColorOptionWidget("Leader (Party Color):", "leaderParty", 115, Integer.parseInt(leaderPartyColorSetting[0]), Integer.parseInt(leaderPartyColorSetting[1]), Integer.parseInt(leaderPartyColorSetting[2]), Integer.parseInt(leaderPartyColorSetting[3]), (Color col) -> {
-				PartyHighlight.LEADER_OL_COLOR = col;
-				PartyCircles.LEADER_OL_COLOR = col;
-			}){}, rightColumn.pos("bl").adds(0, 4));
-			add(new Button(UI.scale(70), "Reset", false).action(() -> {
-				Utils.setprefsa("leaderParty" + "_colorSetting", new String[]{"0", "74", "208", "164"});
-				leaderPartyColorOptionWidget.cb.colorChooser.setColor(leaderPartyColorOptionWidget.currentColor = new Color(0, 74, 208, 164));
-				PartyHighlight.LEADER_OL_COLOR = leaderPartyColorOptionWidget.currentColor;
-				PartyCircles.LEADER_OL_COLOR = leaderPartyColorOptionWidget.currentColor;
-			}), leaderPartyColorOptionWidget.pos("ur").adds(10, 0));
-			rightColumn = add(memberPartyColorOptionWidget = new ColorOptionWidget("Member (Party Color):", "memberParty", 115, Integer.parseInt(memberPartyColorSetting[0]), Integer.parseInt(memberPartyColorSetting[1]), Integer.parseInt(memberPartyColorSetting[2]), Integer.parseInt(memberPartyColorSetting[3]), (Color col) -> {
-				PartyHighlight.MEMBER_OL_COLOR = col;
-				PartyCircles.MEMBER_OL_COLOR = col;
-			}){}, rightColumn.pos("bl").adds(0, 4));
-			add(new Button(UI.scale(70), "Reset", false).action(() -> {
-				Utils.setprefsa("memberParty" + "_colorSetting", new String[]{"0", "160", "0", "164"});
-				memberPartyColorOptionWidget.cb.colorChooser.setColor(memberPartyColorOptionWidget.currentColor = new Color(0, 160, 0, 164));
-				PartyHighlight.MEMBER_OL_COLOR = memberPartyColorOptionWidget.currentColor;
-				PartyCircles.MEMBER_OL_COLOR = memberPartyColorOptionWidget.currentColor;
-			}), memberPartyColorOptionWidget.pos("ur").adds(10, 0));
-
-			rightColumn = add(highlightCombatFoesCheckBox = new CheckBox("Highlight Combat Foes"){
-				{a = Utils.getprefb("highlightCombatFoes", false);}
-				public void changed(boolean val) {
-					Utils.setprefb("highlightCombatFoes", val);
-				}
-			}, rightColumn.pos("bl").adds(0, 12).x(UI.scale(480)));
-			rightColumn = add(showCirclesUnderCombatFoesCheckBox = new CheckBox("Show Circles under Combat Foes"){
-				{a = Utils.getprefb("showCirclesUnderCombatFoes", true);}
-				public void changed(boolean val) {
-					Utils.setprefb("showCirclesUnderCombatFoes", val);
-				}
-			}, rightColumn.pos("bl").adds(0, 2));
-
-			rightColumn = add(combatFoeColorOptionWidget = new ColorOptionWidget("Combat Foes:", "combatFoes", 115, Integer.parseInt(combatFoeColorSetting[0]), Integer.parseInt(combatFoeColorSetting[1]), Integer.parseInt(combatFoeColorSetting[2]), Integer.parseInt(combatFoeColorSetting[3]), (Color col) -> {
-				GobCombatHighlight.COMBAT_FOE_MIXCOLOR = new MixColor(col.getRed(), col.getGreen(), col.getBlue(), col.getAlpha());
-				AggroCircleSprite.COMBAT_FOE_COLOR = col;
-				if (ui != null && ui.gui != null) {
-					ui.sess.glob.oc.gobAction(Gob::removeCombatFoeCircleOverlay);
-					ui.sess.glob.oc.gobAction(Gob::removeCombatFoeHighlight);
-				}
-			}){}, rightColumn.pos("bl").adds(1, 1));
-			add(new Button(UI.scale(70), "Reset", false).action(() -> {
-				Utils.setprefsa("combatFoes" + "_colorSetting", new String[]{"160", "0", "0", "164"});
-				combatFoeColorOptionWidget.cb.colorChooser.setColor(combatFoeColorOptionWidget.currentColor = new Color(180, 0, 0, 196));
-				GobCombatHighlight.COMBAT_FOE_MIXCOLOR = new MixColor(combatFoeColorOptionWidget.currentColor.getRed(), combatFoeColorOptionWidget.currentColor.getGreen(), combatFoeColorOptionWidget.currentColor.getBlue(), combatFoeColorOptionWidget.currentColor.getAlpha());
-				AggroCircleSprite.COMBAT_FOE_COLOR = combatFoeColorOptionWidget.currentColor;
-				if (ui != null && ui.gui != null) {
-					ui.sess.glob.oc.gobAction(Gob::removeCombatFoeCircleOverlay);
-					ui.sess.glob.oc.gobAction(Gob::removeCombatFoeHighlight);
-				}
-			}), combatFoeColorOptionWidget.pos("ur").adds(10, 0));
-
-			rightColumn = add(new Label("Object Pinging Colors:"), rightColumn.pos("bl").adds(0, 12).x(480));
-			rightColumn = add(areaChatPingColorOptionWidget = new ColorOptionWidget("Area Chat (Alt+LClick):", "areaChatPing", 115, Integer.parseInt(areaChatPingColorSetting[0]), Integer.parseInt(areaChatPingColorSetting[1]), Integer.parseInt(areaChatPingColorSetting[2]), Integer.parseInt(areaChatPingColorSetting[3]), (Color col) -> {
-			}){}, rightColumn.pos("bl").adds(1, 1));
-			add(new Button(UI.scale(70), "Reset", false).action(() -> {
-				Utils.setprefsa("areaChatPing" + "_colorSetting", new String[]{"255", "183", "0", "255"});
-				areaChatPingColorOptionWidget.cb.colorChooser.setColor(areaChatPingColorOptionWidget.currentColor = new Color(255, 183, 0, 255));
-			}), areaChatPingColorOptionWidget.pos("ur").adds(10, 0));
-			rightColumn = add(partyChatPingColorOptionWidget = new ColorOptionWidget("Party Chat (Alt+RClick):", "partyChatPing", 115, Integer.parseInt(partyChatPingColorSetting[0]), Integer.parseInt(partyChatPingColorSetting[1]), Integer.parseInt(partyChatPingColorSetting[2]), Integer.parseInt(partyChatPingColorSetting[3]), (Color col) -> {
-			}){}, rightColumn.pos("bl").adds(0, 4));
-			add(new Button(UI.scale(70), "Reset", false).action(() -> {
-				Utils.setprefsa("partyChatPing" + "_colorSetting", new String[]{"243", "0", "0", "255"});
-				partyChatPingColorOptionWidget.cb.colorChooser.setColor(partyChatPingColorOptionWidget.currentColor = new Color(243, 0, 0, 255));
-			}), partyChatPingColorOptionWidget.pos("ur").adds(10, 0));
 
 			Widget backButton;
 			add(backButton = new PButton(UI.scale(200), "Back", 27, back, "Advanced Settings"), leftColumn.pos("bl").adds(0, 18).x(0));
