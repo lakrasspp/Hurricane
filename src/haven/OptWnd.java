@@ -1068,10 +1068,10 @@ public class OptWnd extends Window {
             public void changed(boolean val) {
                 Utils.setprefb("preventEscKeyFromClosingWindows", val);
             }
-        }, rightColumn.pos("bl").adds(0, 2));
+        }, rightColumn.pos("bl").adds(0, 15));
 
 		Widget backButton;
-		add(backButton = new PButton(UI.scale(200), "Back", 27, back, "Advanced Settings"), leftColumn.pos("bl").adds(0, 30).x(0));
+		add(backButton = new PButton(UI.scale(200), "Back", 27, back, "Advanced Settings"), rightColumn.pos("bl").adds(0, 30).x(0));
 	    pack();
 		centerBackButton(backButton, this);
 	}
