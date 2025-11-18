@@ -3388,7 +3388,10 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	}
 
 	public static String getRandomPrefix(Random rand) {
-		return pref.get(rand.nextInt(pref.size()));
+		try{ return pref.get(rand.nextInt(pref.size()));
+			} catch (Exception e) {
+			return "pref";
+		}
 	}
 	public static final List<String> suff = new ArrayList<>();
 	public static final List<String> pref = new ArrayList<>();
@@ -3407,8 +3410,12 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
     }
 
 	public static String getRandomSuffix(Random rand) {
-		return suff.get(rand.nextInt(suff.size()));
-	}
+        try {
+            return suff.get(rand.nextInt(suff.size()));
+        } catch (Exception e) {
+            return "suf";
+        }
+    }
 
 	public void aggroPinged() {
 		try{
