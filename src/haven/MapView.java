@@ -1241,7 +1241,10 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
     private void amblight() {
 	synchronized(glob) {
 	    if(glob.lightamb != null) {
-		amblight = new DirLight(glob.blightamb, glob.blightdif, glob.blightspc, Coord3f.o.sadd((float)glob.lightelev, (float)glob.lightang, 1f));
+			final Color lamb = OptWnd.ambientColorWidget.currentColor;
+			final Color ldif = OptWnd.diffuseColorWidget.currentColor;
+			final Color lspc = OptWnd.specularColorWidget.currentColor;
+		amblight = new DirLight(lamb, ldif, lspc, Coord3f.o.sadd((float)glob.lightelev, (float)glob.lightang, 1f));
 		amblight.prio(100);
 	    } else {
 		amblight = null;

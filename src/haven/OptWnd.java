@@ -1961,6 +1961,14 @@ public class OptWnd extends Window {
 
 	public static CheckBox objectPermanentHighlightingCheckBox;
 
+	//gnominess
+	public static ColorOptionWidget ambientColorWidget; //Nightvision ambient color
+	public static String[] ambientColorSetting = Utils.getprefsa("ambientColor" + "_colorSetting", new String[]{"0", "0", "0", "255"});
+	public static ColorOptionWidget diffuseColorWidget; //Nightvision diffuse color
+	public static String[] diffuseColorSetting = Utils.getprefsa("diffuseColor" + "_colorSetting", new String[]{"0", "0", "0", "255"});
+	public static ColorOptionWidget specularColorWidget; //Nightvision specular color
+	public static String[] specularColorSetting = Utils.getprefsa("specularColor" + "_colorSetting", new String[]{"0", "0", "0", "255"});
+
 	public class DisplaySettingsPanel extends Panel {
 		public DisplaySettingsPanel(Panel back) {
 			Widget leftColumn;
@@ -2659,6 +2667,30 @@ public class OptWnd extends Window {
 				}
 
 			}, rightColumn.pos("bl").add(0, 2));
+
+
+			//gnoominess
+			rightColumn = add(new Label("World Colors:"), rightColumn.pos("bl").add(0, 2));
+			rightColumn = add(ambientColorWidget = new ColorOptionWidget("Ambient Color:", "ambientColor", 115, Integer.parseInt(ambientColorSetting[0]), Integer.parseInt(ambientColorSetting[1]), Integer.parseInt(ambientColorSetting[2]), Integer.parseInt(ambientColorSetting[3]), (Color col) -> {
+			}){}, rightColumn.pos("bl").adds(0, 2));
+			add(new Button(UI.scale(70), "Reset", false).action(() -> {
+				Utils.setprefsa("ambientColor" + "_colorSetting", new String[]{"255", "255", "255", "0"});
+				ambientColorWidget.cb.colorChooser.setColor(ambientColorWidget.currentColor = new Color(255, 255, 255, 0));
+			}), ambientColorWidget.pos("ur").adds(10, 0)).tooltip = resetButtonTooltip;
+
+			rightColumn = add(diffuseColorWidget = new ColorOptionWidget("Diffuse Color:", "diffuseColor", 115, Integer.parseInt(diffuseColorSetting[0]), Integer.parseInt(diffuseColorSetting[1]), Integer.parseInt(diffuseColorSetting[2]), Integer.parseInt(diffuseColorSetting[3]), (Color col) -> {
+			}){}, rightColumn.pos("bl").adds(0, 2));
+			add(new Button(UI.scale(70), "Reset", false).action(() -> {
+				Utils.setprefsa("diffuseColor" + "_colorSetting", new String[]{"255", "255", "255", "0"});
+				diffuseColorWidget.cb.colorChooser.setColor(diffuseColorWidget.currentColor = new Color(255, 255, 255, 0));
+			}), diffuseColorWidget.pos("ur").adds(10, 0)).tooltip = resetButtonTooltip;
+
+			rightColumn = add(specularColorWidget = new ColorOptionWidget("Cpecular Color:", "specularColor", 115, Integer.parseInt(specularColorSetting[0]), Integer.parseInt(specularColorSetting[1]), Integer.parseInt(specularColorSetting[2]), Integer.parseInt(specularColorSetting[3]), (Color col) -> {
+			}){}, rightColumn.pos("bl").adds(0, 2));
+			add(new Button(UI.scale(70), "Reset", false).action(() -> {
+				Utils.setprefsa("ambientColor" + "_colorSetting", new String[]{"255", "255", "255", "0"});
+				specularColorWidget.cb.colorChooser.setColor(specularColorWidget.currentColor = new Color(255, 255, 255, 0));
+			}), specularColorWidget.pos("ur").adds(10, 0)).tooltip = resetButtonTooltip;
 
 			Widget backButton;
 			add(backButton = new PButton(UI.scale(200), "Back", 27, back, "Advanced Settings"), leftColumn.pos("bl").adds(0, 18).x(0));
