@@ -2675,21 +2675,21 @@ public class OptWnd extends Window {
 			}){}, rightColumn.pos("bl").adds(0, 2));
 			add(new Button(UI.scale(70), "Reset", false).action(() -> {
 				Utils.setprefsa("ambientColor" + "_colorSetting", new String[]{"255", "255", "255", "0"});
-				ambientColorWidget.cb.colorChooser.setColor(ambientColorWidget.currentColor = new Color(255, 255, 255, 0));
+				ambientColorWidget.cb.colorChooser.setColor(ambientColorWidget.currentColor = new Color(255, 255, 255, 255));
 			}), ambientColorWidget.pos("ur").adds(10, 0)).tooltip = resetButtonTooltip;
 
 			rightColumn = add(diffuseColorWidget = new ColorOptionWidget("Diffuse Color:", "diffuseColor", 115, Integer.parseInt(diffuseColorSetting[0]), Integer.parseInt(diffuseColorSetting[1]), Integer.parseInt(diffuseColorSetting[2]), Integer.parseInt(diffuseColorSetting[3]), (Color col) -> {
 			}){}, rightColumn.pos("bl").adds(0, 2));
 			add(new Button(UI.scale(70), "Reset", false).action(() -> {
 				Utils.setprefsa("diffuseColor" + "_colorSetting", new String[]{"255", "255", "255", "0"});
-				diffuseColorWidget.cb.colorChooser.setColor(diffuseColorWidget.currentColor = new Color(255, 255, 255, 0));
+				diffuseColorWidget.cb.colorChooser.setColor(diffuseColorWidget.currentColor = new Color(255, 255, 255, 255));
 			}), diffuseColorWidget.pos("ur").adds(10, 0)).tooltip = resetButtonTooltip;
 
 			rightColumn = add(specularColorWidget = new ColorOptionWidget("Cpecular Color:", "specularColor", 115, Integer.parseInt(specularColorSetting[0]), Integer.parseInt(specularColorSetting[1]), Integer.parseInt(specularColorSetting[2]), Integer.parseInt(specularColorSetting[3]), (Color col) -> {
 			}){}, rightColumn.pos("bl").adds(0, 2));
 			add(new Button(UI.scale(70), "Reset", false).action(() -> {
 				Utils.setprefsa("ambientColor" + "_colorSetting", new String[]{"255", "255", "255", "0"});
-				specularColorWidget.cb.colorChooser.setColor(specularColorWidget.currentColor = new Color(255, 255, 255, 0));
+				specularColorWidget.cb.colorChooser.setColor(specularColorWidget.currentColor = new Color(255, 255, 255, 255));
 			}), specularColorWidget.pos("ur").adds(10, 0)).tooltip = resetButtonTooltip;
 
 			Widget backButton;
