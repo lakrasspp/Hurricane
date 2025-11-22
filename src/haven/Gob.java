@@ -1481,6 +1481,19 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		}
 	}
 
+	public void resetHidingBoxes() {
+		if (hidingBoxHollow != null) {
+			hidingBoxHollow.show(false);
+			hidingBoxHollow = null;
+		}
+		if (hidingBoxFilled != null) {
+			hidingBoxFilled.show(false);
+			hidingBoxFilled = null;
+		}
+		updateHidingBoxes(); // will rebuild with new colors
+	}
+
+
 	public void updateHidingBoxes() {
 		if (updateseq == 0)
 			return;

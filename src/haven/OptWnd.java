@@ -4216,9 +4216,9 @@ public class OptWnd extends Window {
 	public static String[] hiddenObjectsColorSetting = Utils.getprefsa("hidingBox" + "_colorSetting", new String[]{"0", "225", "255", "170"});
 
 	//gnoominess
-	public static Color treeHidingColor = new Color(0, 200, 255, 170);
+	public static Color treeHidingColor = new Color(255, 255, 255, 255);
 	public static ColorOptionWidget hiddenTreeColorOptionWidget;
-	public static String[] hiddenTreeColorSetting = Utils.getprefsa("hidingBoxTree" + "_colorSetting", new String[]{"0", "200", "255", "170"});
+	public static String[] hiddenTreeColorSetting = Utils.getprefsa("hidingBoxTree" + "_colorSetting", new String[]{"255", "255", "255", "170"});
 
 	public static Color stumpHidingColor = Color.yellow;
 	public static ColorOptionWidget hiddenStumpColorOptionWidget;
@@ -4462,17 +4462,17 @@ public class OptWnd extends Window {
 			prev = add(hiddenTreeColorOptionWidget = new ColorOptionWidget("Hidden Trees Color:", "hidingBoxTree", 170, Integer.parseInt(hiddenTreeColorSetting[0]), Integer.parseInt(hiddenTreeColorSetting[1]), Integer.parseInt(hiddenTreeColorSetting[2]), Integer.parseInt(hiddenTreeColorSetting[3]), (Color col) -> {
 				if (ui != null && ui.gui != null) {
 					treeHidingColor = col;
-					ui.sess.glob.oc.gobAction(Gob::updateHidingBoxes);
+					ui.sess.glob.oc.gobAction(Gob::resetHidingBoxes);
 					ui.gui.map.updatePlobHidingBox();
 				}
 			}){}, prev.pos("bl").adds(-140, 5));
 
 			prev = add(new Button(UI.scale(70), "Reset", false).action(() -> {
-				Utils.setprefsa("hidingBoxTree" + "_colorSetting", new String[]{"255", "225", "255", "170"});
+				Utils.setprefsa("hidingBoxTree" + "_colorSetting", new String[]{"255", "225", "255", "255"});
 				hiddenTreeColorOptionWidget.cb.colorChooser.setColor(hiddenTreeColorOptionWidget.currentColor = Color.WHITE);
 				if (ui != null && ui.gui != null) {
 					treeHidingColor = Color.WHITE;
-					ui.sess.glob.oc.gobAction(Gob::updateHidingBoxes);
+					ui.sess.glob.oc.gobAction(Gob::resetHidingBoxes);
 					ui.gui.map.updatePlobHidingBox();
 				}
 			}), prev.pos("ur").adds(30, 0));
@@ -4480,7 +4480,7 @@ public class OptWnd extends Window {
 			prev = add(hiddenStumpColorOptionWidget = new ColorOptionWidget("Hidden Stumps Color:", "hidingBoxStump", 170, Integer.parseInt(hiddenStumpColorSetting[0]), Integer.parseInt(hiddenStumpColorSetting[1]), Integer.parseInt(hiddenStumpColorSetting[2]), Integer.parseInt(hiddenStumpColorSetting[3]), (Color col) -> {
 				if (ui != null && ui.gui != null) {
 					stumpHidingColor = col;
-					ui.sess.glob.oc.gobAction(Gob::updateHidingBoxes);
+					ui.sess.glob.oc.gobAction(Gob::resetHidingBoxes);
 					ui.gui.map.updatePlobHidingBox();
 				}
 			}){}, prev.pos("bl").adds(-222, 5));
@@ -4490,7 +4490,7 @@ public class OptWnd extends Window {
 				hiddenStumpColorOptionWidget.cb.colorChooser.setColor(hiddenStumpColorOptionWidget.currentColor = Color.YELLOW);
 				if (ui != null && ui.gui != null) {
 					stumpHidingColor = Color.YELLOW;
-					ui.sess.glob.oc.gobAction(Gob::updateHidingBoxes);
+					ui.sess.glob.oc.gobAction(Gob::resetHidingBoxes);
 					ui.gui.map.updatePlobHidingBox();
 				}
 			}), prev.pos("ur").adds(30, 0));
@@ -4498,7 +4498,7 @@ public class OptWnd extends Window {
 			prev = add(hiddenBushColorOptionWidget = new ColorOptionWidget("Hidden Bush Color:", "hidingBoxBush", 170, Integer.parseInt(hiddenBushColorSetting[0]), Integer.parseInt(hiddenBushColorSetting[1]), Integer.parseInt(hiddenBushColorSetting[2]), Integer.parseInt(hiddenBushColorSetting[3]), (Color col) -> {
 				if (ui != null && ui.gui != null) {
 					bushHidingColor = col;
-					ui.sess.glob.oc.gobAction(Gob::updateHidingBoxes);
+					ui.sess.glob.oc.gobAction(Gob::resetHidingBoxes);
 					ui.gui.map.updatePlobHidingBox();
 				}
 			}){}, prev.pos("bl").adds(-222, 5));
@@ -4508,7 +4508,7 @@ public class OptWnd extends Window {
 				hiddenBushColorOptionWidget.cb.colorChooser.setColor(hiddenBushColorOptionWidget.currentColor = new Color(255, 150, 0, 170));
 				if (ui != null && ui.gui != null) {
 					bushHidingColor = new Color(255, 150, 0, 170);
-					ui.sess.glob.oc.gobAction(Gob::updateHidingBoxes);
+					ui.sess.glob.oc.gobAction(Gob::resetHidingBoxes);
 					ui.gui.map.updatePlobHidingBox();
 				}
 			}), prev.pos("ur").adds(30, 0));
@@ -4516,7 +4516,7 @@ public class OptWnd extends Window {
 			prev = add(hiddenBoulderColorOptionWidget = new ColorOptionWidget("Hidden Boulder Color:", "hidingBoxBoulder", 170, Integer.parseInt(hiddenBoulderColorSetting[0]), Integer.parseInt(hiddenBoulderColorSetting[1]), Integer.parseInt(hiddenBoulderColorSetting[2]), Integer.parseInt(hiddenBoulderColorSetting[3]), (Color col) -> {
 				if (ui != null && ui.gui != null) {
 					boulderHidingColor = col;
-					ui.sess.glob.oc.gobAction(Gob::updateHidingBoxes);
+					ui.sess.glob.oc.gobAction(Gob::resetHidingBoxes);
 					ui.gui.map.updatePlobHidingBox();
 				}
 			}){}, prev.pos("bl").adds(-222, 5));
@@ -4526,7 +4526,7 @@ public class OptWnd extends Window {
 				hiddenBoulderColorOptionWidget.cb.colorChooser.setColor(hiddenBoulderColorOptionWidget.currentColor = new Color(180, 180, 180, 170));
 				if (ui != null && ui.gui != null) {
 					boulderHidingColor = new Color(180, 180, 180, 170);
-					ui.sess.glob.oc.gobAction(Gob::updateHidingBoxes);
+					ui.sess.glob.oc.gobAction(Gob::resetHidingBoxes);
 					ui.gui.map.updatePlobHidingBox();
 				}
 			}), prev.pos("ur").adds(30, 0));
@@ -4534,7 +4534,7 @@ public class OptWnd extends Window {
 			prev = add(hiddenLogColorOptionWidget = new ColorOptionWidget("Hidden Log Color:", "hidingBoxLog", 170, Integer.parseInt(hiddenLogColorSetting[0]), Integer.parseInt(hiddenLogColorSetting[1]), Integer.parseInt(hiddenLogColorSetting[2]), Integer.parseInt(hiddenLogColorSetting[3]), (Color col) -> {
 				if (ui != null && ui.gui != null) {
 					logHidingColor = col;
-					ui.sess.glob.oc.gobAction(Gob::updateHidingBoxes);
+					ui.sess.glob.oc.gobAction(Gob::resetHidingBoxes);
 					ui.gui.map.updatePlobHidingBox();
 				}
 			}){}, prev.pos("bl").adds(-222, 5));
@@ -4544,7 +4544,7 @@ public class OptWnd extends Window {
 				hiddenLogColorOptionWidget.cb.colorChooser.setColor(hiddenLogColorOptionWidget.currentColor = new Color(0, 128, 0, 170));
 				if (ui != null && ui.gui != null) {
 					logHidingColor = new Color(0, 128, 0, 170);
-					ui.sess.glob.oc.gobAction(Gob::updateHidingBoxes);
+					ui.sess.glob.oc.gobAction(Gob::resetHidingBoxes);
 					ui.gui.map.updatePlobHidingBox();
 				}
 			}), prev.pos("ur").adds(30, 0));
