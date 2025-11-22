@@ -17,7 +17,7 @@ public class AccountList extends Widget {
         try {
             if (savedAccounts != null) {
                 for (String s : savedAccounts) {
-                    String[] split = s.split(";");// \(ಠ‿ಠ\)
+                    String[] split = s.split("\\(ಠ‿ಠ\\)");
                     if (!accountmap.containsKey(split[0])) {
                         accountmap.put(split[0], split[1]);
                     }
