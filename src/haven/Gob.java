@@ -1482,9 +1482,9 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	}
 
 	public void updateHidingBoxes() {
-		if (updateseq == 0) {
+		if (updateseq == 0)
 			return;
-		}
+
 		boolean mapIconVisible = false;
 		try { // ND: If we don't try catch this, "Tried to wait for unwaitable event" is thrown and the gob (noticed with players) is loaded but won't move around. Spooky.
 			if (OptWnd.dontHideObjectsThatHaveTheirMapIconEnabledCheckBox.a) {
@@ -1493,9 +1493,8 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 				GobIcon icon = getattr(GobIcon.class);
 				if (icon != null && glob.sess.ui.gui != null && glob.sess.ui.gui.iconconf != null) {
 					GobIcon.Setting conf = glob.sess.ui.gui.iconconf.get(icon.icon());
-					if (conf != null && conf.show) {
+					if (conf != null && conf.show)
 						mapIconVisible = true;
-					}
 				}
 			}
 		} catch (Loading ignored) {}
@@ -1504,68 +1503,135 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		Resource res = Gob.this.getres();
 		if (res != null) {
 			String resName = res.name;
-			if (OptWnd.hideTreesCheckbox.a && resName.startsWith("gfx/terobjs/trees") && !resName.endsWith("log") && !resName.endsWith("oldtrunk")) {
+			Color hidingColor = null;
+
+			if (OptWnd.hideTreesCheckbox.a &&
+					resName.startsWith("gfx/terobjs/trees") &&
+					!resName.endsWith("log") &&
+					!resName.endsWith("stump") &&
+					!resName.endsWith("oldtrunk")) {
+
 				doHide = OptWnd.toggleGobHidingCheckBox.a;
 				doShowHidingBox = true;
-			} else if (OptWnd.hideBushesCheckbox.a && resName.startsWith("gfx/terobjs/bushes")) {
+				hidingColor = OptWnd.treeHidingColor;
+			} else if (OptWnd.hideStumpsCheckbox.a &&
+					resName.startsWith("gfx/terobjs/trees") &&
+					resName.endsWith("stump")) {
+
 				doHide = OptWnd.toggleGobHidingCheckBox.a;
 				doShowHidingBox = true;
-			} else if (OptWnd.hideBouldersCheckbox.a && resName.startsWith("gfx/terobjs/bumlings")) {
+				hidingColor = OptWnd.stumpHidingColor;
+
+			} else if (OptWnd.hideBushesCheckbox.a &&
+					resName.startsWith("gfx/terobjs/bushes")) {
+
 				doHide = OptWnd.toggleGobHidingCheckBox.a;
 				doShowHidingBox = true;
-			} else if (OptWnd.hideTreeLogsCheckbox.a && resName.startsWith("gfx/terobjs/trees") && (resName.endsWith("log") || resName.endsWith("oldtrunk"))) {
+				hidingColor = OptWnd.bushHidingColor;
+
+			} else if (OptWnd.hideBouldersCheckbox.a &&
+					resName.startsWith("gfx/terobjs/bumlings")) {
+
 				doHide = OptWnd.toggleGobHidingCheckBox.a;
 				doShowHidingBox = true;
-			} else if (OptWnd.hideWallsCheckbox.a && (resName.startsWith("gfx/terobjs/arch/palisade") || resName.startsWith("gfx/terobjs/arch/brickwall")) && !resName.endsWith("gate")) {
+				hidingColor = OptWnd.boulderHidingColor;
+
+			} else if (OptWnd.hideTreeLogsCheckbox.a &&
+					resName.startsWith("gfx/terobjs/trees") &&
+					(resName.endsWith("log") || resName.endsWith("oldtrunk"))) {
+
 				doHide = OptWnd.toggleGobHidingCheckBox.a;
 				doShowHidingBox = true;
-			} else if (OptWnd.hideHousesCheckbox.a && Arrays.asList(Config.housesResPaths).contains(resName)) {
+				hidingColor = OptWnd.logHidingColor;
+
+			} else if (OptWnd.hideWallsCheckbox.a &&
+					(resName.startsWith("gfx/terobjs/arch/palisade") ||
+							resName.startsWith("gfx/terobjs/arch/brickwall")) &&
+					!resName.endsWith("gate")) {
+
 				doHide = OptWnd.toggleGobHidingCheckBox.a;
 				doShowHidingBox = true;
-			} else if (OptWnd.hideStockpilesCheckbox.a && resName.startsWith("gfx/terobjs/stockpile")) {
+				hidingColor = OptWnd.wallHidingColor;
+
+			} else if (OptWnd.hideHousesCheckbox.a &&
+					Arrays.asList(Config.housesResPaths).contains(resName)) {
+
 				doHide = OptWnd.toggleGobHidingCheckBox.a;
 				doShowHidingBox = true;
-			} else if (OptWnd.hideCropsCheckbox.a && resName.startsWith("gfx/terobjs/plants") && !resName.endsWith("trellis")) {
-				doHide = OptWnd.toggleGobHidingCheckBox.a;
-				doShowHidingBox = false; // ND: You can walk through them anyway, so it doesn't matter. Their resource doesn't have an actual hitbox layer and we'll have an endless lag loop of trying to draw one.
-			} else if (OptWnd.hideTrellisCheckbox.a && resName.endsWith("trellis")) {
-				doHide = OptWnd.toggleGobHidingCheckBox.a;
-				doShowHidingBox = true;
-			} else if(OptWnd.hideCheeseRacksCheckBox.a && resName.endsWith("cheeserack")) {
+				hidingColor = OptWnd.houseHidingColor;
+
+			} else if (OptWnd.hideStockpilesCheckbox.a &&
+					resName.startsWith("gfx/terobjs/stockpile")) {
+
 				doHide = OptWnd.toggleGobHidingCheckBox.a;
 				doShowHidingBox = true;
-			} else if (OptWnd.hideDryingFramesCheckbox.a && resName.endsWith("dframe")) {
+				hidingColor = OptWnd.stockpileHidingColor;
+
+			} else if (OptWnd.hideCropsCheckbox.a &&
+					resName.startsWith("gfx/terobjs/plants") &&
+					!resName.endsWith("trellis")) {
+
+				// crops have no usable hitboxes, do not draw the hidbox
+				doHide = OptWnd.toggleGobHidingCheckBox.a;
+				doShowHidingBox = false;
+
+			} else if (OptWnd.hideTrellisCheckbox.a &&
+					resName.endsWith("trellis")) {
+
 				doHide = OptWnd.toggleGobHidingCheckBox.a;
 				doShowHidingBox = true;
-			} else if (OptWnd.hideSquirrelCachesCheckbox.a && resName.startsWith("gfx/terobjs/map/squirrelcache")) {
+				hidingColor = OptWnd.defaultColor;
+
+			} else if (OptWnd.hideCheeseRacksCheckBox.a &&
+					resName.endsWith("cheeserack")) {
+
 				doHide = OptWnd.toggleGobHidingCheckBox.a;
 				doShowHidingBox = true;
+				hidingColor = OptWnd.defaultColor;
+
+			} else if (OptWnd.hideDryingFramesCheckbox.a &&
+					resName.endsWith("dframe")) {
+
+				doHide = OptWnd.toggleGobHidingCheckBox.a;
+				doShowHidingBox = true;
+				hidingColor = OptWnd.defaultColor;
+
+			} else if (OptWnd.hideSquirrelCachesCheckbox.a &&
+					resName.startsWith("gfx/terobjs/map/squirrelcache")) {
+
+				doHide = OptWnd.toggleGobHidingCheckBox.a;
+				doShowHidingBox = true;
+				hidingColor = OptWnd.defaultColor;
 			}
-			doHide = (doHide && !mapIconVisible);
-			doShowHidingBox = (doShowHidingBox && !mapIconVisible);
+
+			doHide = doHide && !mapIconVisible;
+			doShowHidingBox = doShowHidingBox && !mapIconVisible;
+
 			isHidden = doHide;
+
 			Drawable d = getattr(Drawable.class);
-			if (d != null && d.skipRender != (doHide) ) {
+			if (d != null && d.skipRender != doHide) {
 				d.skipRender = doHide;
+
 				if (doHide) {
 					if (d.slots != null) {
-						ArrayList<RenderTree.Slot> tmpSlots = new ArrayList<>(d.slots);
-						glob.loader.defer(() -> RUtils.multiremSafe(tmpSlots), null);
+						ArrayList<RenderTree.Slot> tmp = new ArrayList<>(d.slots);
+						glob.loader.defer(() -> RUtils.multiremSafe(tmp), null);
 					}
 				} else {
-					ArrayList<RenderTree.Slot> tmpSlots = new ArrayList<>(slots);
-					glob.loader.defer(() -> RUtils.multiaddSafe(tmpSlots, d), null);
+					ArrayList<RenderTree.Slot> tmp = new ArrayList<>(slots);
+					glob.loader.defer(() -> RUtils.multiaddSafe(tmp, d), null);
 				}
 			}
-			if ((OptWnd.toggleGobHidingCheckBox.a && doShowHidingBox)) {
+
+			if (OptWnd.toggleGobHidingCheckBox.a && doShowHidingBox) {
 				if (hidingBoxHollow != null) {
-					if (!hidingBoxHollow.show(true)) {
+					if (!hidingBoxHollow.show(true))
 						hidingBoxHollow.fx.updateState();
-					}
 				} else if (!virtual || this instanceof MapView.Plob) {
-					HidingBox hidingBoxHollow = HidingBox.forGob(this, false);
-					if (hidingBoxHollow != null) {
-						this.hidingBoxHollow = new HitBoxGobSprite<>(this, hidingBoxHollow);
+					HidingBox hb = HidingBox.forGob(this, false, hidingColor);
+					if (hb != null) {
+						this.hidingBoxHollow = new HitBoxGobSprite<>(this, hb);
 						synchronized (ols) {
 							addol(this.hidingBoxHollow);
 						}
@@ -1575,21 +1641,22 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 				hidingBoxHollow.show(false);
 			}
 
-			if ((OptWnd.toggleGobHidingCheckBox.a && OptWnd.alsoFillTheHidingBoxesCheckBox.a && doShowHidingBox)) {
+			if (OptWnd.toggleGobHidingCheckBox.a &&
+					OptWnd.alsoFillTheHidingBoxesCheckBox.a &&
+					doShowHidingBox) {
 				if (hidingBoxFilled != null) {
-					if (!hidingBoxFilled.show(true)) {
+					if (!hidingBoxFilled.show(true))
 						hidingBoxFilled.fx.updateState();
-					}
 				} else if (!virtual || this instanceof MapView.Plob) {
-					HidingBox hidingBoxFilled = HidingBox.forGob(this, true);
-					if (hidingBoxFilled != null) {
-						this.hidingBoxFilled = new HitBoxGobSprite<>(this, hidingBoxFilled);
+					HidingBox hb = HidingBox.forGob(this, true, hidingColor);
+					if (hb != null) {
+						this.hidingBoxFilled = new HitBoxGobSprite<>(this, hb);
 						synchronized (ols) {
 							addol(this.hidingBoxFilled);
 						}
 					}
 				}
-			} else if(hidingBoxFilled != null) {
+			} else if (hidingBoxFilled != null) {
 				hidingBoxFilled.show(false);
 			}
 		}

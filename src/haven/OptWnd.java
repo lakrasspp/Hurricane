@@ -4200,6 +4200,7 @@ public class OptWnd extends Window {
 	public static CheckBox alsoFillTheHidingBoxesCheckBox;
 	public static CheckBox dontHideObjectsThatHaveTheirMapIconEnabledCheckBox;
 	public static CheckBox hideTreesCheckbox;
+	public static CheckBox hideStumpsCheckbox;
 	public static CheckBox hideBushesCheckbox;
 	public static CheckBox hideBouldersCheckbox;
 	public static CheckBox hideTreeLogsCheckbox;
@@ -4213,6 +4214,32 @@ public class OptWnd extends Window {
 	public static CheckBox hideStockpilesCheckbox;
 	public static ColorOptionWidget hiddenObjectsColorOptionWidget;
 	public static String[] hiddenObjectsColorSetting = Utils.getprefsa("hidingBox" + "_colorSetting", new String[]{"0", "225", "255", "170"});
+
+	//gnoominess
+	public static Color treeHidingColor = new Color(0, 200, 255, 170);
+	public static ColorOptionWidget hiddenTreeColorOptionWidget;
+	public static String[] hiddenTreeColorSetting = Utils.getprefsa("hidingBoxTree" + "_colorSetting", new String[]{"0", "200", "255", "170"});
+
+	public static Color stumpHidingColor = Color.yellow;
+	public static ColorOptionWidget hiddenStumpColorOptionWidget;
+	public static String[] hiddenStumpColorSetting = Utils.getprefsa("hidingBoxStump" + "_colorSetting", new String[]{"255", "255", "0", "170"});
+
+	public static Color bushHidingColor = new Color(255, 150, 0, 170);
+	public static ColorOptionWidget hiddenBushColorOptionWidget;
+	public static String[] hiddenBushColorSetting = Utils.getprefsa("hidingBoxBush" + "_colorSetting", new String[]{"255", "150", "0", "170"});
+
+	public static Color boulderHidingColor = new Color(180, 180, 180, 170);
+	public static ColorOptionWidget hiddenBoulderColorOptionWidget;
+	public static String[] hiddenBoulderColorSetting = Utils.getprefsa("hidingBoxBoulder" + "_colorSetting", new String[]{"180", "180", "180", "170"});
+
+	public static Color logHidingColor = new Color(0, 128, 0, 170);
+	public static ColorOptionWidget hiddenLogColorOptionWidget;
+	public static String[] hiddenLogColorSetting = Utils.getprefsa("hidingBoxLog" + "_colorSetting", new String[]{"0", "128", "0", "170"});
+
+	public static Color houseHidingColor = new Color(200, 0, 200, 170);
+	public static Color wallHidingColor = new Color(255, 0, 0, 170);
+	public static Color stockpileHidingColor = new Color(0, 255, 150, 170);
+	public static Color defaultColor = Color.WHITE;
 
 	public class HidingSettingsPanel extends Panel {
 		private int addbtn(Widget cont, String nm, KeyBinding cmd, int y) {
@@ -4264,10 +4291,9 @@ public class OptWnd extends Window {
 			Widget cont = scroll.cont;
 			addbtn(cont, "Toggle object hiding hotkey:", GameUI.kb_toggleHidingBoxes, 0);
 
-			prev = add(hiddenObjectsColorOptionWidget = new ColorOptionWidget("Hidden Objects Box Color:", "hidingBox", 170, Integer.parseInt(hiddenObjectsColorSetting[0]), Integer.parseInt(hiddenObjectsColorSetting[1]), Integer.parseInt(hiddenObjectsColorSetting[2]), Integer.parseInt(hiddenObjectsColorSetting[3]), (Color col) -> {
-				HidingBox.SOLID_FILLED = Pipe.Op.compose(new BaseColor(col), new States.Facecull(States.Facecull.Mode.NONE), Rendered.last);
-				HidingBox.SOLID_HOLLOW = Pipe.Op.compose(new BaseColor(new Color(col.getRed(), col.getGreen(), col.getBlue(), 153)), new States.LineWidth(HidingBox.WIDTH), HidingBox.TOP);
+			prev = add(hiddenObjectsColorOptionWidget = new ColorOptionWidget("Hidden Objects Box Default Color:", "hidingBox", 170, Integer.parseInt(hiddenObjectsColorSetting[0]), Integer.parseInt(hiddenObjectsColorSetting[1]), Integer.parseInt(hiddenObjectsColorSetting[2]), Integer.parseInt(hiddenObjectsColorSetting[3]), (Color col) -> {
 				if (ui != null && ui.gui != null) {
+					defaultColor = col;
 					ui.sess.glob.oc.gobAction(Gob::updateHidingBoxes);
 					ui.gui.map.updatePlobHidingBox();
 				}
@@ -4275,9 +4301,7 @@ public class OptWnd extends Window {
 
 			prev = add(new Button(UI.scale(70), "Reset", false).action(() -> {
 				Utils.setprefsa("hidingBox" + "_colorSetting", new String[]{"0", "225", "255", "170"});
-				hiddenObjectsColorOptionWidget.cb.colorChooser.setColor(hiddenObjectsColorOptionWidget.currentColor = new Color(0, 225, 255, 170));
-				HidingBox.SOLID_FILLED = Pipe.Op.compose(new BaseColor(hiddenObjectsColorOptionWidget.currentColor), new States.Facecull(States.Facecull.Mode.NONE), Rendered.last);
-				HidingBox.SOLID_HOLLOW = Pipe.Op.compose(new BaseColor(new Color(hiddenObjectsColorOptionWidget.currentColor.getRed(), hiddenObjectsColorOptionWidget.currentColor.getGreen(), hiddenObjectsColorOptionWidget.currentColor.getBlue(), 153)), new States.LineWidth(HidingBox.WIDTH), HidingBox.TOP);
+				hiddenObjectsColorOptionWidget.cb.colorChooser.setColor(hiddenObjectsColorOptionWidget.currentColor = Color.WHITE);
 				if (ui != null && ui.gui != null) {
 					ui.sess.glob.oc.gobAction(Gob::updateHidingBoxes);
 					ui.gui.map.updatePlobHidingBox();
@@ -4298,6 +4322,18 @@ public class OptWnd extends Window {
 				}
 			}, prev.pos("bl").adds(16, 10));
 
+			//gnoominess
+			prev = add(hideStumpsCheckbox = new CheckBox("Stumps"){
+				{a = Utils.getprefb("hideStumps", true);}
+				public void changed(boolean val) {
+					Utils.setprefb("hideStumps", val);
+					if (ui != null && ui.gui != null) {
+						ui.sess.glob.oc.gobAction(Gob::updateHidingBoxes);
+						ui.gui.map.updatePlobHidingBox();
+					}
+				}
+			}, prev2.pos("bl").adds(0, 2));
+
 			prev = add(hideBushesCheckbox = new CheckBox("Bushes"){
 				{a = Utils.getprefb("hideBushes", true);}
 				public void changed(boolean val) {
@@ -4307,7 +4343,7 @@ public class OptWnd extends Window {
 						ui.gui.map.updatePlobHidingBox();
 					}
 				}
-			}, prev2.pos("bl").adds(0, 2));
+			}, prev.pos("bl").adds(0, 2));
 
 			prev = add(hideBouldersCheckbox = new CheckBox("Boulders"){
 				{a = Utils.getprefb("hideBoulders", true);}
@@ -4421,6 +4457,97 @@ public class OptWnd extends Window {
 					}
 				}
 			}, prev.pos("bl").adds(0, 2));
+
+			//gnoominess
+			prev = add(hiddenTreeColorOptionWidget = new ColorOptionWidget("Hidden Trees Color:", "hidingBoxTree", 170, Integer.parseInt(hiddenTreeColorSetting[0]), Integer.parseInt(hiddenTreeColorSetting[1]), Integer.parseInt(hiddenTreeColorSetting[2]), Integer.parseInt(hiddenTreeColorSetting[3]), (Color col) -> {
+				if (ui != null && ui.gui != null) {
+					treeHidingColor = col;
+					ui.sess.glob.oc.gobAction(Gob::updateHidingBoxes);
+					ui.gui.map.updatePlobHidingBox();
+				}
+			}){}, prev.pos("bl").adds(-140, 5));
+
+			prev = add(new Button(UI.scale(70), "Reset", false).action(() -> {
+				Utils.setprefsa("hidingBoxTree" + "_colorSetting", new String[]{"255", "225", "255", "170"});
+				hiddenTreeColorOptionWidget.cb.colorChooser.setColor(hiddenTreeColorOptionWidget.currentColor = Color.WHITE);
+				if (ui != null && ui.gui != null) {
+					treeHidingColor = Color.WHITE;
+					ui.sess.glob.oc.gobAction(Gob::updateHidingBoxes);
+					ui.gui.map.updatePlobHidingBox();
+				}
+			}), prev.pos("ur").adds(30, 0));
+
+			prev = add(hiddenStumpColorOptionWidget = new ColorOptionWidget("Hidden Stumps Color:", "hidingBoxStump", 170, Integer.parseInt(hiddenStumpColorSetting[0]), Integer.parseInt(hiddenStumpColorSetting[1]), Integer.parseInt(hiddenStumpColorSetting[2]), Integer.parseInt(hiddenStumpColorSetting[3]), (Color col) -> {
+				if (ui != null && ui.gui != null) {
+					stumpHidingColor = col;
+					ui.sess.glob.oc.gobAction(Gob::updateHidingBoxes);
+					ui.gui.map.updatePlobHidingBox();
+				}
+			}){}, prev.pos("bl").adds(-222, 5));
+
+			prev = add(new Button(UI.scale(70), "Reset", false).action(() -> {
+				Utils.setprefsa("hidingBoxStump" + "_colorSetting", new String[]{"255", "225", "0", "170"});
+				hiddenStumpColorOptionWidget.cb.colorChooser.setColor(hiddenStumpColorOptionWidget.currentColor = Color.YELLOW);
+				if (ui != null && ui.gui != null) {
+					stumpHidingColor = Color.YELLOW;
+					ui.sess.glob.oc.gobAction(Gob::updateHidingBoxes);
+					ui.gui.map.updatePlobHidingBox();
+				}
+			}), prev.pos("ur").adds(30, 0));
+
+			prev = add(hiddenBushColorOptionWidget = new ColorOptionWidget("Hidden Bush Color:", "hidingBoxBush", 170, Integer.parseInt(hiddenBushColorSetting[0]), Integer.parseInt(hiddenBushColorSetting[1]), Integer.parseInt(hiddenBushColorSetting[2]), Integer.parseInt(hiddenBushColorSetting[3]), (Color col) -> {
+				if (ui != null && ui.gui != null) {
+					bushHidingColor = col;
+					ui.sess.glob.oc.gobAction(Gob::updateHidingBoxes);
+					ui.gui.map.updatePlobHidingBox();
+				}
+			}){}, prev.pos("bl").adds(-222, 5));
+
+			prev = add(new Button(UI.scale(70), "Reset", false).action(() -> {
+				Utils.setprefsa("hidingBoxBush" + "_colorSetting", new String[]{"255", "150", "0", "170"});
+				hiddenBushColorOptionWidget.cb.colorChooser.setColor(hiddenBushColorOptionWidget.currentColor = new Color(255, 150, 0, 170));
+				if (ui != null && ui.gui != null) {
+					bushHidingColor = new Color(255, 150, 0, 170);
+					ui.sess.glob.oc.gobAction(Gob::updateHidingBoxes);
+					ui.gui.map.updatePlobHidingBox();
+				}
+			}), prev.pos("ur").adds(30, 0));
+
+			prev = add(hiddenBoulderColorOptionWidget = new ColorOptionWidget("Hidden Boulder Color:", "hidingBoxBoulder", 170, Integer.parseInt(hiddenBoulderColorSetting[0]), Integer.parseInt(hiddenBoulderColorSetting[1]), Integer.parseInt(hiddenBoulderColorSetting[2]), Integer.parseInt(hiddenBoulderColorSetting[3]), (Color col) -> {
+				if (ui != null && ui.gui != null) {
+					boulderHidingColor = col;
+					ui.sess.glob.oc.gobAction(Gob::updateHidingBoxes);
+					ui.gui.map.updatePlobHidingBox();
+				}
+			}){}, prev.pos("bl").adds(-222, 5));
+
+			prev = add(new Button(UI.scale(70), "Reset", false).action(() -> {
+				Utils.setprefsa("hidingBoxBoulder" + "_colorSetting", new String[]{"180", "180", "180", "170"});
+				hiddenBoulderColorOptionWidget.cb.colorChooser.setColor(hiddenBoulderColorOptionWidget.currentColor = new Color(180, 180, 180, 170));
+				if (ui != null && ui.gui != null) {
+					boulderHidingColor = new Color(180, 180, 180, 170);
+					ui.sess.glob.oc.gobAction(Gob::updateHidingBoxes);
+					ui.gui.map.updatePlobHidingBox();
+				}
+			}), prev.pos("ur").adds(30, 0));
+
+			prev = add(hiddenLogColorOptionWidget = new ColorOptionWidget("Hidden Log Color:", "hidingBoxLog", 170, Integer.parseInt(hiddenLogColorSetting[0]), Integer.parseInt(hiddenLogColorSetting[1]), Integer.parseInt(hiddenLogColorSetting[2]), Integer.parseInt(hiddenLogColorSetting[3]), (Color col) -> {
+				if (ui != null && ui.gui != null) {
+					logHidingColor = col;
+					ui.sess.glob.oc.gobAction(Gob::updateHidingBoxes);
+					ui.gui.map.updatePlobHidingBox();
+				}
+			}){}, prev.pos("bl").adds(-222, 5));
+
+			prev = add(new Button(UI.scale(70), "Reset", false).action(() -> {
+				Utils.setprefsa("hidingBoxLog" + "_colorSetting", new String[]{"0", "128", "0", "170"});
+				hiddenLogColorOptionWidget.cb.colorChooser.setColor(hiddenLogColorOptionWidget.currentColor = new Color(0, 128, 0, 170));
+				if (ui != null && ui.gui != null) {
+					logHidingColor = new Color(0, 128, 0, 170);
+					ui.sess.glob.oc.gobAction(Gob::updateHidingBoxes);
+					ui.gui.map.updatePlobHidingBox();
+				}
+			}), prev.pos("ur").adds(30, 0));
 
 			Widget backButton;
 			add(backButton = new PButton(UI.scale(200), "Back", 27, back, "Advanced Settings"), prev.pos("bl").adds(0, 18).x(0));
