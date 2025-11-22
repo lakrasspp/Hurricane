@@ -4237,9 +4237,15 @@ public class OptWnd extends Window {
 	public static String[] hiddenLogColorSetting = Utils.getprefsa("hidingBoxLog" + "_colorSetting", new String[]{"0", "128", "0", "170"});
 
 	public static Color houseHidingColor = new Color(200, 0, 200, 170);
+	public static ColorOptionWidget hiddenHouseColorOptionWidget;
+	public static String[] hiddenHouseColorSetting = Utils.getprefsa("hidingBoxHouse" + "_colorSetting", new String[]{"200", "0", "200", "170"});
+
 	public static Color wallHidingColor = new Color(255, 0, 0, 170);
-	public static Color stockpileHidingColor = new Color(0, 255, 150, 170);
-	public static Color defaultColor = Color.WHITE;
+	public static ColorOptionWidget hiddenWallColorOptionWidget;
+	public static String[] hiddenWallColorSetting = Utils.getprefsa("hidingBoxWall" + "_colorSetting", new String[]{"255", "0", "0", "170"});
+
+	public static Color defaultColor = new Color(0,255,255,170);
+	public static Color stockpileHidingColor = defaultColor;
 
 	public class HidingSettingsPanel extends Panel {
 		private int addbtn(Widget cont, String nm, KeyBinding cmd, int y) {
@@ -4301,7 +4307,7 @@ public class OptWnd extends Window {
 
 			prev = add(new Button(UI.scale(70), "Reset", false).action(() -> {
 				Utils.setprefsa("hidingBox" + "_colorSetting", new String[]{"0", "225", "255", "170"});
-				hiddenObjectsColorOptionWidget.cb.colorChooser.setColor(hiddenObjectsColorOptionWidget.currentColor = Color.WHITE);
+				hiddenObjectsColorOptionWidget.cb.colorChooser.setColor(hiddenObjectsColorOptionWidget.currentColor = new Color(0,255,255,170));
 				if (ui != null && ui.gui != null) {
 					ui.sess.glob.oc.gobAction(Gob::updateHidingBoxes);
 					ui.gui.map.updatePlobHidingBox();
@@ -4544,6 +4550,42 @@ public class OptWnd extends Window {
 				hiddenLogColorOptionWidget.cb.colorChooser.setColor(hiddenLogColorOptionWidget.currentColor = new Color(0, 128, 0, 170));
 				if (ui != null && ui.gui != null) {
 					logHidingColor = new Color(0, 128, 0, 170);
+					ui.sess.glob.oc.gobAction(Gob::resetHidingBoxes);
+					ui.gui.map.updatePlobHidingBox();
+				}
+			}), prev.pos("ur").adds(30, 0));
+
+			prev = add(hiddenWallColorOptionWidget = new ColorOptionWidget("Hidden Wall Color:", "hidingBoxWall", 170, Integer.parseInt(hiddenWallColorSetting[0]), Integer.parseInt(hiddenWallColorSetting[1]), Integer.parseInt(hiddenWallColorSetting[2]), Integer.parseInt(hiddenWallColorSetting[3]), (Color col) -> {
+				if (ui != null && ui.gui != null) {
+					wallHidingColor = col;
+					ui.sess.glob.oc.gobAction(Gob::resetHidingBoxes);
+					ui.gui.map.updatePlobHidingBox();
+				}
+			}){}, prev.pos("bl").adds(-222, 5));
+
+			prev = add(new Button(UI.scale(70), "Reset", false).action(() -> {
+				Utils.setprefsa("hidingBoxWall" + "_colorSetting", new String[]{"255", "0", "0", "170"});
+				hiddenWallColorOptionWidget.cb.colorChooser.setColor(hiddenWallColorOptionWidget.currentColor = new Color(255, 0, 0, 170));
+				if (ui != null && ui.gui != null) {
+					wallHidingColor = new Color(255, 0, 0, 170);
+					ui.sess.glob.oc.gobAction(Gob::resetHidingBoxes);
+					ui.gui.map.updatePlobHidingBox();
+				}
+			}), prev.pos("ur").adds(30, 0));
+
+			prev = add(hiddenHouseColorOptionWidget = new ColorOptionWidget("Hidden House Color:", "hidingBoxHouse", 170, Integer.parseInt(hiddenHouseColorSetting[0]), Integer.parseInt(hiddenHouseColorSetting[1]), Integer.parseInt(hiddenHouseColorSetting[2]), Integer.parseInt(hiddenHouseColorSetting[3]), (Color col) -> {
+				if (ui != null && ui.gui != null) {
+					houseHidingColor = col;
+					ui.sess.glob.oc.gobAction(Gob::resetHidingBoxes);
+					ui.gui.map.updatePlobHidingBox();
+				}
+			}){}, prev.pos("bl").adds(-222, 5));
+
+			prev = add(new Button(UI.scale(70), "Reset", false).action(() -> {
+				Utils.setprefsa("hidingBoxHouse" + "_colorSetting", new String[]{"200", "0", "200", "170"});
+				hiddenHouseColorOptionWidget.cb.colorChooser.setColor(hiddenHouseColorOptionWidget.currentColor = new Color(200, 0, 200, 170));
+				if (ui != null && ui.gui != null) {
+					houseHidingColor = new Color(200, 0, 200, 170);
 					ui.sess.glob.oc.gobAction(Gob::resetHidingBoxes);
 					ui.gui.map.updatePlobHidingBox();
 				}

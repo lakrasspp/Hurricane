@@ -479,6 +479,7 @@ public class Config {
 
 	public static final String[] housesResPaths = {
 			"gfx/terobjs/arch/logcabin",
+			"gfx/terobjs/arch/stonehut",
 			"gfx/terobjs/arch/timberhouse",
 			"gfx/terobjs/arch/stonestead",
 			"gfx/terobjs/arch/stonemansion",
