@@ -4178,7 +4178,7 @@ public class OptWnd extends Window {
 					Utils.setprefb("disableDrunkennessDistortion", val);
 				}
 			}, rightColumn.pos("bl").adds(0, 2));
-			rightColumn = add(CoolerHatsCheckBox = new CheckBox ("Cooler Hats (Requies Restart)") {
+			rightColumn = add(CoolerHatsCheckBox = new CheckBox ("Cooler Hats") {
 						{
 							a = (Utils.getprefb("CoolerHats", false));
 						}
