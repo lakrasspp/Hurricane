@@ -4244,9 +4244,6 @@ public class OptWnd extends Window {
 	public static ColorOptionWidget hiddenWallColorOptionWidget;
 	public static String[] hiddenWallColorSetting = Utils.getprefsa("hidingBoxWall" + "_colorSetting", new String[]{"255", "0", "0", "170"});
 
-	public static Color defaultColor = new Color(0,255,255,170);
-	public static Color stockpileHidingColor = defaultColor;
-
 	public class HidingSettingsPanel extends Panel {
 		private int addbtn(Widget cont, String nm, KeyBinding cmd, int y) {
 			return (cont.addhl(new Coord(0, y), cont.sz.x,
@@ -4299,8 +4296,8 @@ public class OptWnd extends Window {
 
 			prev = add(hiddenObjectsColorOptionWidget = new ColorOptionWidget("Hidden Objects Box Default Color:", "hidingBox", 170, Integer.parseInt(hiddenObjectsColorSetting[0]), Integer.parseInt(hiddenObjectsColorSetting[1]), Integer.parseInt(hiddenObjectsColorSetting[2]), Integer.parseInt(hiddenObjectsColorSetting[3]), (Color col) -> {
 				if (ui != null && ui.gui != null) {
-					defaultColor = col;
-					ui.sess.glob.oc.gobAction(Gob::updateHidingBoxes);
+//					defaultColor = col;
+					ui.sess.glob.oc.gobAction(Gob::resetHidingBoxes);
 					ui.gui.map.updatePlobHidingBox();
 				}
 			}){}, scroll.pos("bl").adds(1, -2));
@@ -4309,7 +4306,7 @@ public class OptWnd extends Window {
 				Utils.setprefsa("hidingBox" + "_colorSetting", new String[]{"0", "225", "255", "170"});
 				hiddenObjectsColorOptionWidget.cb.colorChooser.setColor(hiddenObjectsColorOptionWidget.currentColor = new Color(0,255,255,170));
 				if (ui != null && ui.gui != null) {
-					ui.sess.glob.oc.gobAction(Gob::updateHidingBoxes);
+					ui.sess.glob.oc.gobAction(Gob::resetHidingBoxes);
 					ui.gui.map.updatePlobHidingBox();
 				}
 			}), prev.pos("ur").adds(30, 0));

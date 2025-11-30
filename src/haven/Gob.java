@@ -1526,28 +1526,28 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 
 				doHide = OptWnd.toggleGobHidingCheckBox.a;
 				doShowHidingBox = true;
-				hidingColor = OptWnd.treeHidingColor;
+				hidingColor = OptWnd.hiddenTreeColorOptionWidget.currentColor;
 			} else if (OptWnd.hideStumpsCheckbox.a &&
 					resName.startsWith("gfx/terobjs/trees") &&
 					resName.endsWith("stump")) {
 
 				doHide = OptWnd.toggleGobHidingCheckBox.a;
 				doShowHidingBox = true;
-				hidingColor = OptWnd.stumpHidingColor;
+				hidingColor = OptWnd.hiddenStumpColorOptionWidget.currentColor;
 
 			} else if (OptWnd.hideBushesCheckbox.a &&
 					resName.startsWith("gfx/terobjs/bushes")) {
 
 				doHide = OptWnd.toggleGobHidingCheckBox.a;
 				doShowHidingBox = true;
-				hidingColor = OptWnd.bushHidingColor;
+				hidingColor = OptWnd.hiddenBushColorOptionWidget.currentColor;
 
 			} else if (OptWnd.hideBouldersCheckbox.a &&
 					resName.startsWith("gfx/terobjs/bumlings")) {
 
 				doHide = OptWnd.toggleGobHidingCheckBox.a;
 				doShowHidingBox = true;
-				hidingColor = OptWnd.boulderHidingColor;
+				hidingColor = OptWnd.hiddenBoulderColorOptionWidget.currentColor;
 
 			} else if (OptWnd.hideTreeLogsCheckbox.a &&
 					resName.startsWith("gfx/terobjs/trees") &&
@@ -1555,7 +1555,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 
 				doHide = OptWnd.toggleGobHidingCheckBox.a;
 				doShowHidingBox = true;
-				hidingColor = OptWnd.logHidingColor;
+				hidingColor = OptWnd.hiddenLogColorOptionWidget.currentColor;
 
 			} else if (OptWnd.hideWallsCheckbox.a &&
 					(resName.startsWith("gfx/terobjs/arch/palisade") ||
@@ -1564,21 +1564,21 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 
 				doHide = OptWnd.toggleGobHidingCheckBox.a;
 				doShowHidingBox = true;
-				hidingColor = OptWnd.wallHidingColor;
+				hidingColor = OptWnd.hiddenWallColorOptionWidget.currentColor;
 
 			} else if (OptWnd.hideHousesCheckbox.a &&
 					Arrays.asList(Config.housesResPaths).contains(resName)) {
 
 				doHide = OptWnd.toggleGobHidingCheckBox.a;
 				doShowHidingBox = true;
-				hidingColor = OptWnd.houseHidingColor;
+				hidingColor = OptWnd.hiddenHouseColorOptionWidget.currentColor;
 
 			} else if (OptWnd.hideStockpilesCheckbox.a &&
 					resName.startsWith("gfx/terobjs/stockpile")) {
 
 				doHide = OptWnd.toggleGobHidingCheckBox.a;
 				doShowHidingBox = true;
-				hidingColor = OptWnd.stockpileHidingColor;
+				hidingColor = OptWnd.hiddenObjectsColorOptionWidget.currentColor;
 
 			} else if (OptWnd.hideCropsCheckbox.a &&
 					resName.startsWith("gfx/terobjs/plants") &&
@@ -1593,28 +1593,28 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 
 				doHide = OptWnd.toggleGobHidingCheckBox.a;
 				doShowHidingBox = true;
-				hidingColor = OptWnd.defaultColor;
+				hidingColor = OptWnd.hiddenObjectsColorOptionWidget.currentColor;
 
 			} else if (OptWnd.hideCheeseRacksCheckBox.a &&
 					resName.endsWith("cheeserack")) {
 
 				doHide = OptWnd.toggleGobHidingCheckBox.a;
 				doShowHidingBox = true;
-				hidingColor = OptWnd.defaultColor;
+				hidingColor = OptWnd.hiddenObjectsColorOptionWidget.currentColor;
 
 			} else if (OptWnd.hideDryingFramesCheckbox.a &&
 					resName.endsWith("dframe")) {
 
 				doHide = OptWnd.toggleGobHidingCheckBox.a;
 				doShowHidingBox = true;
-				hidingColor = OptWnd.defaultColor;
+				hidingColor = OptWnd.hiddenObjectsColorOptionWidget.currentColor;
 
 			} else if (OptWnd.hideSquirrelCachesCheckbox.a &&
 					resName.startsWith("gfx/terobjs/map/squirrelcache")) {
 
 				doHide = OptWnd.toggleGobHidingCheckBox.a;
 				doShowHidingBox = true;
-				hidingColor = OptWnd.defaultColor;
+				hidingColor = OptWnd.hiddenObjectsColorOptionWidget.currentColor;
 			}
 
 			doHide = doHide && !mapIconVisible;
