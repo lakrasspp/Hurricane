@@ -1909,7 +1909,7 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 //					g.chcolor(Color.BLACK);
 //					g.line(playerc, clickc, 4);
 					g.chcolor(OptWnd.drawYourCurrentPathColorOptionWidget.currentColor);
-					g.line(playerc, clickc, 2.5);
+					g.line(playerc, clickc, Double.parseDouble(OptWnd.yourCurrentPathWidthTextEntry.text()));
 				}
 			}
 		} catch (Exception ignored) {

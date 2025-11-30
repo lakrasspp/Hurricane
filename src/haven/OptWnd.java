@@ -1621,26 +1621,14 @@ public class OptWnd extends Window {
 			}, rightColumn.pos("ur").adds(26, 4));
 			targetSpriteSizeSlider.tooltip = targetSpriteTooltip;
 
-//			rightColumn = add(drawChaseVectorsCheckBox = new CheckBox("Draw Chase Vectors"){
-//				{a = Utils.getprefb("drawChaseVectors", true);}
-//				public void changed(boolean val) {
-//					Utils.setprefb("drawChaseVectors", val);
-//				}
-//			}, rightColumn.pos("bl").adds(0, 12).xs(320));
-//			drawChaseVectorsCheckBox.tooltip = drawChaseVectorsTooltip;
-//			rightColumn = add(drawYourCurrentPathCheckBox = new CheckBox("Draw Your Current Path"){
-//				{a = Utils.getprefb("drawYourCurrentPath", false);}
-//				public void changed(boolean val) {
-//					Utils.setprefb("drawYourCurrentPath", val);
-//				}
-//			}, rightColumn.pos("bl").adds(0, 2));
 			rightColumn = add(drawChaseVectorsCheckBox = new CheckBox("Draw Chase Vectors"){
 				{a = Utils.getprefb("drawChaseVectors", true);}
 				public void changed(boolean val) {
 					Utils.setprefb("drawChaseVectors", val);
 				}
-			}, rightColumn.pos("ur").adds(16, 0));
+			}, rightColumn.pos("bl").adds(0, 12).xs(320));
 			drawChaseVectorsCheckBox.tooltip = drawChaseVectorsTooltip;
+
 			rightColumn = add(drawYourCurrentPathCheckBox = new CheckBox("Draw Your Current Path"){
 				{a = Utils.getprefb("drawYourCurrentPath", false);}
 				public void changed(boolean val) {
@@ -1658,15 +1646,25 @@ public class OptWnd extends Window {
 				if (ui != null && ui.gui != null) {
 					ui.sess.glob.oc.gobAction(Gob::updateSpeedBuffAuras);
 				}
-			}), drawYourCurrentPathColorOptionWidget.pos("ur").adds(10, 0));
-
+			}), rightColumn.pos("ur").adds(10, 0));
 			drawYourCurrentPathCheckBox.tooltip = drawYourCurrentPathTooltip;
+
+			rightColumn = add(yourCurrentPathWidthLabel = new Label("Your current path width:"), rightColumn.pos("bl").adds(0, 3));
+			rightColumn = add(yourCurrentPathWidthTextEntry = new TextEntry(UI.scale(40), Utils.getpref("yourpathWidth", "2.5")){
+				protected void changed() {
+					this.settext(this.text().replaceAll("[^0-9.]", "")); // Only digits
+					this.settext(this.text().replaceAll("(?<=^.{3}).*", "")); // No more than 3 digits
+					Utils.setpref("yourpathWidth", this.buf.line());
+					super.changed();
+				}
+			}, rightColumn.pos("ur").adds(31,2 ));
+
 			rightColumn = add(showYourCombatRangeCirclesCheckBox = new CheckBox("Show Your Combat Range Circles"){
 				{a = Utils.getprefb("showYourCombatRangeCircles", false);}
 				public void changed(boolean val) {
 					Utils.setprefb("showYourCombatRangeCircles", val);
 				}
-			}, rightColumn.pos("bl").adds(0, 2));
+			}, rightColumn.pos("bl").adds(-148, 2));
 			showYourCombatRangeCirclesCheckBox.tooltip = showYourCombatRangeCirclesTooltip;
 			rightColumn = add(new Label("Unarmed"), rightColumn.pos("bl").adds(16, 1));
 			add(unarmedCombatRangeColorOptionWidget = new ColorOptionWidget("", "unarmedCombatRange", 0, Integer.parseInt(unarmedCombatRangeColorSetting[0]), Integer.parseInt(unarmedCombatRangeColorSetting[1]), Integer.parseInt(unarmedCombatRangeColorSetting[2]), Integer.parseInt(unarmedCombatRangeColorSetting[3]), (Color col) -> {
@@ -1916,6 +1914,8 @@ public class OptWnd extends Window {
 
 	public static ColorOptionWidget drawYourCurrentPathColorOptionWidget;
 	public static String[] drawYourCurrentPathColorSetting = Utils.getprefsa("currentPath" + "_colorSetting", new String[]{"255", "255", "255", "120"});
+	public static Label yourCurrentPathWidthLabel;
+	public static TextEntry yourCurrentPathWidthTextEntry;
 
 	public static CheckBox highlightCliffsCheckBox;
 	public static ColorOptionWidget highlightCliffsColorOptionWidget;
