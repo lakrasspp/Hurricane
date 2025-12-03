@@ -2273,8 +2273,14 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 					if (clickb == 1 && (!ui.modshift || !ui.modctrl)) {
 						chats.get("Area Chat").send("@" + gob.id);
 					} else if (clickb == 3 && (!ui.modshift || !ui.modctrl)) {
-						if (chats.get("Party") != null)
-							chats.get("Party").send("@" + gob.id);
+                        if (chats.get("Party") != null) {
+                            if (gob.getres().name.equals("gfx/borka/body")) {
+                                String msg = ui.sess.glob.party.markNext(gob);
+                                chats.get("Party").send(msg);
+                            } else {
+                                chats.get("Party").send("@" + gob.id);
+                            }
+                        }
 					} else if (OptWnd.objectPermanentHighlightingCheckBox.a && clickb == 2 && !(ui.modshift || ui.modctrl)){
 						if (Gob.permanentHighlightList.contains(gob.id)) {
 							Gob.permanentHighlightList.remove(gob.id);
@@ -2303,6 +2309,12 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 					if(checkpointManager != null && checkpointManagerThread != null){
 						checkpointManager.pauseIt();
 					}
+                    synchronized (Pathfinder.class) {
+                        if (pf != null) {
+                            pf.terminate = true;
+                            pfthread.interrupt();
+                        }
+                    }
 					wdgmsg("click", args);
 					if (OptWnd.autoSelect1stFlowerMenuCheckBox.a) {
 						if (ui.modctrl) {
@@ -2322,17 +2334,21 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 					switchToPlateBoots();
 				}
 			}
-		}
-		synchronized (Pathfinder.class) {
-			if (pf != null) {
-				pf.terminate = true;
-				pfthread.interrupt();
-			}
+            synchronized (Pathfinder.class) {
+                if (pf != null && clickb == 1) {
+                    pf.terminate = true;
+                    pfthread.interrupt();
+                }
+            }
 		}
 		if(checkpointManager != null && checkpointManagerThread != null && clickb == 1){
 			checkpointManager.pauseIt();
 		}
-	    wdgmsg("click", args);
+		if (OptWnd.walkWithPathfinderCheckBox.a && clickb == 1 && ui.modctrl && ui.modshift && !ui.modmeta && !ui.modsuper) {
+			pfLeftClick(mc.floor(), null);
+		} else {
+			wdgmsg("click", args);
+		}
 	}
 
 	public void clickedGob(Coord pc, Coord2d mc, ClickData inf){

@@ -40,7 +40,7 @@ public class Config {
     public static final String confid = "Hurricane";
     public static final Variable<Boolean> par = Variable.def(() -> true);
     public final Properties localprops = getlocalprops();
-	public static final String clientVersion = "v1.37b";
+	public static final String clientVersion = "v1.39";
 	public static String githubLatestVersion = "Loading...";
 
     private static Config global = null;
@@ -1140,10 +1140,12 @@ public class Config {
 		if (MappingClient.initialized()) {
 			MappingClient.destroy();
 		}
-		MappingClient.init(ui.sess.glob);
-		MappingClient automapper = MappingClient.getInstance();
-		if (automapper != null)
-			automapper.SetPlayerName(OptWnd.liveLocationNameTextEntry.buf.line() + " (" + playername + ")");
+        if (!OptWnd.webmapEndpointTextEntry.text().isEmpty()) {
+            MappingClient.init(ui.sess.glob);
+            MappingClient automapper = MappingClient.getInstance();
+            if (automapper != null)
+                automapper.SetPlayerName(OptWnd.liveLocationNameTextEntry.buf.line() + " (" + playername + ")");
+        }
 	}
 
 	public static final Map<String, String> ORE_FULL_NAMES = new HashMap<>();

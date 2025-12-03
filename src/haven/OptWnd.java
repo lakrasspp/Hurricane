@@ -26,6 +26,7 @@
 
 package haven;
 
+import haven.automated.mapper.MappingClient;
 import haven.render.*;
 import haven.res.gfx.fx.msrad.MSRad;
 import haven.res.ui.pag.toggle.Toggle;
@@ -555,17 +556,6 @@ public class OptWnd extends Window {
 
 		leftColumn = add(new Label("Other Sound Settings"), leftColumn.pos("bl").adds(177, 20));
 
-		leftColumn = add(new Label("Music Instruments Volume"), leftColumn.pos("bl").adds(0, 5).x(0));
-		leftColumn = add(instrumentsSoundVolumeSlider = new HSlider(UI.scale(audioSliderWidth), 0, 100, Utils.getprefi("instrumentsSoundVolume", 70)) {
-			protected void attach(UI ui) {
-				super.attach(ui);
-			}
-			public void changed() {
-				Utils.setprefi("instrumentsSoundVolume", val);
-			}
-		}, leftColumn.pos("bl").adds(0, 2));
-
-
 		leftColumn = add(new Label("Boiling Cauldron Volume (Requires Reload)"), leftColumn.pos("bl").adds(0, 5).x(0));
 		leftColumn = add(cauldronSoundVolumeSlider = new HSlider(UI.scale(audioSliderWidth), 0, 100, Utils.getprefi("cauldronSoundVolume", 25)) {
 			protected void attach(UI ui) {
@@ -625,6 +615,16 @@ public class OptWnd extends Window {
 				Utils.setprefi("quernSoundVolume", val);
 			}
 		}, leftColumn.pos("bl").adds(0, 2));
+
+		rightColumn = add(new Label("Music Instruments Volume"), rightColumn.pos("bl").adds(0, 119));
+		rightColumn = add(instrumentsSoundVolumeSlider = new HSlider(UI.scale(audioSliderWidth), 0, 100, Utils.getprefi("instrumentsSoundVolume", 70)) {
+			protected void attach(UI ui) {
+				super.attach(ui);
+			}
+			public void changed() {
+				Utils.setprefi("instrumentsSoundVolume", val);
+			}
+		}, rightColumn.pos("bl").adds(0, 2));
 
 		rightColumn = add(new Label("Clap Sound Effect Volume"), rightColumn.pos("bl").adds(0, 5));
 		rightColumn = add(clapSoundVolumeSlider = new HSlider(UI.scale(audioSliderWidth), 0, 100, Utils.getprefi("clapSoundVolume", 10)) {
@@ -733,7 +733,7 @@ public class OptWnd extends Window {
 			}
 		}, leftColumn.pos("bl").adds(0, 2));
 		dragWindowsInWhenResizingCheckBox.tooltip = dragWindowsInWhenResizingTooltip;
-		leftColumn = add(showHoverInventoriesWhenHoldingShiftCheckBox = new CheckBox("Show Hover-Inventories with Shift"){
+		leftColumn = add(showHoverInventoriesWhenHoldingShiftCheckBox = new CheckBox("Show Hover-Inventories (Stacks, Belt, etc.) only when holding Shift"){
 			{a = (Utils.getprefb("showHoverInventoriesWhenHoldingShift", true));}
 			public void changed(boolean val) {
 				Utils.setprefb("showHoverInventoriesWhenHoldingShift", val);
@@ -1051,7 +1051,7 @@ public class OptWnd extends Window {
         }, rightColumn.pos("bl").adds(0, 15));
 
 		Widget backButton;
-		add(backButton = new PButton(UI.scale(200), "Back", 27, back, "Advanced Settings"), rightColumn.pos("bl").adds(0, 30).x(0));
+		add(backButton = new PButton(UI.scale(200), "Back", 27, back, "Advanced Settings"), leftColumn.pos("bl").adds(0, 30).x(0));
 	    pack();
 		centerBackButton(backButton, this);
 	}
@@ -1256,18 +1256,6 @@ public class OptWnd extends Window {
 				Utils.setprefi("combatBottomPanelHeight", 100);
 			}), leftColumn.pos("bl").adds(210, -20)).tooltip = resetButtonTooltip;
 
-			leftColumn = add(new Label("Bottom HP/Stam panel height:"), leftColumn.pos("bl").adds(0, 10));
-			leftColumn = add(bottomCombatUIPanelHeighSlider = new HSlider(UI.scale(200), 10, 480, Utils.getprefi("bottomCombatBottomPanelHeight", 100)) {
-				public void changed() {
-					Utils.setprefi("bottomCombatBottomPanelHeight", val);
-				}
-			}, leftColumn.pos("bl").adds(0, 2));
-
-			add(new Button(UI.scale(70), "Reset", false).action(() -> {
-				bottomCombatUIPanelHeighSlider.val = 100;
-				Utils.setprefi("combatBottomPanelHeight", 100);
-			}), leftColumn.pos("bl").adds(210, -20));
-
 			leftColumn = add(showEstimatedAgilityTextCheckBox = new CheckBox("Show Target Estimated Agility (Top Panel)"){
 				{a = Utils.getprefb("showEstimatedAgility", true);}
 				public void changed(boolean val) {
@@ -1302,32 +1290,6 @@ public class OptWnd extends Window {
 				leftColumn = expWindowGrp.add("Top Panel", leftColumn.pos("bl").adds(20, 3));
 				leftColumn = expWindowGrp.add("Bottom Panel", leftColumn.pos("ur").adds(30, 0));
 				if (Utils.getprefb("stamBarLocationIsTop", true)){
-					expWindowGrp.check(0);
-				} else {
-					expWindowGrp.check(1);
-				}
-			}
-
-			leftColumn = add(new Label("Health Bar Location:"), leftColumn.pos("bl").adds(-103, 8));{
-				RadioGroup expWindowGrp = new RadioGroup(this) {
-					public void changed(int btn, String lbl) {
-						try {
-							if(btn==0) {
-								Utils.setprefb("healthBarLocationIsTop", true);
-								healthBarLocationIsTop = true;
-							}
-							if(btn==1) {
-								Utils.setprefb("healthBarLocationIsTop", false);
-								healthBarLocationIsTop = false;
-							}
-						} catch (Exception e) {
-							throw new RuntimeException(e);
-						}
-					}
-				};
-				leftColumn = expWindowGrp.add("Top Panel", leftColumn.pos("bl").adds(0, 3));
-				leftColumn = expWindowGrp.add("Bottom Panel", leftColumn.pos("ur").adds(30, 0));
-				if (Utils.getprefb("healthBarLocationIsTop", true)){
 					expWindowGrp.check(0);
 				} else {
 					expWindowGrp.check(1);
@@ -1628,7 +1590,6 @@ public class OptWnd extends Window {
 				}
 			}, rightColumn.pos("bl").adds(0, 12).xs(320));
 			drawChaseVectorsCheckBox.tooltip = drawChaseVectorsTooltip;
-
 			rightColumn = add(drawYourCurrentPathCheckBox = new CheckBox("Draw Your Current Path"){
 				{a = Utils.getprefb("drawYourCurrentPath", false);}
 				public void changed(boolean val) {
@@ -1682,7 +1643,7 @@ public class OptWnd extends Window {
 				refreshMyUnarmedRange = true;
 				refreshMyWeaponRange = true;
 			}), rightColumn.pos("ur").adds(46, -2));
-
+			
 
 			Widget backButton;
 			add(backButton = new PButton(UI.scale(200), "Back", 27, back, "Advanced Settings"), leftColumn.pos("bl").adds(0, 18).x(0));
@@ -1911,12 +1872,10 @@ public class OptWnd extends Window {
 	public static CheckBox showBarrelContentsTextCheckBox;
 	public static CheckBox showIconSignTextCheckBox;
 	public static CheckBox showCheeseRacksTierTextCheckBox;
-
 	public static ColorOptionWidget drawYourCurrentPathColorOptionWidget;
 	public static String[] drawYourCurrentPathColorSetting = Utils.getprefsa("currentPath" + "_colorSetting", new String[]{"255", "255", "255", "120"});
 	public static Label yourCurrentPathWidthLabel;
 	public static TextEntry yourCurrentPathWidthTextEntry;
-
 	public static CheckBox highlightCliffsCheckBox;
 	public static ColorOptionWidget highlightCliffsColorOptionWidget;
 	public static String[] highlightCliffsColorSetting = Utils.getprefsa("highlightCliffs" + "_colorSetting", new String[]{"255", "0", "0", "200"});
@@ -2540,6 +2499,7 @@ public class OptWnd extends Window {
 				Utils.setprefsa("partyChatPing" + "_colorSetting", new String[]{"243", "0", "0", "255"});
 				partyChatPingColorOptionWidget.cb.colorChooser.setColor(partyChatPingColorOptionWidget.currentColor = new Color(243, 0, 0, 255));
 			}), partyChatPingColorOptionWidget.pos("ur").adds(10, 0)).tooltip = resetButtonTooltip;
+            partyChatPingColorOptionWidget.tooltip = partyChatPingColorOptionTooltip;
 			rightColumn = add(showObjectsSpeedCheckBox = new CheckBox("Show Objects Speed (Gob)"){
 				{a = Utils.getprefb("showObjectsSpeed", false);}
 				public void changed(boolean val) {
@@ -2580,7 +2540,6 @@ public class OptWnd extends Window {
 					super.changed();
 				}
 			}, alsoShowOversizedTreesAbovePercentageCheckBox.pos("ur").adds(4, 0));
-
 			rightColumn = add(showTreesBushesHarvestIconsCheckBox = new CheckBox("Show Trees & Bushes Harvest Icons"){
 				{a = Utils.getprefb("showTreesBushesHarvestIcons", false);}
 				public void changed(boolean val) {
@@ -3018,7 +2977,6 @@ public class OptWnd extends Window {
 			public void changed(boolean val) {Utils.setprefb("clickNearestObject_Caves", val);}}, objectsRight.pos("bl").adds(0, 4)).settip("Go through the nearest Cave Entrance/Exit.");
 		objectsLeft = cont.add(new CheckBox("Mineholes & Ladders"){{a = Utils.getprefb("clickNearestObject_MineholesAndLadders", false);}
 			public void changed(boolean val) {Utils.setprefb("clickNearestObject_MineholesAndLadders", val);}}, objectsLeft.pos("bl").adds(0, 4)).settip("Hop down the nearest Minehole, or Climb up the nearest Ladder.");
-		// TODO: check if every door counts
 		objectsRight = cont.add(new CheckBox("Doors"){{a = Utils.getprefb("clickNearestObject_Doors", false);}
 			public void changed(boolean val) {Utils.setprefb("clickNearestObject_Doors", val);}}, objectsRight.pos("bl").adds(0, 4)).settip("Go through the nearest Door.");
 		y+=UI.scale(60);
@@ -3119,6 +3077,7 @@ public class OptWnd extends Window {
 	public static CheckBox autoDrinkingCheckBox;
 	public static TextEntry autoDrinkingThresholdTextEntry;
 	public static CheckBox enableQueuedMovementCheckBox;
+    public static CheckBox walkWithPathfinderCheckBox;
 
 	public class GameplayAutomationSettingsPanel extends Panel {
 
@@ -3343,6 +3302,18 @@ public class OptWnd extends Window {
 				}
 			}, prev.pos("bl").adds(0, 12));
 			enableQueuedMovementCheckBox.tooltip = enableQueuedMovementTooltip;
+
+            prev = add(walkWithPathfinderCheckBox = new CheckBox("Walk with Pathfinder (Ctrl+Shift+Click)"){
+                {a = Utils.getprefb("walkWithPathfinder", false);}
+                public void set(boolean val) {
+                    Utils.setprefb("walkWithPathfinder", val);
+                    a = val;
+                    if (ui != null && ui.gui != null) {
+                        ui.gui.optionInfoMsg("Walk with Pathfinder (Ctrl+Shift+Click) is now " + (val ? "ENABLED" : "DISABLED") + ".", (val ? msgGreen : msgRed), Audio.resclip(val ? Toggle.sfxon : Toggle.sfxoff));
+                    }
+                }
+            }, prev.pos("bl").adds(0, 12));
+            walkWithPathfinderCheckBox.tooltip = walkWithPathfinderTooltip;
 
 			Widget backButton;
 			add(backButton = new PButton(UI.scale(200), "Back", 27, back, "Advanced Settings"), prev.pos("bl").adds(0, 18));
@@ -4768,12 +4739,12 @@ public class OptWnd extends Window {
 	public static CheckBox uploadMapTilesCheckBox;
 	public static CheckBox sendLiveLocationCheckBox;
 	public static TextEntry liveLocationNameTextEntry;
-//	public static Map<Color, Boolean> colorCheckboxesMap = new HashMap<>();
-//	static {
-//		for (Color color : BuddyWnd.gc) {
-//			colorCheckboxesMap.put(color, Utils.getprefb("enableMarkerUpload" + color.getRGB(), false));
-//		}
-//	}
+//	public static TextEntry webmapTokenTextEntry;
+
+	public static TextEntry cookBookEndpointTextEntry;
+	public static TextEntry cookBookTokenTextEntry;
+
+
 
 	public class ServerIntegrationSettingsPanel extends Panel {
 
@@ -4784,6 +4755,7 @@ public class OptWnd extends Window {
 			prev = add(webmapEndpointTextEntry = new TextEntry(UI.scale(220), Utils.getpref("webMapEndpoint", "")){
 				protected void changed() {
 					Utils.setpref("webMapEndpoint", this.buf.line());
+                    MappingClient.destroy();
 					super.changed();
 				}
 			}, prev.pos("ur").adds(6, 0));
@@ -4813,34 +4785,24 @@ public class OptWnd extends Window {
 			}, prev.pos("ur").adds(6, 0));
 			liveLocationNameTextEntry.tooltip = liveLocationNameTooltip;
 
-//			prev = add(new Label("Markers to upload:"), prev.pos("bl").adds(0, 20).x(0));
-//
-//			for (Map.Entry<Color, Boolean> entry : colorCheckboxesMap.entrySet()) {
-//				Color color = entry.getKey();
-//				boolean isChecked = entry.getValue();
-//
-//				CheckBox colorCheckbox = new CheckBox(""){
-//					{a = isChecked;}
-//					@Override
-//					public void draw(GOut g) {
-//						g.chcolor(color);
-//						g.frect(Coord.z.add(0, (sz.y - box.sz().y) / 2), box.sz());
-//						g.chcolor();
-//						if(state())
-//							g.image(mark, Coord.z.add(0, (sz.y - mark.sz().y) / 2));
-//					}
-//
-//					public void set(boolean val) {
-//						Utils.setprefb("enableMarkerUpload" + color.getRGB(), val);
-//						colorCheckboxesMap.put(color, val);
-//						a = val;
-//					}
-//				};
-//				prev = add(colorCheckbox, prev.pos("ur").adds(10, 0));
-//			}
+            prev = add(new Label("Cookbook Integration"), prev.pos("bl").adds(0, 26).x(110));
+			prev = add(new Label("Cookbook Endpoint:"), prev.pos("bl").adds(0, 16).x(0));
+			prev = add(cookBookEndpointTextEntry = new TextEntry(UI.scale(220), Utils.getpref("cookBookEndpoint", "")){
+				protected void changed() {
+					Utils.setpref("cookBookEndpoint", this.buf.line());
+					super.changed();
+				}
+			}, prev.pos("ur").adds(6, 0));
+			prev = add(new Label("Cookbook Token:"), prev.pos("bl").adds(0, 8).x(0));
+			prev = add(cookBookTokenTextEntry = new TextEntry(UI.scale(220), Utils.getpref("cookBookToken", "")){
+				protected void changed() {
+					Utils.setpref("cookBookToken", this.buf.line());
+					super.changed();
+				}
+			}, prev.pos("ur").adds(20, 0));
 
 			Widget backButton;
-			add(backButton = new PButton(UI.scale(200), "Back", 27, back, "Advanced Settings"), prev.pos("bl").adds(0, 18).x(0));
+			add(backButton = new PButton(UI.scale(200), "Back", 27, back, "Advanced Settings"), prev.pos("bl").adds(0, 26).x(0));
 			pack();
 			centerBackButton(backButton, this);
 		}
@@ -5387,6 +5349,7 @@ public class OptWnd extends Window {
 	private static final Object showBeeSkepsHarvestIconsTooltip = RichText.render("This will show icons for Wax and Honey when they can be harvested from Bee Skeps." +
 			"\n" +
 			"\n$col[218,163,0]{Keybind:} $col[185,185,185]{This can also be toggled using a keybind.}", UI.scale(300));
+    private static final Object partyChatPingColorOptionTooltip = RichText.render("$col[218,163,0]{Note:} $col[185,185,185]{If you ping players for your party, you will instead set a Party Mark on them.}", UI.scale(300));
 
 
 	// Quality Display Settings Tooltips
@@ -5432,6 +5395,9 @@ public class OptWnd extends Window {
 			"\n" +
 			"\n$col[218,163,0]{Action Button:} $col[185,185,185]{This setting can also be turned on/off using an action button from the menu grid (Custom Client Extras → Toggles).}", UI.scale(320));
 	private static final Object enableQueuedMovementTooltip = RichText.render("$col[218,163,0]{Action Button:} $col[185,185,185]{This setting can also be turned on/off using an action button from the menu grid (Custom Client Extras → Toggles).}", UI.scale(300));
+    private static final Object walkWithPathfinderTooltip = RichText.render("You can use this to walk and avoid possible obstacles, for example, in your base. It's not perfect, and doesn't work with cliffs though." +
+            "\n" +
+            "\n$col[218,163,0]{Action Button:} $col[185,185,185]{This setting can also be turned on/off using an action button from the menu grid (Custom Client Extras → Toggles).}", UI.scale(300));
 
 	// Altered Gameplay Settings Tooltips
 	private static final Object overrideCursorItemWhenHoldingAltTooltip = RichText.render("Holding Alt while having an item on your cursor will allow you to left click to walk, or right click to interact with objects, rather than drop it on the ground." +

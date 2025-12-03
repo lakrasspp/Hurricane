@@ -32,6 +32,7 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.awt.Color;
 import java.awt.event.KeyEvent;
 import java.awt.image.WritableRaster;
 import java.util.List;
@@ -143,6 +144,8 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	private String myLastHealthBarText = "";
 	private Tex myStaminaBarTex = null;
 	private String myLastStaminaBarText = "";
+    private static final Tex mapperWarning = PUtils.strokeTex(Text.renderstroked("You need to relog for the Webmap Integration to send data!", Color.RED, Color.BLACK, Text.num12boldFnd));
+    private static final Tex mapperWarning2 = PUtils.strokeTex(Text.renderstroked("(This happens on newly created characters, or if you changed your endpoint)", Color.RED, Color.BLACK, Text.num12boldFnd));
 
 	private String yap_old;
 	private Random randYap = new Random();
@@ -179,10 +182,14 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	public Thread turnipThread;
 	public CleanupBot cleanupBot;
 	public Thread cleanupThread;
+	public GrubGrubBot grubGrubBot;
+	public Thread grubGrubThread;
 	public CellarDiggingBot cellarDiggingBot;
 	public Thread cellarDiggingThread;
 	public RoastingSpitBot roastingSpitBot;
 	public Thread roastingSpitThread;
+	public FishingBot fishingBot;
+	public Thread fishingThread;
 
 	public Widget stamWgt = new Widget(UI.scale(234,22)) {
 		private UI.Grab dragging;
@@ -1595,22 +1602,25 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 			drawSpeedBar(g, currEnemy, sc, msz);
 		}
 		}
-
+    if (statusWdg != null && !OptWnd.webmapEndpointTextEntry.text().isEmpty() && !MappingClient.initialized()) {
+        g.image(mapperWarning, new Coord(statusWdg.c.x - statusWdg.sz.x / 2 - mapperWarning.sz().x / 2, statusWdg.c.y + statusWdg.sz.y + mapperWarning.sz().y));
+        g.image(mapperWarning2, new Coord(statusWdg.c.x - statusWdg.sz.x / 2 - mapperWarning2.sz().x / 2, statusWdg.c.y + statusWdg.sz.y + mapperWarning.sz().y + mapperWarning2.sz().y));
+    }
     }
 
-	private Gob getEnemy() {
-		if (fv.current != null) {
-			long id = fv.current.gobid;
-			synchronized (map.glob.oc) {
-				for (Gob gob : map.glob.oc) {
-					if (gob.id == id) {
-						return gob;
-					}
-				}
-			}
-		}
-		return null;
-	}
+    private Gob getEnemy() {
+        if(fv.current != null) {
+            long id = fv.current.gobid;
+            synchronized (map.glob.oc) {
+                for(Gob gob : map.glob.oc) {
+                    if(gob.id == id) {
+                        return gob;
+                    }
+                }
+            }
+        }
+        return null;
+    }
 
     private String iconconfname() {
 	StringBuilder buf = new StringBuilder();
@@ -2262,26 +2272,26 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	} else if(kb_miniStudy.key().match(ev)) {
 		miniStudy.show(!miniStudy.visible);
 		return(true);
-	} else if(kb_traverse.key().match(ev)) {
-		this.runActionThread(new Thread(new Traverse(this), "Traverse"));
-		return (true);
-	} else if(kb_yap.key().match(ev)) {
-		Map<String, ChatUI.MultiChat> chats = ui.gui.chat.getMultiChannels();
-		String yap_new = yapper();
-		if (yap_old == null || !yap_new.equals(yap_old)) {
-			chats.get("Area Chat").send(yap_new);
-			yap_old = yap_new;
-		}
-		return(true);
+    } else if(kb_traverse.key().match(ev)) {
+        this.runActionThread(new Thread(new Traverse(this), "Traverse"));
+        return (true);
+    } else if(kb_yap.key().match(ev)) {
+        Map<String, ChatUI.MultiChat> chats = ui.gui.chat.getMultiChannels();
+        String yap_new = yapper();
+        if (yap_old == null || !yap_new.equals(yap_old)) {
+            chats.get("Area Chat").send(yap_new);
+            yap_old = yap_new;
+        }
+        return(true);
     } else if(kb_autoDistance.key().match(ev)) {
-		this.runActionThread(new Thread(new AutoDistance(this), "AutoDistance"));
-		return (true);
-	} else if(kb_flatWorld.key().match(ev)) {
-		OptWnd.flatWorldCheckBox.set(!OptWnd.flatWorldCheckBox.a);
-		return(true);
-	} else if(kb_playerBox.key().match(ev)) {
-		OptWnd.drawPlayerBox.set(!OptWnd.drawPlayerBox.a);
-		return(true);
+        this.runActionThread(new Thread(new AutoDistance(this), "AutoDistance"));
+        return (true);
+    } else if(kb_flatWorld.key().match(ev)) {
+        OptWnd.flatWorldCheckBox.set(!OptWnd.flatWorldCheckBox.a);
+        return(true);
+    } else if(kb_playerBox.key().match(ev)) {
+        OptWnd.drawPlayerBox.set(!OptWnd.drawPlayerBox.a);
+        return(true);
 	} else if((ev.c == 27) && (map != null) && !map.hasfocus) {
 	    setfocus(map);
 	    return(true);
