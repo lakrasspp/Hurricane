@@ -1565,7 +1565,6 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 	int x = (int)(ui.gui.sz.x / 2.0);
 	int y = (int)(ui.gui.sz.y - ((ui.gui.sz.y / 500.0) * OptWnd.combatUITopPanelHeightSlider.val));
 	int bottom = (int)(ui.gui.sz.y - ((ui.gui.sz.y / 500.0) * OptWnd.combatUIBottomPanelHeightSlider.val));
-	int bottomCombatUI = (int)(ui.gui.sz.y - ((ui.gui.sz.y / 500.0) * OptWnd.bottomCombatUIPanelHeighSlider.val));
 
 //	if (OptWnd.alwaysShowCombatUIStaminaBarCheckBox.a && showUI) {
 //		IMeter.Meter stam = ui.gui.getmeter("stam", 0);
@@ -1588,7 +1587,7 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 
 	if(OptWnd.drawPlayerSpeedBarCheckBox.a && showUI) {
 		Coord msz = UI.scale(new Coord(235,22));
-		Coord sc = new Coord(x - msz.x/2,  bottomCombatUI - UI.scale(275));
+		Coord sc = new Coord(x - msz.x/2,  bottom - UI.scale(275));
 		Gob player = ui.gui.map.player();
 		drawSpeedBar(g, player, sc, msz);
 	}

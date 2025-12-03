@@ -678,8 +678,13 @@ public class Inventory extends Widget implements DTarget, InventoryListener, Inv
 			}
 
 			@Override
+			public boolean mousewheel(MouseWheelEvent ev) {
+				return (takeFirst().mousewheel(ev));
+			}
+
 			public boolean mousewheel(final Coord c, final int amount) {
-				return (takeFirst().mousewheel(c, amount));
+				MouseWheelEvent ev = new MouseWheelEvent(c, amount);
+				return (takeFirst().mousewheel(ev));
 			}
 
 			private static final Map<String, Tex> TEX = Collections.synchronizedMap(new WeakHashMap<>());
@@ -842,9 +847,10 @@ public class Inventory extends Widget implements DTarget, InventoryListener, Inv
 			}
 
 
-			@Override
+
 			public boolean mousewheel(final Coord c, final int amount) {
-				return super.mousewheel(c, amount);
+				MouseWheelEvent ev = new MouseWheelEvent(c, amount);
+				return (super.mousewheel(ev));
 			}
 
 			@Override

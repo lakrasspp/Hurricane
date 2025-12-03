@@ -733,7 +733,7 @@ public class OptWnd extends Window {
 			}
 		}, leftColumn.pos("bl").adds(0, 2));
 		dragWindowsInWhenResizingCheckBox.tooltip = dragWindowsInWhenResizingTooltip;
-		leftColumn = add(showHoverInventoriesWhenHoldingShiftCheckBox = new CheckBox("Show Hover-Inventories (Stacks, Belt, etc.) only when holding Shift"){
+		leftColumn = add(showHoverInventoriesWhenHoldingShiftCheckBox = new CheckBox("Show Hover-Inventories with Shift"){
 			{a = (Utils.getprefb("showHoverInventoriesWhenHoldingShift", true));}
 			public void changed(boolean val) {
 				Utils.setprefb("showHoverInventoriesWhenHoldingShift", val);
@@ -1051,7 +1051,7 @@ public class OptWnd extends Window {
         }, rightColumn.pos("bl").adds(0, 15));
 
 		Widget backButton;
-		add(backButton = new PButton(UI.scale(200), "Back", 27, back, "Advanced Settings"), leftColumn.pos("bl").adds(0, 30).x(0));
+		add(backButton = new PButton(UI.scale(200), "Back", 27, back, "Advanced Settings"), rightColumn.pos("bl").adds(0, 30).x(0));
 	    pack();
 		centerBackButton(backButton, this);
 	}
@@ -1198,7 +1198,6 @@ public class OptWnd extends Window {
 	public static TextEntry minimumOpeningTextEntry;
 	public static HSlider combatUITopPanelHeightSlider;
 	public static HSlider combatUIBottomPanelHeightSlider;
-	public static HSlider bottomCombatUIPanelHeighSlider;
 	public static CheckBox toggleGobDamageInfoCheckBox;
 	public static CheckBox toggleGobDamageWoundInfoCheckBox;
 	public static CheckBox toggleGobDamageArmorInfoCheckBox;
@@ -1646,7 +1645,7 @@ public class OptWnd extends Window {
 			
 
 			Widget backButton;
-			add(backButton = new PButton(UI.scale(200), "Back", 27, back, "Advanced Settings"), leftColumn.pos("bl").adds(0, 18).x(0));
+			add(backButton = new PButton(UI.scale(200), "Back", 27, back, "Advanced Settings"), rightColumn.pos("bl").adds(0, 18).x(0));
 			pack();
 			centerBackButton(backButton, this);
 		}
