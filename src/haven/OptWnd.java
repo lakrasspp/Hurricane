@@ -3077,6 +3077,7 @@ public class OptWnd extends Window {
 	public static TextEntry autoDrinkingThresholdTextEntry;
 	public static CheckBox enableQueuedMovementCheckBox;
     public static CheckBox walkWithPathfinderCheckBox;
+	public static CheckBox alwaysObfuscateCheckBox;
 
 	public class GameplayAutomationSettingsPanel extends Panel {
 
@@ -3313,6 +3314,13 @@ public class OptWnd extends Window {
                 }
             }, prev.pos("bl").adds(0, 12));
             walkWithPathfinderCheckBox.tooltip = walkWithPathfinderTooltip;
+
+			prev = add(alwaysObfuscateCheckBox = new CheckBox("Always Obfuscate (bypass RF firewall)") {
+				{a = Utils.getprefb("alwaysObfuscate", true);}
+				public void changed(boolean val) {
+					Utils.setprefb("alwaysObfuscate", val);
+				}
+			}, prev.pos("bl").adds(0,12));
 
 			Widget backButton;
 			add(backButton = new PButton(UI.scale(200), "Back", 27, back, "Advanced Settings"), prev.pos("bl").adds(0, 18));
