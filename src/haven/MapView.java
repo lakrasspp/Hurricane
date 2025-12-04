@@ -2371,7 +2371,7 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
 		if(checkpointManager != null && checkpointManagerThread != null && clickb == 1){
 			checkpointManager.pauseIt();
 		}
-		if (OptWnd.walkWithPathFinderCheckBox.a && clickb == 1 && ui.modctrl && ui.modshift && !ui.modmeta && !ui.modsuper) {
+		if (OptWnd.walkWithPathfinderCheckBox.a && clickb == 1 && ui.modctrl && ui.modshift && !ui.modmeta && !ui.modsuper) {
 			pfLeftClick(mc.floor(), null);
 		} else {
 			wdgmsg("click", args);

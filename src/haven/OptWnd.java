@@ -1624,13 +1624,13 @@ public class OptWnd extends Window {
 				public void changed(boolean val) {
 					Utils.setprefb("drawPathfinderRoute", val);
 				}
-			}, rightColumn.pos("bl").adds(0, 2));
+			}, rightColumn.pos("bl").adds(-148, 2));
 			rightColumn = add(showYourCombatRangeCirclesCheckBox = new CheckBox("Show Your Combat Range Circles"){
 				{a = Utils.getprefb("showYourCombatRangeCircles", false);}
 				public void changed(boolean val) {
 					Utils.setprefb("showYourCombatRangeCircles", val);
 				}
-			}, rightColumn.pos("bl").adds(-148, 2));
+			}, rightColumn.pos("bl").adds(0, 2));
 			showYourCombatRangeCirclesCheckBox.tooltip = showYourCombatRangeCirclesTooltip;
 			rightColumn = add(new Label("Unarmed"), rightColumn.pos("bl").adds(16, 1));
 			add(unarmedCombatRangeColorOptionWidget = new ColorOptionWidget("", "unarmedCombatRange", 0, Integer.parseInt(unarmedCombatRangeColorSetting[0]), Integer.parseInt(unarmedCombatRangeColorSetting[1]), Integer.parseInt(unarmedCombatRangeColorSetting[2]), Integer.parseInt(unarmedCombatRangeColorSetting[3]), (Color col) -> {
@@ -3083,6 +3083,7 @@ public class OptWnd extends Window {
 	public static TextEntry autoDrinkingThresholdTextEntry;
 	public static CheckBox enableQueuedMovementCheckBox;
     public static CheckBox walkWithPathfinderCheckBox;
+	public static CheckBox drawPathfinderRouteCheckBox;
 	public static CheckBox alwaysObfuscateCheckBox;
 
 	public class GameplayAutomationSettingsPanel extends Panel {
