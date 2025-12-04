@@ -1619,6 +1619,12 @@ public class OptWnd extends Window {
 				}
 			}, rightColumn.pos("ur").adds(31,2 ));
 
+			rightColumn = add(drawPathfinderRouteCheckBox = new CheckBox("Draw Pathfinder Route"){
+				{a = Utils.getprefb("drawPathfinderRoute", false);}
+				public void changed(boolean val) {
+					Utils.setprefb("drawPathfinderRoute", val);
+				}
+			}, rightColumn.pos("bl").adds(0, 2));
 			rightColumn = add(showYourCombatRangeCirclesCheckBox = new CheckBox("Show Your Combat Range Circles"){
 				{a = Utils.getprefb("showYourCombatRangeCircles", false);}
 				public void changed(boolean val) {
@@ -3533,19 +3539,18 @@ public class OptWnd extends Window {
 			TopPrev = camGrp.add("Top Down Camera", TopPrev.pos("bl").adds(0, 1));
 
 			TopPrev = add(new Label("Camera Dragging:"), TopPrev.pos("bl").adds(0, 6).x(0));
-			TopPrev = add(allowMouse4CamDragCheckBox = new CheckBox("Also allow Mouse 4 Button to drag the Camera"){
-				{a = (Utils.getprefb("allowMouse4CamDrag", false));}
-				public void changed(boolean val) {
-					Utils.setprefb("allowMouse4CamDrag", val);
-				};
-			}, TopPrev.pos("bl").adds(12, 2));
-			TopPrev = add(allowMouse5CamDragCheckBox = new CheckBox("Also allow Mouse 5 Button to drag the Camera"){
-				{a = Utils.getprefb("allowMouse5CamDrag", false);}
-				public void changed(boolean val) {
-					Utils.setprefb("allowMouse5CamDrag", val);
-				}
-			}, TopPrev.pos("bl").adds(0, 2));
-
+				TopPrev = add(allowMouse4CamDragCheckBox = new CheckBox("Also allow Mouse 4 Button to drag the Camera"){
+					{a = (Utils.getprefb("allowMouse4CamDrag", false));}
+					public void changed(boolean val) {
+						Utils.setprefb("allowMouse4CamDrag", val);
+					};
+				}, TopPrev.pos("bl").adds(12, 2));
+				TopPrev = add(allowMouse5CamDragCheckBox = new CheckBox("Also allow Mouse 5 Button to drag the Camera"){
+					{a = Utils.getprefb("allowMouse5CamDrag", false);}
+					public void changed(boolean val) {
+						Utils.setprefb("allowMouse5CamDrag", val);
+					}
+				}, TopPrev.pos("bl").adds(0, 2));
 			TopPrev = add(new Label("Selected Camera Settings:"), TopPrev.pos("bl").adds(0, 6).x(0));
 			// ND: The Ortho Camera Settings
 			OrthoPrev = add(reverseOrthoCameraAxesCheckBox = new CheckBox("Reverse Ortho Look Axis"){

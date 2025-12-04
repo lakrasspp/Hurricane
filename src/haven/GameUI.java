@@ -44,6 +44,7 @@ import java.util.stream.Collectors;
 
 import haven.automated.*;
 import haven.automated.mapper.MappingClient;
+import haven.automated.pathfinder.Pathfinder;
 import haven.render.Location;
 import haven.res.ui.stackinv.ItemStack;
 
@@ -2145,6 +2146,12 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 		}
 		return (true);
 	} else if (kb_clickNearestObject.key().match(ev)) {
+		synchronized (Pathfinder.class) {
+			if (map.pf != null) {
+				map.pf.terminate = true;
+				map.pfthread.interrupt();
+			}
+		}
 		if (interactWithNearestObjectThread == null) {
 			interactWithNearestObjectThread = new Thread(new InteractWithNearestObject(this), "InteractWithNearestObject");
 			interactWithNearestObjectThread.start();
@@ -2156,6 +2163,12 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 		}
 		return (true);
 	} else if (kb_clickNearestCursorObject.key().match(ev)) {
+		synchronized (Pathfinder.class) {
+			if (map.pf != null) {
+				map.pf.terminate = true;
+				map.pfthread.interrupt();
+			}
+		}
 		if (interactWithNearestObjectThread == null) {
 			interactWithNearestObjectThread = new Thread(new InteractWithCursorNearest(this), "InteractWithCursorNearest");
 			interactWithNearestObjectThread.start();
@@ -2167,6 +2180,12 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 		}
 		return (true);
 	} else if (kb_enterNearestVehicle.key().match(ev)) {
+		synchronized (Pathfinder.class) {
+			if (map.pf != null) {
+				map.pf.terminate = true;
+				map.pfthread.interrupt();
+			}
+		}
 		if (enterNearestVehicleThread == null) {
 			enterNearestVehicleThread = new Thread(new EnterNearestVehicle(this), "EnterNearestVehicle");
 			enterNearestVehicleThread.start();
@@ -2178,6 +2197,12 @@ public class GameUI extends ConsoleHost implements Console.Directory, UI.Notice.
 		}
 		return (true);
 	} else if (kb_wagonNearestLiftable.key().match(ev)) {
+		synchronized (Pathfinder.class) {
+			if (map.pf != null) {
+				map.pf.terminate = true;
+				map.pfthread.interrupt();
+			}
+		}
 		if (wagonNearestLiftableThread == null) {
 			wagonNearestLiftableThread = new Thread(new WagonNearestLiftable(this), "WagonNearestLiftable");
 			wagonNearestLiftableThread.start();
