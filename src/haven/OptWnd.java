@@ -2504,8 +2504,7 @@ public class OptWnd extends Window {
 				Utils.setprefsa("partyChatPing" + "_colorSetting", new String[]{"243", "0", "0", "255"});
 				partyChatPingColorOptionWidget.cb.colorChooser.setColor(partyChatPingColorOptionWidget.currentColor = new Color(243, 0, 0, 255));
 			}), partyChatPingColorOptionWidget.pos("ur").adds(10, 0)).tooltip = resetButtonTooltip;
-            partyChatPingColorOptionWidget.tooltip = partyChatPingColorOptionTooltip;
-			rightColumn = add(showObjectsSpeedCheckBox = new CheckBox("Show Objects Speed (Gob)"){
+			rightColumn = add(showObjectsSpeedCheckBox = new CheckBox("Show Objects Speed"){
 				{a = Utils.getprefb("showObjectsSpeed", false);}
 				public void changed(boolean val) {
 					Utils.setprefb("showObjectsSpeed", val);
@@ -5362,7 +5361,6 @@ public class OptWnd extends Window {
 	private static final Object showBeeSkepsHarvestIconsTooltip = RichText.render("This will show icons for Wax and Honey when they can be harvested from Bee Skeps." +
 			"\n" +
 			"\n$col[218,163,0]{Keybind:} $col[185,185,185]{This can also be toggled using a keybind.}", UI.scale(300));
-    private static final Object partyChatPingColorOptionTooltip = RichText.render("$col[218,163,0]{Note:} $col[185,185,185]{If you ping players for your party, you will instead set a Party Mark on them.}", UI.scale(300));
 
 
 	// Quality Display Settings Tooltips

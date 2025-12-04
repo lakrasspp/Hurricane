@@ -27,7 +27,6 @@
 package haven;
 
 import java.awt.*;
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
@@ -121,7 +120,6 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	private GobSpeedInfo gobSpeedInfo;
 	public String currentWeapon = "";
     public boolean combatInfoAdded = false;
-    private Overlay partyMarkOverlay;
 
     public static class Overlay implements RenderTree.Node, Sprite.Owner {
 	public final int id;
@@ -1286,15 +1284,6 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		updateSupportOverlays();
 		initPermanentHighlightOverlay();
 		HitBoxes.addHitBox(this);
-        if (glob.party != null) {
-            synchronized (glob.party.targetMarkers) {
-                for (Map.Entry<Party.TargetMark, Long> entry : glob.party.targetMarkers.entrySet()) {
-                    if (this.id != -1 && entry.getValue().equals(this.id)) {
-                        addTargetMarker(entry.getKey());
-                    }
-                }
-            }
-        }
 	}
 
 	public void updPose(HashSet<String> poses) {
@@ -2730,29 +2719,5 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
         setattr(GobCombatDataInfo.class, null);
         combatInfoAdded = false;
 	}
-
-    public void addTargetMarker(Party.TargetMark targetMarker) {
-        try {
-            removeTargetMarker();
-            Resource.Image rimg = Resource.local().loadwait(targetMarker.resPath).layer(Resource.imgc);
-            BufferedImage buf = rimg.img;
-            buf = PUtils.rasterimg(PUtils.blurmask2(buf.getRaster(), 4, 1, Color.BLACK));
-            Tex tex = new TexI(buf);
-
-            PartyMarkSprite partyMarkSprite = new PartyMarkSprite(this, tex);
-            partyMarkOverlay = new Overlay(this, partyMarkSprite);
-            addol(partyMarkOverlay);
-        } catch (Exception ignored) {}
-    }
-
-    public void removeTargetMarker() {
-        try {
-            if (partyMarkOverlay != null) {
-                removeOl(partyMarkOverlay);
-                partyMarkOverlay = null;
-            }
-        } catch (Exception ignored) {}
-    }
-
 
 }
