@@ -395,10 +395,12 @@ public class ModSprite extends Sprite implements Sprite.CUpd, EquipTarget {
 
     public void added(RenderTree.Slot slot) {
     if (!(owner instanceof ResDrawable)) {
-        HatTransformEntry transform = HAT_TRANSFORMS.get(this.res.name);
-        if (transform != null) {
-            slot.cstate(Pipe.Op.compose(transform.transforms));
-        }
+		if(OptWnd.CoolerHatsCheckBox.a) {
+			HatTransformEntry transform = HAT_TRANSFORMS.get(this.res.name);
+			if (transform != null) {
+				slot.cstate(Pipe.Op.compose(transform.transforms));
+			}
+		}
     }
 	parts(slot);
 	slots.add(slot);
