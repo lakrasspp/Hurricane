@@ -40,7 +40,7 @@ public class Config {
     public static final String confid = "Hurricane";
     public static final Variable<Boolean> par = Variable.def(() -> true);
     public final Properties localprops = getlocalprops();
-	public static final String clientVersion = "v1.40a";
+	public static final String clientVersion = "v1.40b";
 	public static String githubLatestVersion = "Loading...";
 
     private static Config global = null;
@@ -1128,7 +1128,7 @@ public class Config {
 		MapAttInfo.put("uppercut", new AttackInfo(new Color[]{Color.GREEN,Color.BLUE},30));
 	}
 
-	private static String playername;
+	public static String playername;
 
 	public static void setPlayerName(String playername) {
 		Config.playername = playername;
@@ -1138,7 +1138,7 @@ public class Config {
 		if (MappingClient.initialized()) {
 			MappingClient.destroy();
 		}
-        if (!OptWnd.webmapEndpointTextEntry.text().isEmpty()) {
+        if (!OptWnd.webmapEndpointTextEntry.text().isEmpty() && ui.sess != null && ui.sess.glob != null) {
             MappingClient.init(ui.sess.glob);
             MappingClient automapper = MappingClient.getInstance();
             if (automapper != null)
