@@ -44,6 +44,7 @@ public class Traverse implements Runnable {
             "downstairs",
             "cellarstairs",
             "cavein",
+            "cavein2",
             "caveout"
     ));
     public final ArrayList<DoorShiftData> buildings = new ArrayList<DoorShiftData>(Arrays.asList(
