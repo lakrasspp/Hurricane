@@ -1618,13 +1618,6 @@ public class OptWnd extends Window {
 					super.changed();
 				}
 			}, rightColumn.pos("ur").adds(31,2 ));
-
-			rightColumn = add(drawPathfinderRouteCheckBox = new CheckBox("Draw Pathfinder Route"){
-				{a = Utils.getprefb("drawPathfinderRoute", false);}
-				public void changed(boolean val) {
-					Utils.setprefb("drawPathfinderRoute", val);
-				}
-			}, rightColumn.pos("bl").adds(-148, 2));
 			rightColumn = add(showYourCombatRangeCirclesCheckBox = new CheckBox("Show Your Combat Range Circles"){
 				{a = Utils.getprefb("showYourCombatRangeCircles", false);}
 				public void changed(boolean val) {
@@ -3320,6 +3313,12 @@ public class OptWnd extends Window {
                 }
             }, prev.pos("bl").adds(0, 12));
             walkWithPathfinderCheckBox.tooltip = walkWithPathfinderTooltip;
+            prev = add(drawPathfinderRouteCheckBox = new CheckBox("Draw Pathfinder Route on the ground"){
+                {a = Utils.getprefb("drawPathfinderRoute", false);}
+                public void changed(boolean val) {
+                    Utils.setprefb("drawPathfinderRoute", val);
+                }
+            }, prev.pos("bl").adds(12, 2));
 
 			prev = add(alwaysObfuscateCheckBox = new CheckBox("Always Obfuscate (bypass RF firewall)") {
 				{a = Utils.getprefb("alwaysObfuscate", true);}
