@@ -1623,7 +1623,7 @@ public class OptWnd extends Window {
 				public void changed(boolean val) {
 					Utils.setprefb("showYourCombatRangeCircles", val);
 				}
-			}, rightColumn.pos("bl").adds(0, 2));
+			}, rightColumn.pos("bl").adds(-148, 2));
 			showYourCombatRangeCirclesCheckBox.tooltip = showYourCombatRangeCirclesTooltip;
 			rightColumn = add(new Label("Unarmed"), rightColumn.pos("bl").adds(16, 1));
 			add(unarmedCombatRangeColorOptionWidget = new ColorOptionWidget("", "unarmedCombatRange", 0, Integer.parseInt(unarmedCombatRangeColorSetting[0]), Integer.parseInt(unarmedCombatRangeColorSetting[1]), Integer.parseInt(unarmedCombatRangeColorSetting[2]), Integer.parseInt(unarmedCombatRangeColorSetting[3]), (Color col) -> {
@@ -3318,14 +3318,14 @@ public class OptWnd extends Window {
                 public void changed(boolean val) {
                     Utils.setprefb("drawPathfinderRoute", val);
                 }
-            }, prev.pos("bl").adds(12, 2));
+            }, prev.pos("bl").adds(12, 2).x(0));
 
 			prev = add(alwaysObfuscateCheckBox = new CheckBox("Always Obfuscate (bypass RF firewall)") {
 				{a = Utils.getprefb("alwaysObfuscate", true);}
 				public void changed(boolean val) {
 					Utils.setprefb("alwaysObfuscate", val);
 				}
-			}, prev.pos("bl").adds(0,12));
+			}, prev.pos("bl").adds(0,12).x(0));
 
 			Widget backButton;
 			add(backButton = new PButton(UI.scale(200), "Back", 27, back, "Advanced Settings"), prev.pos("bl").adds(0, 18));

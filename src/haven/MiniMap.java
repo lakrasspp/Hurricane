@@ -1140,7 +1140,7 @@ public class MiniMap extends Widget {
 			}
 		mv.wdgmsg("click", args);
 		}
-        if (OptWnd.walkWithPathFinderCheckBox.a && button == 1 && ui.modctrl && ui.modshift && !ui.modmeta && !ui.modsuper) {
+        if (OptWnd.walkWithPathfinderCheckBox.a && button == 1 && ui.modctrl && ui.modshift && !ui.modmeta && !ui.modsuper) {
             mv.pfLeftClick(dsloc.tc.sub(sessloc.tc).mul(tilesz).add(tilesz.div(2)).floor(), null);
         }
 	}
