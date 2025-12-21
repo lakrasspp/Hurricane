@@ -725,7 +725,7 @@ public class GItem extends AWidget implements ItemInfo.SpriteOwner, GSprite.Owne
 						this.wdgmsg("drop", Coord.z);
 					} else if(AutoDropManagerWindow.autoDropMeatCheckBox.a && (itemBaseName.equals("meat") || itemBaseName.equals("entrails") || itemBaseName.equals("intestines") || itemBaseName.equals("animalfat")) && parseTextEntryInt(AutoDropManagerWindow.autoDropMeatQualityTextEntry) > quality) {
 						this.wdgmsg("drop", Coord.z);
-					} else if (AutoDropManagerWindow.autoDropHidesCheckBox.a && itemBaseName.contains("hide") && parseTextEntryInt(AutoDropManagerWindow.autoDropHIdesQualityTextEntry) > quality) {
+					} else if (AutoDropManagerWindow.autoDropHidesCheckBox.a && (itemBaseName.contains("hide") || itemBaseName.equals("caveanglerscales") || itemBaseName.equals("squirreltail")) && parseTextEntryInt(AutoDropManagerWindow.autoDropHIdesQualityTextEntry) > quality) {
 						this.wdgmsg("drop", Coord.z);
 					}
 					checkedAutodrop = true;
