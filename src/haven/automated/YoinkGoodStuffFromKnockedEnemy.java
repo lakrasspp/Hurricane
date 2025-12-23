@@ -59,6 +59,10 @@ public class YoinkGoodStuffFromKnockedEnemy implements Runnable {
             if (enemyEquipory.slots[3] != null) {
                 enemyEquipory.slots[3].item.wdgmsg("transfer", Coord.z);
             }
+            //shoulders slot
+            if (enemyEquipory.slots[22] != null && !enemyEquipory.slots[22].item.getres().name.equals("gfx/invobjs/small/coracle")) {
+                enemyEquipory.slots[22].item.wdgmsg("transfer", Coord.z);
+            }
 
         } catch (Exception ignored) {}
     }
