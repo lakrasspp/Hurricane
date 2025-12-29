@@ -2944,8 +2944,6 @@ public class OptWnd extends Window {
 				"\n\n$col[185,185,185]{Party members will never be attacked by this button. You can exclude other specific player groups from being attacked in the Aggro Exclusion Settings.}", new Color(255, 0, 0,255), GameUI.kb_aggroNearestPlayerButton, y);
 		y = addbtnImproved(cont, "Aggro all Non-Friendly Players", "Tries to attack everyone in range. " +
 				"\n\n$col[185,185,185]{Party members will never be attacked by this button. You can exclude other specific player groups from being attacked in the Aggro Exclusion Settings.}", new Color(255, 0, 0,255), GameUI.kb_aggroAllNonFriendlyPlayers, y);
-		y = addbtnImproved(cont, "Re-Aggro Animal (Cheese)", "Use this to cheese animals and re-aggro them quickly when they flee." +
-				"\n$col[185,185,185]{This is useful when you use animal auto-peace. Also, it only works when you're fighting one single animal.}", new Color(255, 68, 0,255), GameUI.kb_aggroLastTarget, y);
 		y = addbtnImproved(cont, "Peace Current Target", "", new Color(0, 255, 34,255), GameUI.kb_peaceCurrentTarget, y);
 		y = addbtnImproved(cont, "Traverse", "Tries to traverse through nearest doors/caves", Color.WHITE, GameUI.kb_traverse, y);
 		y = addbtnImproved(cont, "Yap", "Shitpost in areachat for you!", Color.WHITE, GameUI.kb_yap, y);
@@ -3003,6 +3001,8 @@ public class OptWnd extends Window {
 			public void changed(boolean val) {Utils.setprefb("wagonNearestLiftable_log", val);}}, objectsLiftActionLeft.pos("bl").adds(0, 4)).settip("Lift nearest log into Wagon/Cart.");
 
 		y+=UI.scale(40);
+        y = addbtnImproved(cont, "Toggle Auto-Reaggro Target", "Use this to cheese animals and instantly re-aggro them when they flee.", new Color(0, 255, 34,255), GameUI.kb_autoReaggroTarget, y);
+        y+=UI.scale(20);
 		y = addbtn(cont, "Toggle Collision Boxes", GameUI.kb_toggleCollisionBoxes, y);
 		y = addbtn(cont, "Toggle Object Hiding", GameUI.kb_toggleHidingBoxes, y);
 		y = addbtn(cont, "Display Growth Info on Plants", GameUI.kb_toggleGrowthInfo, y);
@@ -3076,7 +3076,6 @@ public class OptWnd extends Window {
 	public static CheckBox autoDropLeechesCheckBox;
 	public static CheckBox autoEquipBunnySlippersPlateBootsCheckBox;
 	public static CheckBox autoDropTicksCheckBox;
-	public static CheckBox autoPeaceAnimalsWhenCombatStartsCheckBox;
 	public static CheckBox preventUsingRawHideWhenRidingCheckBox;
 	public static CheckBox autoDrinkingCheckBox;
 	public static TextEntry autoDrinkingThresholdTextEntry;
@@ -3255,17 +3254,6 @@ public class OptWnd extends Window {
 				}
 			}),prev.pos("bl").adds(0, 12).x(0));
 
-			prev = add(autoPeaceAnimalsWhenCombatStartsCheckBox = new CheckBox("Auto-Peace Animals when Combat Starts"){
-				{a = Utils.getprefb("autoPeaceAnimalsWhenCombatStarts", false);}
-				public void set(boolean val) {
-					Utils.setprefb("autoPeaceAnimalsWhenCombatStarts", val);
-					a = val;
-					if (ui != null && ui.gui != null) {
-						ui.gui.optionInfoMsg("Autopeace Animals when Combat Starts is now " + (val ? "ENABLED" : "DISABLED") + ".", (val ? msgGreen : msgRed), Audio.resclip(val ? Toggle.sfxon : Toggle.sfxoff));
-					}
-				}
-			}, prev.pos("bl").adds(0, 12));
-			autoPeaceAnimalsWhenCombatStartsCheckBox.tooltip = autoPeaceAnimalsWhenCombatStartsTooltip;
 			prev = add(preventUsingRawHideWhenRidingCheckBox = new CheckBox("Prevent using Raw Hide when Riding a Horse"){
 				{a = Utils.getprefb("preventUsingRawHideWhenRiding", false);}
 				public void changed(boolean val) {
@@ -3727,6 +3715,7 @@ public class OptWnd extends Window {
 	public static CheckBox hideFlavorObjectsCheckBox;
 	public static CheckBox flatWorldCheckBox;
 	public static CheckBox disableTileSmoothingCheckBox;
+    public static CheckBox disableTileBlendingCheckBox;
 	public static CheckBox disableTileTransitionsCheckBox;
 	public static CheckBox flatCaveWallsCheckBox;
 	public static CheckBox straightCliffEdgesCheckBox;
@@ -3818,6 +3807,18 @@ public class OptWnd extends Window {
 				}
 			}, leftColumn.pos("bl").adds(0, 2));
 			disableTileSmoothingCheckBox.tooltip = disableTileSmoothingTooltip;
+            leftColumn = add(disableTileBlendingCheckBox = new CheckBox("Disable Tile Blending"){
+                {a = Utils.getprefb("disableTileBlending", false);}
+                public void changed(boolean val) {
+                    Utils.setprefb("disableTileBlending", val);
+                    if (ui.sess != null)
+                        ui.sess.glob.map.invalidateAll();
+                    if (ui != null && ui.gui != null) {
+                        ui.gui.optionInfoMsg("Tile Blending is now " + (val ? "DISABLED" : "ENABLED") + "!", (val ? msgRed : msgGreen), Audio.resclip(val ? Toggle.sfxoff : Toggle.sfxon));
+                    }
+                }
+            }, leftColumn.pos("bl").adds(0, 2));
+            disableTileBlendingCheckBox.tooltip = disableTileBlendingTooltip;
 			leftColumn = add(disableTileTransitionsCheckBox = new CheckBox("Disable Tile Transitions"){
 				{a = Utils.getprefb("disableTileTransitions", false);}
 				public void changed(boolean val) {
@@ -5404,9 +5405,6 @@ public class OptWnd extends Window {
 	private static final Object autoEquipBunnySlippersPlateBootsTooltip = RichText.render("Switches your currently equipped shoes to Bunny Slippers when you right click to chase a rabbit, or Plate Boots if you click on anything else." +
 			"\n" +
 			"\n$col[185,185,185]{I suggest always using this setting in PVP.}", UI.scale(300));
-	private static final Object autoPeaceAnimalsWhenCombatStartsTooltip = RichText.render("This will automatically set your status to 'Peace' when combat is initiated with a new target (animals only). " +
-			"\nToggling this on, while in combat, will also autopeace all animals you are currently fighting." +
-			"\n\n$col[218,163,0]{Action Button:} $col[185,185,185]{This setting can also be turned on/off using an action button from the menu grid (Custom Client Extras → Toggles).}", UI.scale(320));
 	private static final Object preventUsingRawHideWhenRidingTooltip = RichText.render("This will prevent you from using Raw Hide while riding a Horse, and only allow using it when you're not mounted.", UI.scale(300));
 	private static final Object autoDrinkingTooltip = RichText.render("When your Stamina Bar goes below the set threshold, try to drink Water. If the threshold box is empty, it defaults to 75%." +
 			"\n" +
@@ -5486,7 +5484,13 @@ public class OptWnd extends Window {
 			"\n$col[185,185,185]{I guess some people think this makes it easier to differentiate between terrain types, or maybe it's just preference.}" +
 			"\n" +
 			"\n$col[218,163,0]{Action Button:} $col[185,185,185]{This setting can also be turned on/off using an action button from the menu grid (Custom Client Extras → Toggles).}", UI.scale(320));
-	private static final Object disableTileTransitionsTooltip = RichText.render("This will turn all tiles into squares, so you can determine where one biome ends and another one starts, or where the shoreline meets the water." +
+    private static final Object disableTileBlendingTooltip = RichText.render("This will remove the blending of the random texture patches that are being applied to biome tiles." +
+            "\n" +
+            "\n$col[185,185,185]{It might make it a bit more confusing, because some patches of land might look like completely different biomes, but they're not...}" +
+            "\n" +
+            "\n$col[218,163,0]{Action Button:} $col[185,185,185]{This setting can also be turned on/off using an action button from the menu grid (Custom Client Extras → Toggles).}", UI.scale(320));
+
+    private static final Object disableTileTransitionsTooltip = RichText.render("This will turn all tiles into squares, so you can determine where one biome ends and another one starts, or where the shoreline meets the water." +
 			"\n" +
 			"\n$col[185,185,185]{It can be useful in some niche cases I won't bother listing, but it's preference.}" +
 			"\n" +

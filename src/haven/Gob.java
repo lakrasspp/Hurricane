@@ -27,6 +27,7 @@
 package haven;
 
 import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
@@ -120,6 +121,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	private GobSpeedInfo gobSpeedInfo;
 	public String currentWeapon = "";
     public boolean combatInfoAdded = false;
+    private Overlay partyMarkOverlay;
 
     public static class Overlay implements RenderTree.Node, Sprite.Owner {
 	public final int id;

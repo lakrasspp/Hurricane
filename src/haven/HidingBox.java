@@ -69,7 +69,7 @@ public class HidingBox extends SlottedNode implements Rendered {
 
 	@Override
 	public void draw(Pipe context, Render out) {
-		if (model != null) {
+		if(model != null) {
 			out.draw(context, model);
 		}
 	}
