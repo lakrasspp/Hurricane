@@ -2216,7 +2216,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 		}
 	}
 
-	private void checkIfPlayerOrMannequin(){
+	public void checkIfPlayerOrMannequin(){
 		try {
 			if (getres() != null) {
 				for (GAttrib g : attr.values()) {
