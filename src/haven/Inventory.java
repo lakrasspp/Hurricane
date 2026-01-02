@@ -137,6 +137,36 @@ public class Inventory extends Widget implements DTarget, InventoryListener, Inv
 	}
 	return(true);
     }
+
+	public boolean mousedown(MouseDownEvent ev) {
+		if(ev.b == 3 && ui.modctrl && ui.modshift) {
+			Coord gridCoord = ev.c.div(sqsz);
+			if(gridCoord.x < 0 || gridCoord.y < 0 || gridCoord.x >= isz.x || gridCoord.y >= isz.y) {
+				return super.mousedown(ev);
+			}
+
+			boolean clickedOnItem = false;
+
+			for(Widget wdg = child; wdg != null; wdg = wdg.next) {
+				if(wdg instanceof WItem) {
+					WItem witem = (WItem)wdg;
+					Coord itemGridPos = witem.c.div(sqsz);
+					Coord itemGridSize = witem.sz.div(sqsz);
+					if(gridCoord.x >= itemGridPos.x && gridCoord.x < itemGridPos.x + itemGridSize.x &&
+							gridCoord.y >= itemGridPos.y && gridCoord.y < itemGridPos.y + itemGridSize.y) {
+						clickedOnItem = true;
+						break;
+					}
+				}
+			}
+
+			if(!clickedOnItem) {
+				new Thread(new haven.automated.InventorySorter(ui.gui, this), "InventorySorter").start();
+				return true;
+			}
+		}
+		return super.mousedown(ev);
+	}
     
     public void addchild(Widget child, Object... args) {
 	add(child);
