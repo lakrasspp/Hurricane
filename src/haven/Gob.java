@@ -86,6 +86,7 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 	private final GobCustomSizeAndRotation customSizeAndRotation = new GobCustomSizeAndRotation();
 	public double gobSpeed = 0;
 	private Overlay customSearchOverlay;
+	private Overlay customHighlightOverlay;
 	public Boolean knocked = null;  // knocked will be null if pose update request hasn't been received yet
 	private Overlay customAuraOverlay;
 	private Overlay customBoxOverlay;
@@ -2034,6 +2035,19 @@ public class Gob implements RenderTree.Node, Sprite.Owner, Skeleton.ModOwner, Eq
 			removeOl(customSearchOverlay);
 			customSearchOverlay = null;
 		}
+	}
+
+	private void setHighlightOl() {
+			if(customHighlightOverlay != null) {
+//				removeOl(customHighlightOverlay);
+				customHighlightOverlay = null;
+			}
+			customHighlightOverlay = new Overlay(this, new haven.sprites.PingHighlightSprite(this,null, 3.0));
+			addol(customHighlightOverlay);
+	}
+
+	public void updateHighlightOverlays() {
+			setHighlightOl();
 	}
 
 	public void updateCritterAuras() {

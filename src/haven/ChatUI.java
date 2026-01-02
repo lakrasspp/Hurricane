@@ -884,6 +884,7 @@ public class ChatUI extends Widget {
 	private Map<Integer, Boolean> muted = null;
 	private Integer mutewait = null;
 	static private final File mapPingFile = new File(haven.MainFrame.gameDir + "res/customclient/sfx/mapPing.wav");
+	static private final File highlightFile = new File(MainFrame.gameDir + "res/customclient/sfx/highlightPlayer.wav");
 
 	public class NamedMessage extends Message {
 	    public final int from;
@@ -1013,6 +1014,20 @@ public class ChatUI extends Widget {
 							gob.highlight(OptWnd.areaChatPingColorOptionWidget.currentColor);
 						} else if (name.equals("Party")) {
 							gob.highlight(OptWnd.partyChatPingColorOptionWidget.currentColor);
+							if (ui != null && ui.gui != null) {
+								gob.updateHighlightOverlays();
+							}
+							try {
+								AudioInputStream in = AudioSystem.getAudioInputStream(highlightFile);
+								AudioFormat tgtFormat = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 44100, 16, 2,4, 44100, false);
+								AudioInputStream pcmStream = AudioSystem.getAudioInputStream(tgtFormat, in);
+								Audio.CS klippi = new Audio.PCMClip(pcmStream, 2, 2);
+								((Audio.Mixer)Audio.player.stream).add(new Audio.VolAdjust(klippi, 0.3));
+							} catch(UnsupportedAudioFileException e) {
+								e.printStackTrace();
+							} catch(IOException e) {
+								e.printStackTrace();
+							}
 						}
 					}
 					return false;

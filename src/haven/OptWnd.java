@@ -2976,6 +2976,7 @@ public class OptWnd extends Window {
 				"\n\n$col[185,185,185]{Party members will never be attacked by this button. You can exclude other specific player groups from being attacked in the Aggro Exclusion Settings.}", new Color(255, 0, 0,255), GameUI.kb_aggroNearestPlayerButton, y);
 		y = addbtnImproved(cont, "Aggro all Non-Friendly Players", "Tries to attack everyone in range. " +
 				"\n\n$col[185,185,185]{Party members will never be attacked by this button. You can exclude other specific player groups from being attacked in the Aggro Exclusion Settings.}", new Color(255, 0, 0,255), GameUI.kb_aggroAllNonFriendlyPlayers, y);
+		y = addbtnImproved(cont, "HIghlight Nearest to Cursor", "bla bla bla", new Color(255, 0, 0,255), GameUI.kb_highlightNearestCursor, y);
 		y = addbtnImproved(cont, "Peace Current Target", "", new Color(0, 255, 34,255), GameUI.kb_peaceCurrentTarget, y);
 		y = addbtnImproved(cont, "Traverse", "Tries to traverse through nearest doors/caves", Color.WHITE, GameUI.kb_traverse, y);
 		y = addbtnImproved(cont, "Yap", "Shitpost in areachat for you!", Color.WHITE, GameUI.kb_yap, y);
