@@ -63,6 +63,26 @@ public class GobIconsCustom {
 		put("gfx/terobjs/items/truffle-white3", "customclient/mapicons/whitetruffle");
 
         put("gfx/terobjs/well", "customclient/mapicons/well");
+
+		put("gfx/terobjs/items/boarspear", "customclient/mapicons/boarspear");
+		put("gfx/terobjs/items/dragonhelm", "customclient/mapicons/dragonhelm");
+		put("gfx/terobjs/items/exquisitebelt", "customclient/mapicons/exquisitebelt");
+		put("gfx/terobjs/items/forgering", "customclient/mapicons/forgering");
+		put("gfx/terobjs/items/keyring", "customclient/mapicons/keyring");
+		put("gfx/terobjs/items/key-big", "customclient/mapicons/mastercopy");
+		put("gfx/terobjs/items/merchantspants", "customclient/mapicons/merchantspants");
+		put("gfx/terobjs/items/merchantsring", "customclient/mapicons/merchantsring");
+		put("gfx/terobjs/items/monocle", "customclient/mapicons/monocle");
+		put("gfx/terobjs/items/riverpearl", "customclient/mapicons/pearl");   // !!!
+		put("gfx/terobjs/items/pearlnecklase", "customclient/mapicons/pearlnecklace");
+		put("gfx/terobjs/items/robring", "customclient/mapicons/robring");
+		put("gfx/terobjs/items/key", "customclient/mapicons/slavecopy");
+		put("gfx/terobjs/items/thanesring", "customclient/mapicons/thanesring");
+		put("gfx/terobjs/items/thimble", "customclient/mapicons/thimble");
+		put("gfx/terobjs/items/travellerssack", "customclient/mapicons/travellerssack");
+		put("gfx/terobjs/items/trollbelt", "customclient/mapicons/trollbelt");
+		put("gfx/terobjs/items/trollhelm", "customclient/mapicons/trollhelm");
+		put("gfx/terobjs/items/whalersjacket", "customclient/mapicons/whalersjacket");
     }};
 
 
